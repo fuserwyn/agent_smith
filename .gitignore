@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+cache/
+runs/
+.pytest_cache/
+.DS_Store
+evaluations/
+moulinette/
