@@ -1,0 +1,513 @@
+<title>Архитектура Agent Smith</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: engineering schematic — one wide diagram with trust zones, a step player under it, then a catalogue grouped by zone */
+:root {
+  --bg: #EDF0F3;
+  --surface: #FFFFFF;
+  --ink: #16233A;
+  --muted: #5B6678;
+  --line: #C6CFDA;
+  --accent: #D98A00;
+  --accent-ink: #8F5A00;
+  --z-trusted: #2D5BA6;
+  --z-untrusted: #B42D4A;
+  --z-mcp: #6A4BB0;
+  --z-docker: #0F7C76;
+  --z-external: #677284;
+  --font-display: "Unbounded", "IBM Plex Sans", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1620; --surface: #172131; --ink: #E3E9F1; --muted: #94A0B2; --line: #2B3749;
+    --accent: #F4B33A; --accent-ink: #F4B33A;
+    --z-trusted: #74A0EA; --z-untrusted: #EE7389; --z-mcp: #AB8EEC; --z-docker: #42C4B8; --z-external: #9AA4B2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1620; --surface: #172131; --ink: #E3E9F1; --muted: #94A0B2; --line: #2B3749;
+  --accent: #F4B33A; --accent-ink: #F4B33A;
+  --z-trusted: #74A0EA; --z-untrusted: #EE7389; --z-mcp: #AB8EEC; --z-docker: #42C4B8; --z-external: #9AA4B2;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+.wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 56px; }
+h1, h2 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(28px, 4.4vw, 46px); font-weight: 700; line-height: 1.1; }
+h2 { font-size: clamp(20px, 2.4vw, 26px); font-weight: 500; }
+h3 { margin: 0; font-size: 18px; font-weight: 600; }
+p { margin: 0; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+header { display: grid; gap: 16px; max-width: 760px; }
+.lead { font-size: 18px; color: var(--muted); max-width: 65ch; }
+.lead b { color: var(--ink); font-weight: 600; }
+
+/* ---------- diagram ---------- */
+.section { display: grid; gap: 20px; }
+.section-head { display: grid; gap: 6px; max-width: 70ch; }
+.section-head p { color: var(--muted); }
+.diagram {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.diagram svg { display: block; width: 100%; min-width: 980px; height: auto; }
+.hint { font-size: 13px; color: var(--muted); }
+
+svg text { font-family: var(--font-body); fill: var(--ink); }
+svg .t-title { font-size: 15px; font-weight: 600; }
+svg .t-sub { font-family: var(--font-mono); font-size: 11px; fill: var(--muted); }
+svg .t-zone { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; }
+svg .t-edge { font-family: var(--font-mono); font-size: 10.5px; fill: var(--muted); }
+svg .t-legend { font-size: 12px; fill: var(--muted); }
+
+.zone rect.zbox { fill: color-mix(in srgb, var(--zc) 5%, transparent); stroke: var(--zc); stroke-width: 1.2; stroke-dasharray: 6 5; }
+.zone text { fill: var(--zc); }
+.zone.sub rect.zbox { stroke-dasharray: 2 4; fill: color-mix(in srgb, var(--zc) 4%, transparent); }
+.z-trusted { --zc: var(--z-trusted); }
+.z-untrusted { --zc: var(--z-untrusted); }
+.z-mcp { --zc: var(--z-mcp); }
+.z-docker { --zc: var(--z-docker); }
+.z-external { --zc: var(--z-external); }
+.hatch line { stroke: var(--z-untrusted); stroke-opacity: 0.14; stroke-width: 1; }
+
+.node { cursor: pointer; outline: none; }
+.node rect.nbox { fill: var(--surface); stroke: var(--zc); stroke-width: 1.4; transition: stroke-width .15s, fill .15s; }
+.node .bar { fill: var(--zc); }
+.node:hover rect.nbox, .node:focus-visible rect.nbox, .node.is-hl rect.nbox { fill: color-mix(in srgb, var(--zc) 10%, var(--surface)); stroke-width: 2.2; }
+.node:focus-visible rect.nbox { stroke: var(--accent); }
+.node.is-active rect.nbox { stroke: var(--accent); stroke-width: 2.8; fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.pill rect { fill: color-mix(in srgb, var(--z-trusted) 9%, var(--surface)); stroke: color-mix(in srgb, var(--z-trusted) 45%, transparent); }
+.pill text { font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+.chip rect { fill: color-mix(in srgb, var(--z-untrusted) 10%, var(--surface)); stroke: color-mix(in srgb, var(--z-untrusted) 40%, transparent); }
+.chip text { font-family: var(--font-mono); font-size: 10.5px; fill: var(--ink); }
+
+.edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.edge.cross { stroke-dasharray: 5 4; }
+.edge.is-active { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 8 6; animation: march .7s linear infinite; }
+.cyc { fill: none; stroke: color-mix(in srgb, var(--z-trusted) 60%, transparent); stroke-width: 1.3; }
+.arrow-def { fill: var(--muted); }
+.arrow-act { fill: var(--accent); }
+.arrow-cyc { fill: color-mix(in srgb, var(--z-trusted) 60%, transparent); }
+@keyframes march { to { stroke-dashoffset: -14; } }
+
+/* ---------- player ---------- */
+.player { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button {
+  font: 500 14px var(--font-body); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; cursor: pointer;
+}
+button:hover { border-color: var(--ink); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.now { font-size: 15px; min-height: 1.6em; color: var(--ink); }
+.now b { font-family: var(--font-mono); color: var(--accent-ink); margin-right: 8px; }
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 20px; counter-reset: s; }
+ol.steps li { counter-increment: s; }
+ol.steps button {
+  width: 100%; text-align: left; border: 0; border-left: 2px solid var(--line); border-radius: 0;
+  background: transparent; padding: 6px 10px; font-size: 14px; font-weight: 400; color: var(--muted);
+  display: grid; grid-template-columns: 2.2em 1fr; gap: 4px;
+}
+ol.steps button::before { content: counter(s, decimal-leading-zero); font-family: var(--font-mono); font-size: 12px; padding-top: 2px; }
+ol.steps button:hover { color: var(--ink); border-left-color: var(--ink); }
+ol.steps button[aria-current="step"] { color: var(--ink); border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+
+/* ---------- catalogue ---------- */
+.group { display: grid; gap: 16px; }
+.group-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.group-head .dot { width: 12px; height: 12px; border-radius: 3px; background: var(--zc); align-self: center; flex: none; }
+.group-head h2 { font-size: 18px; }
+.group-head p { color: var(--muted); font-size: 15px; flex: 1 1 320px; min-width: 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--zc);
+  border-radius: 8px; padding: 20px; display: grid; gap: 12px; align-content: start; min-width: 0;
+  scroll-margin-top: 24px; transition: box-shadow .2s, border-color .2s;
+}
+.card.flash { box-shadow: 0 0 0 3px var(--accent); }
+.card .path { font-family: var(--font-mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.card .label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.card ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15px; }
+.card p { font-size: 15px; }
+.card .note { font-size: 14px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 10px; }
+.card .show { justify-self: start; font-size: 13px; padding: 5px 10px; }
+
+/* ---------- decisions ---------- */
+.decisions { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 0 32px; }
+.decision { padding: 16px 0; border-top: 1px solid var(--line); display: grid; gap: 4px; min-width: 0; }
+.decision b { font-weight: 600; }
+.decision span { color: var(--muted); font-size: 15px; }
+footer { color: var(--muted); font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .edge.is-active { animation: none; stroke-dasharray: none; }
+  .card, .node rect.nbox { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">42 · Agent Smith · subject v1.1</div>
+    <h1>Архитектура Agent Smith</h1>
+    <p class="lead">Агент получает задачу и решает её сам: <b>думает, пишет Python-код, запускает его в песочнице, смотрит вывод</b> и повторяет, пока не вызовет <code>final_answer()</code>. Ниже схема всех частей, зоны доверия между ними и описание каждого блока.</p>
+  </header>
+
+  <section class="section" aria-labelledby="h-map">
+    <div class="section-head">
+      <h2 id="h-map">Схема системы</h2>
+      <p>Пунктирные рамки — границы процессов. Пунктирные стрелки пересекают границу: сеть, pipe, stdio или <code>docker exec</code>. Нажмите на блок, чтобы прочитать его описание.</p>
+    </div>
+
+    <div class="diagram">
+      <svg id="map" viewBox="0 0 1200 760" role="img" aria-label="Схема архитектуры Agent Smith">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow-def" d="M0 0L10 5L0 10z"/></marker>
+          <marker id="ar-act" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="arrow-act" d="M0 0L10 5L0 10z"/></marker>
+          <marker id="ar-cyc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="arrow-cyc" d="M0 0L10 5L0 10z"/></marker>
+          <pattern id="hatch" class="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10"/></pattern>
+        </defs>
+
+        <!-- zones -->
+        <g class="zone z-trusted"><rect class="zbox" x="20" y="56" width="760" height="484" rx="10"/><text class="t-zone" x="36" y="80">ПРОЦЕСС АГЕНТА · доверенный код</text></g>
+        <g class="zone sub z-trusted"><rect class="zbox" x="260" y="372" width="500" height="148" rx="8"/><text class="t-zone" x="276" y="394">SANDBOX · родительская часть</text></g>
+        <g class="zone z-external"><rect class="zbox" x="820" y="56" width="360" height="124" rx="10"/><text class="t-zone" x="836" y="80">ВНЕШНИЕ API</text></g>
+        <g class="zone z-mcp"><rect class="zbox" x="820" y="372" width="360" height="196" rx="10"/><text class="t-zone" x="836" y="396">ОТДЕЛЬНЫЙ ПРОЦЕСС · MCP</text></g>
+        <g class="zone z-docker"><rect class="zbox" x="820" y="600" width="360" height="140" rx="10"/><text class="t-zone" x="836" y="624">DOCKER · только SWE-bench</text></g>
+        <g class="zone z-untrusted"><rect x="260" y="580" width="500" height="160" rx="10" fill="url(#hatch)"/><rect class="zbox" x="260" y="580" width="500" height="160" rx="10"/><text class="t-zone" x="276" y="604">WORKER-ПРОЦЕСС · недоверенный код</text></g>
+
+        <!-- edges -->
+        <path id="e-cli-loop" class="edge" d="M240 128H276" marker-end="url(#ar)"/>
+        <path id="e-config-loop" class="edge" d="M240 218H276" marker-end="url(#ar)"/>
+        <path id="e-budget-loop" class="edge" d="M244 308H276" marker-start="url(#ar)" marker-end="url(#ar)"/>
+        <path id="e-loop-llm" class="edge" d="M500 128H536" marker-end="url(#ar)"/>
+        <path id="e-loop-ext" class="edge" d="M500 218H536" marker-end="url(#ar)"/>
+        <path id="e-loop-prompt" class="edge" d="M500 308H536" marker-end="url(#ar)"/>
+        <path id="e-llm-prov" class="edge cross" d="M760 128H836" marker-end="url(#ar)"/>
+        <path id="e-loop-exec" class="edge" d="M380 344V406" marker-start="url(#ar)" marker-end="url(#ar)"/>
+        <path id="e-exec-mcp" class="edge" d="M484 442H536" marker-start="url(#ar)" marker-end="url(#ar)"/>
+        <path id="e-mcp-server" class="edge cross" d="M740 442H836" marker-end="url(#ar)"/>
+        <path id="e-server-tools" class="edge" d="M1000 470V490" marker-end="url(#ar)"/>
+        <path id="e-tools-docker" class="edge cross" d="M1000 550V636" marker-end="url(#ar)"/>
+        <path id="e-exec-worker" class="edge cross" d="M380 478V616" marker-start="url(#ar)" marker-end="url(#ar)"/>
+        <path id="e-worker-final" class="edge" d="M580 672H596" marker-end="url(#ar)"/>
+        <path id="e-budget-out" class="edge" d="M140 340V406" marker-end="url(#ar)"/>
+
+        <text class="t-edge" x="798" y="119" text-anchor="middle">HTTPS</text>
+        <text class="t-edge" x="788" y="433" text-anchor="middle">stdio|HTTP</text>
+        <text class="t-edge" x="1010" y="596">docker exec</text>
+        <text class="t-edge" x="390" y="563">pipe · JSON</text>
+
+        <!-- nodes: trusted -->
+        <g class="node z-trusted" data-id="cli" tabindex="0" role="button" aria-label="CLI-раннеры"><rect class="nbox" x="40" y="96" width="200" height="64" rx="6"/><text class="t-title" x="56" y="124">CLI-раннеры</text><text class="t-sub" x="56" y="143">agent_mbpp · agent_swebench</text></g>
+        <g class="node z-trusted" data-id="config" tabindex="0" role="button" aria-label="Схемы и конфиг"><rect class="nbox" x="40" y="186" width="200" height="64" rx="6"/><text class="t-title" x="56" y="214">Схемы и конфиг</text><text class="t-sub" x="56" y="233">Pydantic · JSON · .env</text></g>
+        <g class="node z-trusted" data-id="budget" tabindex="0" role="button" aria-label="Бюджет и метрики"><rect class="nbox" x="40" y="276" width="200" height="64" rx="6"/><text class="t-title" x="56" y="304">Бюджет и метрики</text><text class="t-sub" x="56" y="323">лимиты · StepMetrics</text></g>
+        <g class="node z-trusted" data-id="output" tabindex="0" role="button" aria-label="solution.json"><rect class="nbox" x="40" y="410" width="200" height="64" rx="6"/><text class="t-title" x="56" y="438">solution.json</text><text class="t-sub" x="56" y="457">SolutionOutput</text></g>
+
+        <g class="node z-trusted" data-id="loop" tabindex="0" role="button" aria-label="AgentLoop">
+          <rect class="nbox" x="280" y="96" width="220" height="248" rx="6"/>
+          <text class="t-title" x="296" y="124">AgentLoop</text><text class="t-sub" x="296" y="143">оркестратор цикла</text>
+          <g class="pill"><rect x="300" y="160" width="160" height="30" rx="15"/><text x="380" y="180" text-anchor="middle">Thought</text></g>
+          <g class="pill"><rect x="300" y="212" width="160" height="30" rx="15"/><text x="380" y="232" text-anchor="middle">Code</text></g>
+          <g class="pill"><rect x="300" y="264" width="160" height="30" rx="15"/><text x="380" y="284" text-anchor="middle">Observation</text></g>
+          <path class="cyc" d="M380 190V208" marker-end="url(#ar-cyc)"/>
+          <path class="cyc" d="M380 242V260" marker-end="url(#ar-cyc)"/>
+          <path class="cyc" d="M460 279C486 279 486 175 464 175" marker-end="url(#ar-cyc)"/>
+          <text class="t-sub" x="296" y="324">до final_answer или лимита</text>
+        </g>
+
+        <g class="node z-trusted" data-id="llm" tabindex="0" role="button" aria-label="LLM-роутер"><rect class="nbox" x="540" y="96" width="220" height="64" rx="6"/><text class="t-title" x="556" y="124">LLM-роутер</text><text class="t-sub" x="556" y="143">провайдеры · ключи · ретраи</text></g>
+        <g class="node z-trusted" data-id="extractor" tabindex="0" role="button" aria-label="Извлечение кода"><rect class="nbox" x="540" y="186" width="220" height="64" rx="6"/><text class="t-title" x="556" y="214">Извлечение кода</text><text class="t-sub" x="556" y="233">python · xml · json · react</text></g>
+        <g class="node z-trusted" data-id="prompt" tabindex="0" role="button" aria-label="Промпт и история"><rect class="nbox" x="540" y="276" width="220" height="64" rx="6"/><text class="t-title" x="556" y="304">Промпт и история</text><text class="t-sub" x="556" y="323">system prompt · сжатие</text></g>
+        <g class="node z-trusted" data-id="executor" tabindex="0" role="button" aria-label="Executor"><rect class="nbox" x="280" y="410" width="200" height="64" rx="6"/><text class="t-title" x="296" y="438">Executor</text><text class="t-sub" x="296" y="457">запуск · таймаут · kill</text></g>
+        <g class="node z-trusted" data-id="mcpclient" tabindex="0" role="button" aria-label="MCP-клиент"><rect class="nbox" x="540" y="410" width="200" height="64" rx="6"/><text class="t-title" x="556" y="438">MCP-клиент</text><text class="t-sub" x="556" y="457">list_tools · мануал</text></g>
+
+        <!-- external -->
+        <g class="node z-external" data-id="providers" tabindex="0" role="button" aria-label="LLM API"><rect class="nbox" x="840" y="96" width="320" height="64" rx="6"/><text class="t-title" x="856" y="124">LLM API (бесплатные)</text><text class="t-sub" x="856" y="143">OpenRouter · Groq · Gemini · Mistral</text></g>
+
+        <!-- mcp -->
+        <g class="node z-mcp" data-id="mcpserver" tabindex="0" role="button" aria-label="MCP-сервер"><rect class="nbox" x="840" y="414" width="320" height="56" rx="6"/><text class="t-title" x="856" y="438">MCP-сервер</text><text class="t-sub" x="856" y="456">mcp_tools_mbpp.py · mcp_tools_swebench.py</text></g>
+        <g class="node z-mcp" data-id="toolsimpl" tabindex="0" role="button" aria-label="Логика тулов"><rect class="nbox" x="840" y="494" width="320" height="56" rx="6"/><text class="t-title" x="856" y="518">Логика тулов</text><text class="t-sub" x="856" y="536">tools_impl/ · fs · search · exec</text></g>
+
+        <!-- docker -->
+        <g class="node z-docker" data-id="docker" tabindex="0" role="button" aria-label="Контейнер задачи"><rect class="nbox" x="840" y="640" width="320" height="80" rx="6"/><text class="t-title" x="856" y="668">Контейнер задачи</text><text class="t-sub" x="856" y="687">/testbed · git · eval-скрипт</text><text class="t-sub" x="856" y="705">удаляется всегда: docker rm -f</text></g>
+
+        <!-- untrusted -->
+        <g class="node z-untrusted" data-id="worker" tabindex="0" role="button" aria-label="Worker">
+          <rect class="nbox" x="280" y="620" width="300" height="104" rx="6"/>
+          <text class="t-title" x="296" y="645">Worker · exec(code)</text>
+          <g class="chip"><rect x="292" y="660" width="88" height="22" rx="4"/><text x="336" y="675" text-anchor="middle">imports</text></g>
+          <g class="chip"><rect x="386" y="660" width="88" height="22" rx="4"/><text x="430" y="675" text-anchor="middle">paths</text></g>
+          <g class="chip"><rect x="480" y="660" width="88" height="22" rx="4"/><text x="524" y="675" text-anchor="middle">no network</text></g>
+          <g class="chip"><rect x="292" y="690" width="88" height="22" rx="4"/><text x="336" y="705" text-anchor="middle">builtins</text></g>
+          <g class="chip"><rect x="386" y="690" width="88" height="22" rx="4"/><text x="430" y="705" text-anchor="middle">AST dunder</text></g>
+          <g class="chip"><rect x="480" y="690" width="88" height="22" rx="4"/><text x="524" y="705" text-anchor="middle">RAM · time</text></g>
+        </g>
+        <g class="node z-untrusted" data-id="finalanswer" tabindex="0" role="button" aria-label="final_answer"><rect class="nbox" x="600" y="640" width="144" height="64" rx="6"/><text class="t-title" x="614" y="668">final_answer()</text><text class="t-sub" x="614" y="687">сигнал «готово»</text></g>
+
+        <!-- legend -->
+        <g>
+          <text class="t-zone" x="36" y="604" fill="currentColor" style="fill: var(--muted)">ЛЕГЕНДА</text>
+          <rect x="36" y="616" width="14" height="10" rx="2" fill="none" stroke="var(--z-trusted)" stroke-dasharray="3 2"/><text class="t-legend" x="58" y="625">наш доверенный код</text>
+          <rect x="36" y="636" width="14" height="10" rx="2" fill="url(#hatch)" stroke="var(--z-untrusted)" stroke-dasharray="3 2"/><text class="t-legend" x="58" y="645">код от модели</text>
+          <rect x="36" y="656" width="14" height="10" rx="2" fill="none" stroke="var(--z-mcp)" stroke-dasharray="3 2"/><text class="t-legend" x="58" y="665">MCP-процесс</text>
+          <rect x="36" y="676" width="14" height="10" rx="2" fill="none" stroke="var(--z-docker)" stroke-dasharray="3 2"/><text class="t-legend" x="58" y="685">контейнер задачи</text>
+          <path class="edge" d="M36 706H62" marker-end="url(#ar)"/><text class="t-legend" x="70" y="710">вызов в процессе</text>
+          <path class="edge cross" d="M36 728H62" marker-end="url(#ar)"/><text class="t-legend" x="70" y="732">через границу</text>
+        </g>
+      </svg>
+    </div>
+    <p class="hint">На узком экране схему можно прокрутить вбок.</p>
+  </section>
+
+  <section class="section player" aria-labelledby="h-step">
+    <div class="section-head">
+      <h2 id="h-step">Один шаг цикла</h2>
+      <p>Что происходит за одну итерацию Thought → Code → Observation. Запустите проигрывание или выберите шаг, и путь подсветится на схеме.</p>
+    </div>
+    <div class="controls">
+      <button id="play" class="primary" type="button">▶ Проиграть</button>
+      <button id="prev" type="button" aria-label="Предыдущий шаг">←</button>
+      <button id="next" type="button" aria-label="Следующий шаг">→</button>
+      <button id="reset" type="button">Сбросить</button>
+    </div>
+    <p class="now" id="now" aria-live="polite">Выберите шаг или нажмите «Проиграть».</p>
+    <ol class="steps" id="steps"></ol>
+  </section>
+
+  <section class="section" aria-labelledby="h-blocks">
+    <div class="section-head">
+      <h2 id="h-blocks">Блоки системы</h2>
+      <p>Что делает каждый блок и как он работает внутри. Сгруппировано по зонам доверия, как на схеме.</p>
+    </div>
+    <div id="catalogue" style="display:grid; gap:40px"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-why">
+    <div class="section-head">
+      <h2 id="h-why">Почему устроено именно так</h2>
+    </div>
+    <div class="decisions">
+      <div class="decision"><b>Код модели исполняется в отдельном процессе</b><span>Зависший код можно убить по таймауту, лимит памяти через setrlimit не задевает агента, а падение worker не роняет цикл.</span></div>
+      <div class="decision"><b>MCP-клиент живёт в родителе, в worker только прокси</b><span>У недоверенного кода нет сокетов. MCP-вызовы идут вне таймаута песочницы, как требует сабжект.</span></div>
+      <div class="decision"><b>Worker живёт всю задачу</b><span>Переменные сохраняются между шагами: модель может найти файл на одном шаге и использовать результат на следующем.</span></div>
+      <div class="decision"><b>Любой формат вызова тулов становится Python</b><span>Песочнице всё равно, какая модель ответила: XML, JSON или ReAct переводятся в обычные вызовы функций.</span></div>
+      <div class="decision"><b>Тулы берутся только из list_tools()</b><span>На защите подключат чужой MCP-сервер. Мануал для промпта строится из его схем без правок кода.</span></div>
+      <div class="decision"><b>Слои не знают друг о друге</b><span>Логика тулов не знает про MCP, сервер не знает про агента, цикл не знает про провайдера. Каждый слой тестируется отдельно.</span></div>
+    </div>
+  </section>
+
+  <footer>Основано на <span class="mono">en.subject.pdf</span> (v1.1), <span class="mono">PLAN.md</span> и <span class="mono">ARCHITECTURE.md</span> в репозитории.</footer>
+</div>
+
+<script>
+const ZONES = [
+  { key: "trusted", name: "Процесс агента", text: "Наш код: цикл, работа с LLM и управляющая часть песочницы. Доступ в сеть есть только здесь." },
+  { key: "untrusted", name: "Worker-процесс", text: "Здесь исполняется код, который написала модель. Без сети, импорты и пути по allowlist, лимиты памяти и времени." },
+  { key: "mcp", name: "MCP-сервер", text: "Отдельный процесс с нашими тулами. Подключается по stdio или streamable HTTP." },
+  { key: "docker", name: "Docker-контейнер", text: "Окружение задачи SWE-bench с репозиторием в /testbed." },
+  { key: "external", name: "Внешние API", text: "Бесплатные LLM-провайдеры. Платные тарифы запрещены." }
+];
+
+const BLOCKS = [
+  { id: "cli", zone: "trusted", title: "CLI-раннеры", path: "agent_mbpp/ · agent_swebench/ · runners/",
+    what: "Точка входа. Запускается как uv run python -m agent_mbpp (или agent_swebench) с --task-file, --output, --model-name и --provider-url.",
+    how: ["Загружает .env и task.json, проверяет его через MBPPTaskInput или SWEBenchTaskInput.", "Собирает зависимости: LLM-роутер, песочницу с нужным MCP-сервером, AgentLoop.", "Для SWE-bench сначала поднимает Docker-контейнер задачи.", "Ловит любые исключения и всё равно пишет валидный solution.json."],
+    note: "Слой тонкий, логика в runners/. На защите будут просить быстро что-то поменять, и так проще найти нужное место." },
+  { id: "config", zone: "trusted", title: "Схемы и конфиг", path: "schemas.py · sandbox_template.json · config/models.json · .env",
+    what: "Pydantic-модели данных и файлы настроек: SandboxConfig, AgentConfig, модели задач, StepMetrics и SolutionOutput.",
+    how: ["JSON читается в Pydantic с валидацией. Неизвестные поля дают ошибку, а не тихо игнорируются.", "models.json хранит base_url, модели и имена переменных окружения с ключами, но не сами ключи.", "Ключи берутся только из окружения: OPENROUTER_API_KEY, OPENROUTER_API_KEY_2 и так далее."],
+    note: "Ключ в исходниках означает провал проверки." },
+  { id: "loop", zone: "trusted", title: "AgentLoop", path: "agent/loop.py",
+    what: "Сердце системы. Крутит цикл Thought → Code → Observation, пока модель не вызовет final_answer или не кончится бюджет.",
+    how: ["Просит PromptBuilder собрать сообщения и отправляет их в LLM-роутер.", "Отдаёт ответ модели экстрактору и получает код.", "Передаёт код в Executor и получает ExecResult.", "Превращает результат в Observation и добавляет в историю.", "Проверяет бюджет. На final_answer завершает работу с success=true."],
+    note: "Цикл пишем сами: smolagents, langgraph, llama-index, crewai и autogen запрещены." },
+  { id: "prompt", zone: "trusted", title: "Промпт и история", path: "agent/prompt_builder.py · agent/history.py · agent/prompts/",
+    what: "Собирает всё, что видит модель на каждом шаге.",
+    how: ["System prompt состоит из роли, методологии, мануала тулов от MCP-клиента и примера хорошего цикла.", "Методология для SWE-bench: найти, прочитать, воспроизвести, исправить, проверить, сдать.", "Последние Observation попадают в историю целиком, старые сжимаются до заголовка.", "Полный system prompt сохраняется в solution.json для проверки."],
+    note: "Для MBPP промпт держим в 600–900 токенах, иначе не уложиться в лимит 6k." },
+  { id: "llm", zone: "trusted", title: "LLM-роутер", path: "llm/router.py · key_pool.py · openai_compat.py · usage.py",
+    what: "Единый интерфейс к любым провайдерам: complete(messages, stop, max_tokens).",
+    how: ["Один клиент на httpx для всех OpenAI-совместимых API.", "KeyPool держит несколько ключей на провайдера, перебирает их по кругу и после 429 даёт ключу остыть.", "При таймаутах и ошибках 5xx повторяет запрос с растущей задержкой, затем переходит к следующему провайдеру.", "Stop-sequences (<end_code>, </tool_call>, Observation:) не дают модели выдумать вывод.", "Записывает токены, время ответа и число повторов."],
+    note: "Чтобы сменить провайдера, достаточно поправить конфиг, код трогать не нужно." },
+  { id: "extractor", zone: "trusted", title: "Извлечение кода", path: "extraction/",
+    what: "Превращает текст ответа модели в Python-код для песочницы.",
+    how: ["Пробует форматы по очереди: блок ```python``` с <end_code>, XML <invoke>, JSON <tool_call>, ReAct Action / Action Input.", "Не-Python форматы переводит в вызовы вида result = read_file(filepath=\"...\").", "Возвращает код, найденный формат и заметки. Если кода нет или блок был кривым, заметка объясняет модели, что произошло."],
+    note: "Песочница не зависит от формата ответа, поэтому подходит любая модель." },
+  { id: "budget", zone: "trusted", title: "Бюджет и метрики", path: "agent/budget.py · agent/metrics.py",
+    what: "Следит за лимитами и записывает метрики каждого шага.",
+    how: ["MBPP: 10 итераций, 6k входных и 1.5k выходных токенов, 120 с. SWE-bench: 30 итераций, 300k, 10k, 900 с.", "Перед каждым запросом считает остаток и ограничивает max_tokens.", "Когда остаётся один шаг, просит модель вызвать final_answer.", "После шага пишет StepMetrics: токены, время запроса, ретраи, llm_output, sandbox_input, sandbox_output, api_url и model_name."],
+    note: "Токены reasoning-моделей тоже идут в лимит." },
+  { id: "executor", zone: "trusted", title: "Executor", path: "sandbox/executor.py · sandbox/protocol.py · sandbox/cli.py",
+    what: "Родительская часть песочницы. Управляет worker-процессом.",
+    how: ["Запускает worker один раз на задачу.", "Отправляет код по pipe сообщением {\"type\": \"exec\"} и ждёт ответа с таймаутом.", "При превышении убивает worker через SIGKILL, перезапускает его и отдаёт частичный вывод с пометкой.", "Обрезает длинный вывод и пишет, сколько срезано. Пока идёт вызов тула, таймер стоит.", "KeyboardInterrupt и SystemExit не перехватывает, а пробрасывает в цикл."],
+    note: "Тот же Executor работает в интерактивном режиме uv run sandbox." },
+  { id: "mcpclient", zone: "trusted", title: "MCP-клиент", path: "mcp_client/client.py · registry.py · sandbox/manual.py",
+    what: "Подключается к любому MCP-серверу и описывает его тулы для модели.",
+    how: ["Транспорт stdio (--mcp-stdio \"python mcp_tools_mbpp.py\") или streamable HTTP (--mcp-server URL).", "Читает list_tools, list_resources и list_prompts в реестр.", "Из JSON-схем генерирует мануал с именами, описаниями и типами параметров для system prompt.", "Выполняет вызовы тулов, которые worker присылает через Executor."],
+    note: "Имена тулов нигде не захардкожены: на защите подключат чужой сервер." },
+  { id: "output", zone: "trusted", title: "solution.json", path: "SolutionOutput",
+    what: "Итог запуска в формате, который проверяет moulinette.",
+    how: ["Содержит task_id, benchmark, success, solution (код для MBPP или патч для SWE-bench), system_prompt и iterations.", "Плюс суммарные токены и время, а также массив steps с подробностями каждого шага.", "Пишется при любом исходе: успех, исчерпанный лимит, отказ провайдера."],
+    note: "По этим логам проверяют, что агент решил задачу сам, а не взял готовое решение из PR." },
+  { id: "worker", zone: "untrusted", title: "Worker", path: "sandbox/worker.py · sandbox/guards/",
+    what: "Отдельный процесс, в котором исполняется код от модели. Единственное место, где живёт недоверенный код.",
+    how: ["До запуска кода через setrlimit ставит лимиты RAM и CPU и отключает сеть, подменяя socket.", "Хук импорта пропускает только authorized_imports, включая маски вида math.*.", "open и пути проверяются через realpath: путь должен лежать внутри allowed_directories.", "Из builtins убраны eval, exec, compile, globals, input и подобные. AST-фильтр запрещает доступ к __subclasses__, __globals__ и другим dunder-атрибутам.", "В namespace лежат прокси тулов и final_answer. Вызов тула превращается в JSON-сообщение родителю."],
+    note: "Только стандартная библиотека: RestrictedPython и подобные пакеты запрещены." },
+  { id: "finalanswer", zone: "untrusted", title: "final_answer()", path: "sandbox/final_answer.py",
+    what: "Встроенная функция песочницы, а не MCP-тул. Доступна всегда, с любым сервером.",
+    how: ["final_answer(x) бросает FinalAnswerSignal, наследника BaseException, чтобы его не поймал обычный except Exception.", "Worker передаёт ответ родителю, и цикл завершается.", "MBPP: final_answer(code). SWE-bench: final_answer(get_patch())."],
+    note: "" },
+  { id: "mcpserver", zone: "mcp", title: "MCP-сервер", path: "mcp_tools_mbpp.py · mcp_tools_swebench.py (корень репо)",
+    what: "Наши MCP-серверы, каждый работает отдельным процессом.",
+    how: ["MBPP: run_tests(code) прогоняет assert-тесты задачи.", "SWE-bench: девять обязательных тулов: read_file, edit_file, list_files, search_code, search_function_or_class_definition_in_code, find_references, run_tests, get_patch, run_command.", "Сервер только принимает вызов, отдаёт его в tools_impl и возвращает текст."],
+    note: "Тулы работают вне песочницы, и её таймаут на них не распространяется." },
+  { id: "toolsimpl", zone: "mcp", title: "Логика тулов", path: "tools_impl/fs.py · search.py · exec.py · lint.py",
+    what: "Чистая логика тулов без MCP и без агента, поэтому её можно тестировать отдельно.",
+    how: ["read_file возвращает строки в формате «N: текст».", "edit_file заменяет точную строку и выдаёт ошибку, если совпадений нет или их несколько. После правки запускает py_compile или ruff.", "search_code возвращает «/abs/path.py:N строка». Определения и ссылки ищутся через ast и регулярные выражения.", "run_command возвращает stdout, stderr и код выхода. get_patch вызывает git -c core.fileMode=false diff."],
+    note: "Форматы вывода заданы сабжектом и проверяются тестами по отдельности." },
+  { id: "docker", zone: "docker", title: "Контейнер задачи", path: "docker/container.py",
+    what: "Образ задачи SWE-bench с репозиторием в /testbed и готовым окружением для тестов.",
+    how: ["Раннер поднимает контейнер до старта цикла.", "Тулы работают внутри через docker exec. run_tests запускает eval-скрипт задачи.", "Контейнер удаляется в любом случае: try/finally, atexit и обработчик SIGTERM вызывают docker rm -f."],
+    note: "Внутрь можно поставить ruff или jedi, чтобы усилить тулы." },
+  { id: "providers", zone: "external", title: "LLM API", path: "OpenRouter · Groq · Gemini · Mistral · Together",
+    what: "Бесплатные LLM-провайдеры, к которым обращается роутер.",
+    how: ["В сеть ходит только процесс агента. У песочницы сети нет.", "Платные тарифы запрещены, поэтому ротация ключей и переключение провайдеров обязательны.", "Для отчёта нужно сравнить не меньше пяти моделей на трёх задачах SWE-bench."],
+    note: "Для жёстких лимитов лучше подходят модели без reasoning." }
+];
+
+const STEPS = [
+  { nodes: ["loop", "prompt"], edges: ["e-loop-prompt"], text: "AgentLoop собирает сообщения: system prompt, мануал тулов и историю." },
+  { nodes: ["loop", "llm"], edges: ["e-loop-llm"], text: "Запрос к модели со stop-sequences, чтобы она не дописала выдуманный вывод." },
+  { nodes: ["llm", "providers"], edges: ["e-llm-prov"], text: "Роутер берёт свободный ключ. При 429 переключает ключ или провайдера." },
+  { nodes: ["loop", "extractor"], edges: ["e-loop-ext"], text: "Из ответа достаётся код. XML, JSON и ReAct переводятся в Python." },
+  { nodes: ["loop", "executor"], edges: ["e-loop-exec"], text: "Код уходит в Executor." },
+  { nodes: ["executor", "worker"], edges: ["e-exec-worker"], text: "Worker исполняет код под всеми ограничениями, таймер идёт." },
+  { nodes: ["worker", "executor", "mcpclient"], edges: ["e-exec-worker", "e-exec-mcp"], text: "Код вызвал read_file: прокси шлёт сообщение родителю, таймер на паузе." },
+  { nodes: ["mcpclient", "mcpserver", "toolsimpl", "docker"], edges: ["e-mcp-server", "e-server-tools", "e-tools-docker"], text: "MCP-сервер выполняет тул. Для SWE-bench через docker exec в /testbed." },
+  { nodes: ["executor", "worker"], edges: ["e-exec-worker"], text: "Результат возвращается в worker, и код продолжает работу." },
+  { nodes: ["executor", "loop"], edges: ["e-loop-exec"], text: "ExecResult становится Observation: вывод, ошибки, пометки об обрезке и таймауте." },
+  { nodes: ["budget", "loop"], edges: ["e-budget-loop"], text: "Записан StepMetrics, проверен остаток бюджета. Дальше следующий шаг." },
+  { nodes: ["worker", "finalanswer", "budget", "output"], edges: ["e-worker-final", "e-budget-out"], text: "Когда код вызывает final_answer, цикл завершается и пишет solution.json." }
+];
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/* catalogue */
+const cat = $("#catalogue");
+for (const z of ZONES) {
+  const items = BLOCKS.filter(b => b.zone === z.key);
+  const g = document.createElement("div");
+  g.className = "group z-" + z.key;
+  g.innerHTML = `<div class="group-head"><span class="dot"></span><h2>${z.name}</h2><p>${z.text}</p></div><div class="cards"></div>`;
+  const cards = $(".cards", g);
+  for (const b of items) {
+    const c = document.createElement("article");
+    c.className = "card";
+    c.id = "b-" + b.id;
+    c.dataset.id = b.id;
+    c.innerHTML = `
+      <div><h3>${esc(b.title)}</h3><div class="path">${esc(b.path)}</div></div>
+      <div><div class="label">Что это</div><p>${esc(b.what)}</p></div>
+      <div><div class="label">Как работает</div><ul>${b.how.map(h => `<li>${esc(h)}</li>`).join("")}</ul></div>
+      ${b.note ? `<p class="note">${esc(b.note)}</p>` : ""}
+      <button class="show" type="button">Показать на схеме</button>`;
+    cards.appendChild(c);
+  }
+  cat.appendChild(g);
+}
+
+/* highlighting */
+const nodeEl = id => $(`.node[data-id="${id}"]`);
+function hl(id, on) { const n = nodeEl(id); if (n) n.classList.toggle("is-hl", on); }
+
+$$(".card").forEach(c => {
+  c.addEventListener("mouseenter", () => hl(c.dataset.id, true));
+  c.addEventListener("mouseleave", () => hl(c.dataset.id, false));
+  $(".show", c).addEventListener("click", () => {
+    stop(); clearActive();
+    nodeEl(c.dataset.id)?.classList.add("is-active");
+    $(".diagram").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "center" });
+  });
+});
+
+function reduce() { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+
+function openCard(id) {
+  const c = $("#b-" + id);
+  if (!c) return;
+  c.scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "center" });
+  c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash");
+  setTimeout(() => c.classList.remove("flash"), 1600);
+}
+$$(".node").forEach(n => {
+  n.addEventListener("click", () => openCard(n.dataset.id));
+  n.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCard(n.dataset.id); } });
+});
+
+/* step player */
+const list = $("#steps");
+STEPS.forEach((s, i) => {
+  const li = document.createElement("li");
+  li.innerHTML = `<button type="button">${esc(s.text)}</button>`;
+  $("button", li).addEventListener("click", () => { stop(); show(i); });
+  list.appendChild(li);
+});
+let cur = -1, timer = null;
+
+function clearActive() {
+  $$(".node.is-active").forEach(n => n.classList.remove("is-active"));
+  $$(".edge.is-active").forEach(e => {
+    e.classList.remove("is-active");
+    if (e.hasAttribute("marker-end")) e.setAttribute("marker-end", "url(#ar)");
+    if (e.hasAttribute("marker-start")) e.setAttribute("marker-start", "url(#ar)");
+  });
+  $$("#steps button").forEach(b => b.removeAttribute("aria-current"));
+}
+function show(i) {
+  clearActive();
+  cur = i;
+  const s = STEPS[i];
+  s.nodes.forEach(id => nodeEl(id)?.classList.add("is-active"));
+  s.edges.forEach(id => {
+    const e = document.getElementById(id);
+    if (!e) return;
+    e.classList.add("is-active");
+    if (e.hasAttribute("marker-end")) e.setAttribute("marker-end", "url(#ar-act)");
+    if (e.hasAttribute("marker-start")) e.setAttribute("marker-start", "url(#ar-act)");
+  });
+  $$("#steps button")[i].setAttribute("aria-current", "step");
+  $("#now").innerHTML = `<b>${String(i + 1).padStart(2, "0")} / ${STEPS.length}</b>${esc(s.text)}`;
+}
+function stop() { clearInterval(timer); timer = null; $("#play").textContent = "▶ Проиграть"; }
+$("#play").addEventListener("click", () => {
+  if (timer) { stop(); return; }
+  $("#play").textContent = "❚❚ Пауза";
+  if (cur < 0 || cur >= STEPS.length - 1) show(0); else show(cur + 1);
+  timer = setInterval(() => {
+    if (cur >= STEPS.length - 1) { stop(); return; }
+    show(cur + 1);
+  }, 2200);
+});
+$("#next").addEventListener("click", () => { stop(); show(Math.min(STEPS.length - 1, cur + 1)); });
+$("#prev").addEventListener("click", () => { stop(); show(Math.max(0, cur - 1)); });
+$("#reset").addEventListener("click", () => { stop(); clearActive(); cur = -1; $("#now").textContent = "Выберите шаг или нажмите «Проиграть»."; });
+</script>
