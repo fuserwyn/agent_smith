@@ -1,0 +1,1084 @@
+<title>Agent Smith Observatory</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: control bar on top; architecture diagram is the hero; step timeline + budget beside it;
+   step detail (flow with diffs, interpreter path, tool hops) and event log below. */
+:root {
+  --bg: #eef1f5; --panel: #ffffff; --panel-2: #f6f8fb; --ink: #172033; --muted: #5b6680; --line: #d4dae4;
+  --c-task: #5a6473; --c-orch: #3446a8; --c-llm: #a8650f; --c-extract: #7646b0; --c-sandbox: #0d7a74;
+  --c-mcp: #1d63c4; --c-repo: #4f5b6c; --c-final: #2a8a4a; --c-error: #c0392b; --c-warn: #b06a00;
+  --add-bg: #e3f6e8; --add-fg: #1d6b35; --del-bg: #fde8e7; --del-fg: #a3271c; --cur-bg: #fff3c4;
+  --glow: rgba(52, 70, 168, .14);
+  --f-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e131d; --panel: #151c2a; --panel-2: #1a2333; --ink: #e2e7f0; --muted: #8e99ae; --line: #28324a;
+  --c-task: #a3adbd; --c-orch: #8fa0ff; --c-llm: #f0b450; --c-extract: #c9a4f7; --c-sandbox: #4fd0c4;
+  --c-mcp: #6fb0ff; --c-repo: #a7b2c3; --c-final: #6bd88a; --c-error: #ff7b72; --c-warn: #f2c14e;
+  --add-bg: #12301f; --add-fg: #7ee2a0; --del-bg: #3a1a1a; --del-fg: #ff9b93; --cur-bg: #3a3214;
+  --glow: rgba(143, 160, 255, .16); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e131d; --panel: #151c2a; --panel-2: #1a2333; --ink: #e2e7f0; --muted: #8e99ae; --line: #28324a;
+  --c-task: #a3adbd; --c-orch: #8fa0ff; --c-llm: #f0b450; --c-extract: #c9a4f7; --c-sandbox: #4fd0c4;
+  --c-mcp: #6fb0ff; --c-repo: #a7b2c3; --c-final: #6bd88a; --c-error: #ff7b72; --c-warn: #f2c14e;
+  --add-bg: #12301f; --add-fg: #7ee2a0; --del-bg: #3a1a1a; --del-fg: #ff9b93; --cur-bg: #3a3214;
+  --glow: rgba(143, 160, 255, .16); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px 32px; }
+h1, h2, h3, h4 { margin: 0; text-wrap: balance; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--c-orch); outline-offset: 2px; }
+.wrap { max-width: 1440px; margin: 0 auto; display: grid; gap: 14px; }
+.mono { font-family: var(--f-mono); font-size: 12px; }
+.muted { color: var(--muted); }
+
+/* ---------- top bar ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.brand span { color: var(--muted); font-size: 13px; }
+.sources { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn { border: 1px solid var(--line); background: var(--panel); padding: 6px 12px; border-radius: 999px; font-size: 13px; }
+.chip-btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.chip-btn:disabled { opacity: .45; cursor: not-allowed; }
+.controls { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.ctl { border: 1px solid var(--line); background: var(--panel); width: 36px; height: 34px; border-radius: 8px; display: grid; place-items: center; }
+.ctl svg { width: 16px; height: 16px; fill: currentColor; }
+.ctl.play { width: 44px; background: var(--c-orch); color: var(--panel); border-color: var(--c-orch); }
+.speed { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; height: 34px; padding: 0 6px; }
+.scrubrow { display: flex; gap: 10px; align-items: center; }
+.scrub { flex: 1 1 220px; min-width: 160px; accent-color: var(--c-orch); }
+.pos { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 84px; text-align: right; }
+.toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+.banner { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 13px; color: var(--muted);
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 14px; }
+.badge { font-family: var(--f-mono); font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.badge.demo { color: var(--c-warn); } .badge.live { color: var(--c-final); } .badge.file { color: var(--c-mcp); }
+
+/* ---------- main grid ---------- */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+.panel-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.panel-h h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.panel-b { padding: 12px 14px; }
+
+/* diagram */
+.diagram-wrap { overflow-x: auto; }
+#diagram { display: block; width: 100%; min-width: 620px; height: auto; }
+.node rect.box { fill: var(--panel-2); stroke: var(--line); stroke-width: 1.5; transition: stroke .2s, fill .2s; }
+.node text { fill: var(--ink); font-family: var(--f-ui); }
+.node .title { font-size: 14px; font-weight: 600; }
+.node .sub { font-size: 11px; fill: var(--muted); font-family: var(--f-mono); }
+.node .pill { font-size: 10.5px; font-family: var(--f-mono); }
+.node { cursor: pointer; }
+.node.active rect.box { stroke: var(--nc); stroke-width: 2.5; fill: color-mix(in srgb, var(--nc) 12%, var(--panel-2)); }
+.node.error rect.box { stroke: var(--c-error); }
+.node.selected rect.box { stroke-dasharray: 5 3; stroke: var(--nc); }
+.node .stripe { fill: var(--nc); }
+.boundary { fill: none; stroke: var(--c-sandbox); stroke-width: 1.5; stroke-dasharray: 6 5; opacity: .8; }
+.boundary-label { fill: var(--c-sandbox); font-size: 11px; font-family: var(--f-mono); letter-spacing: .04em; }
+.edge { fill: none; stroke: var(--line); stroke-width: 2; transition: stroke .2s; }
+.edge.active { stroke: var(--ec, var(--c-orch)); stroke-width: 2.5; }
+.edge.changed { stroke-dasharray: 6 4; }
+.edge-label { font-size: 10.5px; fill: var(--muted); font-family: var(--f-mono); }
+.delta circle { fill: var(--c-warn); }
+.delta text { fill: var(--panel); font-size: 11px; font-weight: 700; font-family: var(--f-mono); text-anchor: middle; }
+.pulse { fill: var(--ec, var(--c-orch)); }
+.caption { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 13px; min-height: 44px; }
+.caption .kind { font-family: var(--f-mono); font-size: 11px; padding: 2px 8px; border-radius: 6px; color: var(--panel); background: var(--c-orch); white-space: nowrap; }
+.caption .txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--f-mono); font-size: 12.5px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.legend b { color: var(--c-warn); font-family: var(--f-mono); }
+
+.node-info { padding: 12px 14px; border-top: 1px solid var(--line); display: grid; gap: 8px; font-size: 13px; }
+.node-info h3 { font-size: 15px; }
+.node-info ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.node-info .path { color: var(--muted); }
+.io { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.io > div { border: 1px solid var(--line); border-radius: 8px; min-width: 0; background: var(--panel-2); }
+.io h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 6px 10px 0; display: flex; justify-content: space-between; gap: 6px; }
+.io pre { margin: 0; padding: 6px 10px 8px; font-family: var(--f-mono); font-size: 11.5px; white-space: pre-wrap; word-break: break-word; max-height: 140px; overflow: auto; }
+
+/* budget */
+.meters { display: grid; gap: 10px; }
+.meter { display: grid; gap: 4px; }
+.meter-top { display: flex; justify-content: space-between; font-size: 12px; }
+.meter-top span:last-child { font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.bar { height: 8px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--c-orch); transition: width .3s; border-radius: 999px; }
+.bar i.warn { background: var(--c-warn); } .bar i.crit { background: var(--c-error); }
+
+/* steps */
+.steps { display: grid; gap: 6px; max-height: 420px; overflow-y: auto; }
+.step { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 7px 9px; }
+.step[aria-current="true"] { border-color: var(--c-orch); box-shadow: 0 0 0 3px var(--glow); }
+.step .n { font-family: var(--f-mono); font-weight: 600; font-size: 13px; color: var(--muted); }
+.step .t { min-width: 0; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step .tools { font-family: var(--f-mono); font-size: 11px; color: var(--c-mcp); }
+.st { font-family: var(--f-mono); font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.st.ok { color: var(--c-sandbox); } .st.final { color: var(--c-final); } .st.err { color: var(--c-error); } .st.run { color: var(--c-llm); } .st.nocode { color: var(--c-warn); } .st.chg { color: var(--c-warn); } .st.same { color: var(--c-final); }
+.empty { color: var(--muted); font-size: 13px; padding: 12px 14px; }
+
+/* detail */
+.lower { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 14px; align-items: start; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tab { border: 1px solid transparent; background: none; padding: 5px 10px; border-radius: 7px; font-size: 13px; color: var(--muted); }
+.tab[aria-selected="true"] { border-color: var(--line); background: var(--panel-2); color: var(--ink); font-weight: 600; }
+.metaline { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); padding: 10px 14px 0; font-family: var(--f-mono); }
+pre.code { margin: 0; padding: 12px 14px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; max-height: 460px; overflow: auto; }
+.lines { font-family: var(--f-mono); font-size: 12.5px; line-height: 1.55; max-height: 460px; overflow: auto; padding: 8px 0; }
+.ln { display: grid; grid-template-columns: 22px 44px 44px minmax(0, 1fr); padding: 0 14px 0 4px; }
+.ln .g { color: var(--muted); text-align: right; padding-right: 10px; user-select: none; }
+.ln .s { text-align: center; user-select: none; font-weight: 700; }
+.ln code { white-space: pre-wrap; word-break: break-word; font-family: inherit; }
+.ln.add { background: var(--add-bg); } .ln.add .s, .ln.add code { color: var(--add-fg); }
+.ln.del { background: var(--del-bg); } .ln.del .s, .ln.del code { color: var(--del-fg); }
+.ln.ctx code { color: var(--ink); }
+.fold { display: block; width: 100%; text-align: left; border: 0; background: var(--panel-2); color: var(--muted); font-family: var(--f-mono); font-size: 11.5px; padding: 3px 14px 3px 74px; }
+.diffhead { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 14px 0; font-family: var(--f-mono); font-size: 11.5px; }
+.diffhead .m { color: var(--del-fg); } .diffhead .p { color: var(--add-fg); }
+
+/* flow cards */
+.flow { display: grid; gap: 0; }
+.hand { border-top: 1px solid var(--line); }
+.hand:first-child { border-top: 0; }
+.hand-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 14px 0; }
+.hand-h h4 { font-size: 13.5px; }
+.hand-h .route { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.hand-h .views { margin-left: auto; display: flex; gap: 4px; }
+.mini { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; font-size: 11.5px; padding: 2px 8px; color: var(--muted); }
+.mini[aria-pressed="true"] { color: var(--ink); background: var(--panel-2); font-weight: 600; }
+.note { padding: 6px 14px 0; font-size: 12.5px; color: var(--muted); }
+.note.warn { color: var(--c-warn); }
+
+/* interpreter */
+.interp { display: grid; grid-template-columns: minmax(0, 1fr) 260px; }
+.interp-code { border-right: 1px solid var(--line); min-width: 0; }
+.xl { display: grid; grid-template-columns: 34px 40px minmax(0, 1fr); padding: 0 12px 0 4px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.6; }
+.xl .h { text-align: right; padding-right: 8px; color: var(--c-sandbox); font-size: 11px; }
+.xl .g { text-align: right; padding-right: 10px; color: var(--muted); }
+.xl code { white-space: pre-wrap; word-break: break-word; font-family: inherit; }
+.xl.ran { background: color-mix(in srgb, var(--c-sandbox) 9%, transparent); }
+.xl.skip code { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.xl.cur { background: var(--cur-bg); box-shadow: inset 3px 0 0 var(--c-warn); }
+.xl .tag { margin-left: 8px; font-size: 10.5px; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; }
+.xl .tag.tool { color: var(--c-mcp); } .xl .tag.exc { color: var(--c-error); } .xl .tag.fin { color: var(--c-final); }
+.vars { padding: 10px 12px; display: grid; gap: 10px; align-content: start; font-size: 12.5px; min-width: 0; }
+.vars h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.vars table { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 11.5px; table-layout: fixed; }
+.vars td { padding: 2px 0; vertical-align: top; word-break: break-word; }
+.vars td:first-child { width: 38%; color: var(--muted); padding-right: 6px; }
+.vars tr.fresh td:last-child { color: var(--c-warn); font-weight: 600; }
+.path { display: flex; flex-wrap: wrap; gap: 3px; padding: 10px 14px; border-top: 1px solid var(--line); font-family: var(--f-mono); font-size: 11px; max-height: 120px; overflow: auto; }
+.path span { padding: 0 5px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--line); }
+.path span.now { background: var(--cur-bg); border-color: var(--c-warn); }
+.path span.t { color: var(--c-mcp); } .path span.x { color: var(--c-error); } .path span.f { color: var(--c-final); }
+
+/* tool hops */
+.call { border-top: 1px solid var(--line); padding: 10px 14px 12px; display: grid; gap: 8px; }
+.call:first-child { border-top: 0; }
+.call > h4 { font-family: var(--f-mono); font-size: 13px; color: var(--c-mcp); word-break: break-word; }
+.timing { display: flex; height: 10px; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); background: var(--panel-2); }
+.timing i { display: block; height: 100%; }
+.timing-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); font-family: var(--f-mono); }
+.timing-legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; background: var(--sw); vertical-align: -1px; }
+ol.hops { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; counter-reset: hop; }
+ol.hops > li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; position: relative; padding-bottom: 10px; }
+ol.hops > li::before { counter-increment: hop; content: counter(hop); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-mono); font-size: 11px; font-weight: 600; color: var(--panel); background: var(--hc, var(--c-mcp)); }
+ol.hops > li::after { content: ""; position: absolute; left: 10px; top: 24px; bottom: 0; width: 2px; background: var(--line); }
+ol.hops > li:last-child::after { display: none; }
+.hop { min-width: 0; display: grid; gap: 4px; }
+.hop-h { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.hop-h b { font-size: 13px; }
+.hop-h .where { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.hop pre { margin: 0; padding: 6px 10px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; font-family: var(--f-mono); font-size: 11.5px; white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
+.hop .kv { display: flex; flex-wrap: wrap; gap: 4px 12px; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.hop .kv b { color: var(--ink); font-weight: 600; }
+.op { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.op-h { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 5px 10px; background: var(--panel-2); font-family: var(--f-mono); font-size: 11.5px; }
+.op-h .ex0 { color: var(--c-final); } .op-h .exn { color: var(--c-error); }
+.op pre { border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+.op code.cmd { display: block; padding: 5px 10px; font-family: var(--f-mono); font-size: 11.5px; white-space: pre-wrap; word-break: break-all; }
+
+/* log */
+.log { max-height: 560px; overflow-y: auto; font-family: var(--f-mono); font-size: 12px; }
+.log button { display: grid; grid-template-columns: 52px 112px 1fr; gap: 8px; width: 100%; text-align: left; border: 0; background: none; padding: 5px 14px; border-bottom: 1px solid var(--line); }
+.log button.sub { padding-left: 26px; }
+.log button.cur { background: var(--glow); }
+.log button.future { opacity: .38; }
+.log .tt { color: var(--muted); font-variant-numeric: tabular-nums; }
+.log .ty { color: var(--kc, var(--ink)); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.log .ds { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+
+.drop { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 82%, transparent); display: grid; place-items: center; font-size: 18px; font-weight: 600; border: 3px dashed var(--c-orch); z-index: 20; }
+details.sys summary { cursor: pointer; padding: 10px 14px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+details.sys pre { border-top: 1px solid var(--line); }
+
+@media (max-width: 1100px) { .main, .lower { grid-template-columns: minmax(0, 1fr); } .steps { max-height: 300px; } }
+@media (max-width: 760px) { .interp { grid-template-columns: minmax(0, 1fr); } .interp-code { border-right: 0; border-bottom: 1px solid var(--line); } .io { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .brand span { display: none; } .controls { margin-left: 0; width: 100%; } .ln { grid-template-columns: 18px 32px 32px minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Agent Smith Observatory</h1><span>Thought → Code → Observation, step by step</span></div>
+    <div class="sources" role="group" aria-label="Trace source">
+      <button class="chip-btn" id="src-mbpp" aria-pressed="true">Demo · MBPP</button>
+      <button class="chip-btn" id="src-swe" aria-pressed="false">Demo · SWE-bench</button>
+      <button class="chip-btn" id="src-file" aria-pressed="false">Open trace or solution…</button>
+      <button class="chip-btn" id="src-live" aria-pressed="false" disabled title="Available when served by: uv run agent-ui">Live</button>
+      <input type="file" id="file" accept=".json,.jsonl,.txt" hidden>
+    </div>
+    <div class="controls">
+      <button class="ctl" id="b-first" aria-label="Go to start"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
+      <button class="ctl" id="b-prev" aria-label="Previous event"><svg viewBox="0 0 16 16"><path d="M12 2v12L4 8z"/></svg></button>
+      <button class="ctl play" id="b-play" aria-label="Play"><svg viewBox="0 0 16 16" id="i-play"><path d="M4 2v12l10-6z"/></svg></button>
+      <button class="ctl" id="b-next" aria-label="Next event"><svg viewBox="0 0 16 16"><path d="M4 2v12l8-6z"/></svg></button>
+      <button class="ctl" id="b-last" aria-label="Go to end"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
+      <select class="speed" id="speed" aria-label="Playback speed">
+        <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="scrubrow">
+    <input type="range" class="scrub" id="scrub" min="0" max="0" value="0" aria-label="Event position">
+    <span class="pos" id="pos">0 / 0</span>
+    <label class="toggle"><input type="checkbox" id="opt-lines" checked> code lines in timeline</label>
+  </div>
+
+  <div class="main">
+    <section class="panel" aria-label="Architecture">
+      <div class="panel-h"><h2>Architecture · live component activity</h2><span class="mono muted">click a component: its input and output for the selected step</span></div>
+      <div class="diagram-wrap">
+        <svg id="diagram" viewBox="0 0 900 572" role="img" aria-label="Agent Smith architecture diagram">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+          </defs>
+          <g id="edges"></g>
+          <rect class="boundary" x="196" y="300" width="452" height="152" rx="14"/>
+          <text class="boundary-label" x="372" y="320">SANDBOX · worker process · audit hook</text>
+          <g id="nodes"></g>
+          <g id="deltas"></g>
+          <g id="pulses"></g>
+        </svg>
+      </div>
+      <div class="caption" id="caption"><span class="kind">ready</span><span class="txt">Press play to replay the run.</span></div>
+      <div class="legend" id="legend"><span><b>Δ</b> data changed between the box that sent it and the box that received it (open the Flow tab for the diff)</span></div>
+      <div class="node-info" id="node-info"></div>
+    </section>
+
+    <aside class="panel" aria-label="Budget and steps">
+      <div class="panel-h"><h2>Budget (cumulative limits)</h2><span class="mono muted" id="model"></span></div>
+      <div class="panel-b meters" id="meters"></div>
+      <div class="panel-h" style="border-top:1px solid var(--line)"><h2>Steps</h2><span class="mono" id="result"></span></div>
+      <div class="panel-b steps" id="steps"></div>
+    </aside>
+  </div>
+
+  <div class="lower">
+    <section class="panel" aria-label="Step detail">
+      <div class="panel-h"><h2 id="detail-title">Step detail</h2>
+        <div class="tabs" role="tablist" id="tabs">
+          <button class="tab" role="tab" data-tab="flow" aria-selected="true">Flow &amp; diffs</button>
+          <button class="tab" role="tab" data-tab="interp" aria-selected="false">Interpreter</button>
+          <button class="tab" role="tab" data-tab="tools" aria-selected="false">Tool calls</button>
+          <button class="tab" role="tab" data-tab="llm" aria-selected="false">LLM output</button>
+          <button class="tab" role="tab" data-tab="code" aria-selected="false">Sandbox input</button>
+          <button class="tab" role="tab" data-tab="obs" aria-selected="false">Observation</button>
+        </div>
+      </div>
+      <div class="metaline" id="detail-meta"></div>
+      <div id="detail-body"></div>
+      <details class="sys"><summary>System prompt sent to the LLM</summary><pre class="code" id="sysprompt"></pre></details>
+    </section>
+    <section class="panel" aria-label="Event log">
+      <div class="panel-h"><h2>Event log</h2><span class="mono muted">click to jump</span></div>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+</div>
+<div class="drop" id="drop" hidden>Drop events.jsonl or solution.json</div>
+
+<script>
+const DEMO = /*DEMO_START*/{"mbpp":[{"t":0.468,"ts":"2026-11-09T16:57:14.839515","type":"mcp_connected","server":"agent-smith-mbpp","tools":["run_tests"],"resources":true,"prompts":true},{"t":0.506,"ts":"2026-11-09T16:57:14.877747","type":"run_start","benchmark":"mbpp","task_id":"282","limits":{"max_iterations":10,"max_input_tokens":6000,"max_output_tokens":1500,"timeout_seconds":120.0},"system_prompt":"You are an expert Python programmer. You solve a programming task by writing code in a sandbox.\n\nEvery reply has exactly this shape:\nThought: <brief reasoning>\n```python\n<code>\n```<end_code>\nThen STOP and wait: the code runs in a Python sandbox and you receive \"Observation:\" with its printed output.\nNever write the Observation yourself. Variables persist between steps. Use print() to see results.\n\n## Tools (Python functions available in the sandbox; each returns a str)\n- run_tests(code: str, tests: list | None = None) -> str\n    Run the task's test assertions against a candidate solution. `code` is the COMPLETE solution source (needed imports + the function), as a string. `tests` is ...\n- final_answer(answer: str) -> None\n    Built-in. Submits your final answer and ends the task.\n- list_resources() / read_resource(uri) -> str   (MCP resources)\n- list_prompts() / get_prompt(name, arguments: dict) -> str   (MCP prompts)\nTool errors raise ToolError (catchable).\n\n## Sandbox rules\n- Allowed imports ONLY: math, math.*, collections, collections.*, itertools, re, json, typing, typing.*, functools, operator, heapq, bisect, copy, string, random, datetime, datetime.*, array, cmath\n- Files: only under /testbed, /tmp/agent (use tools for the repository)\n- No network, no subprocesses, no eval/exec/open of other paths, no dunder attributes.\n- Each code block: 30s timeout, 512 MB memory.\n- Variables persist between steps. Only print()ed output and the last expression are shown.\n\nSolve it in ONE step when possible: write the solution, test it, submit if green:\nThought: Count with a dict, return the most common.\n```python\ncode = r\"\"\"\nfrom collections import Counter\ndef most_common(xs):\n    return Counter(xs).most_common(1)[0][0]\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)\n```<end_code>\nIf tests fail, read got/expected, fix the code and repeat.\n\nRules:\n- `code` must be a complete standalone solution: needed imports + the function with the EXACT name and parameters\n  requested. No prints, no tests, no input() in it. Use only the allowed imports.\n- One extra hidden test exists: implement the general behaviour described, never hard-code test values.\n- final_answer receives the solution source code as a string.\n- Keep Thoughts to one or two sentences.","task_prompt":"Task: Write a function to substaract two lists using map and lambda function.\nRequired signature: def sub_list(nums1,nums2):\nPublic tests (run_tests checks these):\nassert sub_list([1,2],[3,4])==[-2,-2]\nassert sub_list([90,120],[50,70])==[40,50]","model":"scripted-demo","api_url":"scripted://fake-llm","tools":["run_tests"]},{"t":0.507,"ts":"2026-11-09T16:57:14.877858","type":"llm_request","step":1,"messages":2,"estimated_input_tokens":958,"max_tokens":800,"delivered":"Task: Write a function to substaract two lists using map and lambda function.\nRequired signature: def sub_list(nums1,nums2):\nPublic tests (run_tests checks these):\nassert sub_list([1,2],[3,4])==[-2,-2]\nassert sub_list([90,120],[50,70])==[40,50]","compacted_steps":[]},{"t":0.538,"ts":"2026-11-09T16:57:14.909252","type":"llm_response","step":1,"text":"Thought: Pair the two lists element-wise and combine each pair.\n```python\ncode = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)\n```","input_tokens":645,"output_tokens":71,"request_time_ms":31.343000009655952,"retries":0,"finish_reason":"stop"},{"t":0.538,"ts":"2026-11-09T16:57:14.909508","type":"extraction","step":1,"format":"python_block","code":"code = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)","notes":[]},{"t":0.538,"ts":"2026-11-09T16:57:14.909533","type":"sandbox_start","step":1,"code":"code = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)"},{"t":0.539,"ts":"2026-11-09T16:57:14.910197","type":"tool_call","name":"run_tests","args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n"},"line":5,"written":"run_tests('\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x + y, nums1, nums2))\\n')"},{"t":0.59,"ts":"2026-11-09T16:57:14.960905","type":"tool_result","name":"run_tests","result":"TESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]","is_error":false,"duration_ms":50.6241669645533,"line":5,"args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n"},"written":"run_tests('\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x + y, nums1, nums2))\\n')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_tests","arguments":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n"}}},"transport":"stdio (\"python\" \"<repo>/mcp_tools_mbpp.py\")","rtt_ms":50.6,"server":{"server":"agent-smith-mbpp","tool":"run_tests","handler":"mbpp_tools.run_tests","received_args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n","tests":null},"duration_ms":47.4,"ops":[{"op":"sandbox","command":"Sandbox.execute(solution + 2 test assertions, 28 lines)","exit_code":0,"duration_ms":47.0,"stdout_bytes":189,"stderr_bytes":0,"stdin_bytes":1188,"stdout_head":"FAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]\n","stderr_head":"","timed_out":false}],"raw_output_bytes":189,"result_chars":214,"result_lines":7,"truncated":false,"executor":"sandbox","target":"isolated sandbox worker (no MCP, no network)","details":{"source":"task.json of MBPP task 282 (dumped by the moulinette, read via MBPP_TASK_FILE): public test_list from the MBPP dataset. The moulinette hides the first test; it is only used at validation.","tests":["assert sub_list([1,2],[3,4])==[-2,-2]","assert sub_list([90,120],[50,70])==[40,50]"],"test_imports":[],"generated":"harness = candidate code + test imports + one try/except block per assert (prints PASS/FAIL with got/expected); executed in a fresh sandbox without MCP","harness":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n\n\ntry:\n    _got = sub_list([1, 2], [3, 4])\n    _exp = [-2, -2]\n    if _got == _exp:\n        print('PASS 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\")\n    else:\n        print('FAIL 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\" + '\\n    got:      ' + repr(_got)[:300] + '\\n    expected: ' + repr(_exp)[:300])\nexcept AssertionError:\n    print('FAIL 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\")\nexcept Exception as _e:\n    print('ERROR 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\" + '\\n    ' + type(_e).__name__ + ': ' + str(_e)[:300])\n\ntry:\n    _got = sub_list([90, 120], [50, 70])\n    _exp = [40, 50]\n    if _got == _exp:\n        print('PASS 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\")\n    else:\n        print('FAIL 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\" + '\\n    got:      ' + repr(_got)[:300] + '\\n    expected: ' + repr(_exp)[:300])\nexcept AssertionError:\n    print('FAIL 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\")\nexcept Exception as _e:\n    print('ERROR 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\" + '\\n    ' + type(_e).__name__ + ': ' + str(_e)[:300])\n"}}},{"t":0.59,"ts":"2026-11-09T16:57:14.961485","type":"sandbox_end","step":1,"status":"ok","output":"TESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]","duration_s":0.052,"is_final":false,"stdout":"TESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0,"v":{"code":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x + y, nums1, nums2))\\n'"}},{"e":"line","l":5,"f":"<module>","d":0,"v":{"result":"'TESTS FAILED (0/2 passed)\\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\\n    got:      [4, 6]\\n..."}},{"e":"tool","l":5,"n":"run_tests","a":{"code":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x + y, nums1..."}},{"e":"tool_result","l":5,"n":"run_tests","ok":true,"r":"'TESTS FAILED (0/2 passed)\\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\\n    got:      [4, 6]\\n    expected: [-2, -2]\\nFAIL 2: assert sub_list([90,120],[50..."},{"e":"line","l":6,"f":"<module>","d":0},{"e":"line","l":7,"f":"<module>","d":0}],"dropped":0}},{"t":0.59,"ts":"2026-11-09T16:57:14.961583","type":"budget","iterations":1,"max_iterations":10,"input_tokens":645,"max_input_tokens":6000,"output_tokens":71,"max_output_tokens":1500,"elapsed":0.59,"timeout":120.0},{"t":0.59,"ts":"2026-11-09T16:57:14.961605","type":"observation","step":1,"text":"TESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]"},{"t":0.59,"ts":"2026-11-09T16:57:14.961634","type":"llm_request","step":2,"messages":4,"estimated_input_tokens":1157,"max_tokens":800,"delivered":"Observation:\nTESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]","compacted_steps":[]},{"t":0.593,"ts":"2026-11-09T16:57:14.964329","type":"llm_response","step":2,"text":"Thought: The tests show sums instead of differences: the lambda must subtract.\n```python\ncode = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)\n```","input_tokens":774,"output_tokens":74,"request_time_ms":2.664624946191907,"retries":0,"finish_reason":"stop"},{"t":0.593,"ts":"2026-11-09T16:57:14.964447","type":"extraction","step":2,"format":"python_block","code":"code = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)","notes":[]},{"t":0.593,"ts":"2026-11-09T16:57:14.964467","type":"sandbox_start","step":2,"code":"code = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)"},{"t":0.594,"ts":"2026-11-09T16:57:14.964904","type":"tool_call","name":"run_tests","args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"},"line":5,"written":"run_tests('\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1, nums2))\\n')"},{"t":0.638,"ts":"2026-11-09T16:57:15.008867","type":"tool_result","name":"run_tests","result":"ALL TESTS PASSED (2/2)\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]","is_error":false,"duration_ms":43.96237502805889,"line":5,"args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"},"written":"run_tests('\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1, nums2))\\n')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_tests","arguments":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"}}},"transport":"stdio (\"python\" \"<repo>/mcp_tools_mbpp.py\")","rtt_ms":43.9,"server":{"server":"agent-smith-mbpp","tool":"run_tests","handler":"mbpp_tools.run_tests","received_args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n","tests":null},"duration_ms":41.3,"ops":[{"op":"sandbox","command":"Sandbox.execute(solution + 2 test assertions, 28 lines)","exit_code":0,"duration_ms":40.9,"stdout_bytes":97,"stderr_bytes":0,"stdin_bytes":1188,"stdout_head":"PASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]\n","stderr_head":"","timed_out":false}],"raw_output_bytes":97,"result_chars":119,"result_lines":3,"truncated":false,"executor":"sandbox","target":"isolated sandbox worker (no MCP, no network)","details":{"source":"task.json of MBPP task 282 (dumped by the moulinette, read via MBPP_TASK_FILE): public test_list from the MBPP dataset. The moulinette hides the first test; it is only used at validation.","tests":["assert sub_list([1,2],[3,4])==[-2,-2]","assert sub_list([90,120],[50,70])==[40,50]"],"test_imports":[],"generated":"harness = candidate code + test imports + one try/except block per assert (prints PASS/FAIL with got/expected); executed in a fresh sandbox without MCP","harness":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n\n\ntry:\n    _got = sub_list([1, 2], [3, 4])\n    _exp = [-2, -2]\n    if _got == _exp:\n        print('PASS 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\")\n    else:\n        print('FAIL 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\" + '\\n    got:      ' + repr(_got)[:300] + '\\n    expected: ' + repr(_exp)[:300])\nexcept AssertionError:\n    print('FAIL 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\")\nexcept Exception as _e:\n    print('ERROR 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\" + '\\n    ' + type(_e).__name__ + ': ' + str(_e)[:300])\n\ntry:\n    _got = sub_list([90, 120], [50, 70])\n    _exp = [40, 50]\n    if _got == _exp:\n        print('PASS 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\")\n    else:\n        print('FAIL 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\" + '\\n    got:      ' + repr(_got)[:300] + '\\n    expected: ' + repr(_exp)[:300])\nexcept AssertionError:\n    print('FAIL 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\")\nexcept Exception as _e:\n    print('ERROR 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\" + '\\n    ' + type(_e).__name__ + ': ' + str(_e)[:300])\n"}}},{"t":0.638,"ts":"2026-11-09T16:57:15.009442","type":"sandbox_end","step":2,"status":"final_answer","output":"ALL TESTS PASSED (2/2)\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]\n[final_answer received]","duration_s":0.045,"is_final":true,"stdout":"ALL TESTS PASSED (2/2)\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0,"v":{"code":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1, nums2))\\n'"}},{"e":"line","l":5,"f":"<module>","d":0,"v":{"result":"'ALL TESTS PASSED (2/2)\\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\\nPASS 2: assert sub_list([..."}},{"e":"tool","l":5,"n":"run_tests","a":{"code":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1..."}},{"e":"tool_result","l":5,"n":"run_tests","ok":true,"r":"'ALL TESTS PASSED (2/2)\\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]'"},{"e":"line","l":6,"f":"<module>","d":0},{"e":"line","l":7,"f":"<module>","d":0},{"e":"line","l":8,"f":"<module>","d":0},{"e":"final","l":8,"r":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1, nums2))\\n'"}],"dropped":0}},{"t":0.638,"ts":"2026-11-09T16:57:15.009510","type":"budget","iterations":2,"max_iterations":10,"input_tokens":1419,"max_input_tokens":6000,"output_tokens":145,"max_output_tokens":1500,"elapsed":0.64,"timeout":120.0},{"t":0.638,"ts":"2026-11-09T16:57:15.009526","type":"final_answer","step":2,"answer":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"},{"t":0.638,"ts":"2026-11-09T16:57:15.009553","type":"run_end","success":true,"error":null,"solution":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n","total_time_seconds":0.639,"iterations":2,"max_iterations":10,"input_tokens":1419,"max_input_tokens":6000,"output_tokens":145,"max_output_tokens":1500,"elapsed":0.64,"timeout":120.0}],"swebench":[{"t":0.467,"ts":"2026-11-09T16:57:15.984076","type":"mcp_connected","server":"agent-smith-swebench","tools":["read_file","edit_file","list_files","search_code","search_function_or_class_definition_in_code","find_references","run_tests","get_patch","run_command"],"resources":true,"prompts":true},{"t":0.503,"ts":"2026-11-09T16:57:16.020315","type":"run_start","benchmark":"swebench","task_id":"demo__calculator-1","limits":{"max_iterations":30,"max_input_tokens":300000,"max_output_tokens":10000,"timeout_seconds":900.0},"system_prompt":"You are an autonomous software engineer fixing a real issue in the repository at /tmp/agent_smith_demo/testbed.\nYou act by writing Python code that calls tools (Python functions). The repository lives in a separate\nenvironment: you can only reach it through the tools, never with open() or imports.\n\nEvery reply has exactly this shape:\nThought: <brief reasoning>\n```python\n<code>\n```<end_code>\nThen STOP and wait: the code runs in a Python sandbox and you receive \"Observation:\" with its printed output.\nNever write the Observation yourself. Variables persist between steps. Use print() to see results.\n\n## Tools (Python functions available in the sandbox; each returns a str)\n- read_file(filepath: str, start_line: int = 1, end_line: int | None = None) -> str\n    Read a file with line numbers ('<n>: <line>'). Relative paths are from the repo root. Reads at most 400 lines per call; use start_line/end_line to page.\n- edit_file(filepath: str, old_str: str, new_str: str) -> str\n    Replace the exact string old_str (must occur exactly once, whitespace-sensitive) with new_str. The edit is rejected if it would introduce a Python syntax error. Empty old_str on a missing file creates it.\n- list_files(directory: str = '.', pattern: str = '*') -> str\n    List files under a directory whose name matches a glob pattern (e.g. '*.py', 'test_*.py').\n- search_code(pattern: str, file_pattern: str = '*.py') -> str\n    grep -E like search over the repository. Output: '/abs/path.py:<line> <content>'.\n- search_function_or_class_definition_in_code(name: str) -> str\n    Find where a function or class is defined (def/class). Output like search_code.\n- find_references(name: str, filepath: str | None = None, line: int | None = None) -> str\n    Find all usages of a symbol (whole-word match). Matches in `filepath` near `line` are listed first.\n- run_tests() -> str\n    Run the task's evaluation script; returns a pass/fail summary plus the tail of the test output.\n- get_patch() -> str\n    Return the unified diff of all changes (git -c core.fileMode=false diff).\n- run_command(command: str, workdir: str | None = None, timeout: int = 120) -> str\n    Run a shell command (bash) in workdir (default: repo root). Returns exit code, stdout and stderr.\n- final_answer(answer: str) -> None\n    Built-in. Submits your final answer and ends the task.\n- list_resources() / read_resource(uri) -> str   (MCP resources)\n- list_prompts() / get_prompt(name, arguments: dict) -> str   (MCP prompts)\nTool errors raise ToolError (catchable).\n\n## Sandbox rules\n- Allowed imports ONLY: math, math.*, collections, collections.*, itertools, re, json, typing, typing.*, functools, operator, heapq, bisect, copy, string, random, datetime, datetime.*, array, cmath\n- Files: only under /testbed, /tmp/agent (use tools for the repository)\n- No network, no subprocesses, no eval/exec/open of other paths, no dunder attributes.\n- Each code block: 30s timeout, 512 MB memory.\n- Variables persist between steps. Only print()ed output and the last expression are shown.\n\n## Method (follow it; it is how an experienced engineer fixes a bug)\n1. Understand: restate the bug in one sentence. Identify symbols, error messages and files mentioned in the issue.\n2. Locate: search_function_or_class_definition_in_code / search_code for those symbols. Read only the relevant\n   ranges with read_file(path, start, end) (not whole big files).\n3. Reproduce: write a tiny script that shows the bug, e.g.\n   run_command(\"cat > /tmp/repro.py << 'EOF'\\n<python>\\nEOF\\npython /tmp/repro.py\"). Confirm you see the failure.\n4. Fix: make the minimal, general change at the root cause with edit_file(path, old_str, new_str).\n   old_str must be copied EXACTLY (indentation included) from read_file output and be unique.\n5. Verify: re-run the reproduction, then run_tests(). Inspect failing test names; iterate if needed.\n6. Submit: as soon as the fix is verified call final_answer(get_patch()). Do not keep exploring after tests pass.\n\n## Efficiency\n- Batch several tool calls in ONE code block (search + read, edit + re-run). Print only what you need.\n- You have a limited number of steps and tokens: no long essays in Thoughts.\n- Never modify test files. Keep scratch files in /tmp, never inside the repository.\n\n## Integrity (mandatory)\n- Solve the issue by reading and running the code in this repository only.\n- Do not fetch anything from the internet, pull requests, issue trackers or package indexes, and do not\n  reproduce a memorised upstream patch without verifying it against this code base.\n\n## Example of a good first step\nThought: The issue says `Matrix.col_insert` misplaces columns. Find its definition and read it.\n```python\nprint(search_function_or_class_definition_in_code(\"col_insert\"))\nprint(search_code(\"def _eval_col_insert\", \"*.py\"))\n```<end_code>","task_prompt":"Repository: demo/calculator (checked out at /tmp/agent_smith_demo/testbed)\n<issue>\nCalculator.total() returns wrong results\n\n`Calculator().total([1, 2, 3])` returns -6 instead of 6. Expected the sum of the values.\n<\/issue>","model":"scripted-demo","api_url":"scripted://fake-llm","tools":["read_file","edit_file","list_files","search_code","search_function_or_class_definition_in_code","find_references","run_tests","get_patch","run_command"]},{"t":0.504,"ts":"2026-11-09T16:57:16.020433","type":"llm_request","step":1,"messages":2,"estimated_input_tokens":1860,"max_tokens":1024,"delivered":"Repository: demo/calculator (checked out at /tmp/agent_smith_demo/testbed)\n<issue>\nCalculator.total() returns wrong results\n\n`Calculator().total([1, 2, 3])` returns -6 instead of 6. Expected the sum of the values.\n<\/issue>","compacted_steps":[]},{"t":0.538,"ts":"2026-11-09T16:57:16.054483","type":"llm_response","step":1,"text":"Thought: The issue says Calculator.total returns wrong sums. Locate total() and add().\n```python\nprint(search_function_or_class_definition_in_code(\"Calculator\"))\nprint(search_function_or_class_definition_in_code(\"add\"))\n```","input_tokens":1259,"output_tokens":56,"request_time_ms":34.00104108732194,"retries":0,"finish_reason":"stop"},{"t":0.538,"ts":"2026-11-09T16:57:16.054635","type":"extraction","step":1,"format":"python_block","code":"print(search_function_or_class_definition_in_code(\"Calculator\"))\nprint(search_function_or_class_definition_in_code(\"add\"))","notes":[]},{"t":0.538,"ts":"2026-11-09T16:57:16.054652","type":"sandbox_start","step":1,"code":"print(search_function_or_class_definition_in_code(\"Calculator\"))\nprint(search_function_or_class_definition_in_code(\"add\"))"},{"t":0.538,"ts":"2026-11-09T16:57:16.055079","type":"tool_call","name":"search_function_or_class_definition_in_code","args":{"name":"Calculator"},"line":1,"written":"search_function_or_class_definition_in_code('Calculator')"},{"t":0.554,"ts":"2026-11-09T16:57:16.070634","type":"tool_result","name":"search_function_or_class_definition_in_code","result":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:","is_error":false,"duration_ms":15.549292089417577,"line":1,"args":{"name":"Calculator"},"written":"search_function_or_class_definition_in_code('Calculator')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"search_function_or_class_definition_in_code","arguments":{"name":"Calculator"}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":15.5,"server":{"server":"agent-smith-swebench","tool":"search_function_or_class_definition_in_code","handler":"SWEBenchTools.search_function_or_class_definition_in_code","received_args":{"name":"Calculator"},"duration_ms":12.7,"ops":[{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'grep -rnI --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=node_modules --exclude-dir=.tox --exclude-dir=.eggs --exclude-dir=build --exclude-dir=dist -E --include='\"'\"'*.py'\"'\"' -e '\"'\"'^[[:space:]]*(async[[:space:]]+)?(def|class)[[:space:]]+Calculator\\b'\"'\"' /tmp/agent_smith_demo/testbed 2>&1 | head -n 151')","exit_code":0,"duration_ms":12.4,"stdout_bytes":66,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8:class Calculator:\n","stderr_head":"","timed_out":false}],"raw_output_bytes":66,"result_chars":65,"result_lines":1,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.554,"ts":"2026-11-09T16:57:16.071123","type":"tool_call","name":"search_function_or_class_definition_in_code","args":{"name":"add"},"line":2,"written":"search_function_or_class_definition_in_code('add')"},{"t":0.571,"ts":"2026-11-09T16:57:16.087796","type":"tool_result","name":"search_function_or_class_definition_in_code","result":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):","is_error":false,"duration_ms":16.671457909978926,"line":2,"args":{"name":"add"},"written":"search_function_or_class_definition_in_code('add')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"search_function_or_class_definition_in_code","arguments":{"name":"add"}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":16.6,"server":{"server":"agent-smith-swebench","tool":"search_function_or_class_definition_in_code","handler":"SWEBenchTools.search_function_or_class_definition_in_code","received_args":{"name":"add"},"duration_ms":13.9,"ops":[{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'grep -rnI --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=node_modules --exclude-dir=.tox --exclude-dir=.eggs --exclude-dir=build --exclude-dir=dist -E --include='\"'\"'*.py'\"'\"' -e '\"'\"'^[[:space:]]*(async[[:space:]]+)?(def|class)[[:space:]]+add\\b'\"'\"' /tmp/agent_smith_demo/testbed 2>&1 | head -n 151')","exit_code":0,"duration_ms":13.8,"stdout_bytes":63,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4:def add(a, b):\n","stderr_head":"","timed_out":false}],"raw_output_bytes":63,"result_chars":62,"result_lines":1,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.571,"ts":"2026-11-09T16:57:16.088251","type":"sandbox_end","step":1,"status":"ok","output":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):\n[budget] step 1/30, output tokens left 9944, time left 892s","duration_s":0.034,"is_final":false,"stdout":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"search_function_or_class_definition_in_code","a":{"name":"'Calculator'"}},{"e":"tool_result","l":1,"n":"search_function_or_class_definition_in_code","ok":true,"r":"'/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:'"},{"e":"line","l":2,"f":"<module>","d":0},{"e":"tool","l":2,"n":"search_function_or_class_definition_in_code","a":{"name":"'add'"}},{"e":"tool_result","l":2,"n":"search_function_or_class_definition_in_code","ok":true,"r":"'/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):'"}],"dropped":0}},{"t":0.571,"ts":"2026-11-09T16:57:16.088324","type":"budget","iterations":1,"max_iterations":30,"input_tokens":1259,"max_input_tokens":300000,"output_tokens":56,"max_output_tokens":10000,"elapsed":0.07,"timeout":900.0},{"t":0.571,"ts":"2026-11-09T16:57:16.088342","type":"observation","step":1,"text":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):\n[budget] step 1/30, output tokens left 9944, time left 892s"},{"t":0.572,"ts":"2026-11-09T16:57:16.088376","type":"llm_request","step":2,"messages":4,"estimated_input_tokens":2029,"max_tokens":1024,"delivered":"Observation:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):\n[budget] step 1/30, output tokens left 9944, time left 892s","compacted_steps":[]},{"t":0.577,"ts":"2026-11-09T16:57:16.093757","type":"llm_response","step":2,"text":"Thought: Read the module around both definitions.\n```python\nprint(read_file(\"pkg/mathutil.py\", 1, 12))\n```","input_tokens":1368,"output_tokens":27,"request_time_ms":5.346249905414879,"retries":0,"finish_reason":"stop"},{"t":0.577,"ts":"2026-11-09T16:57:16.093874","type":"extraction","step":2,"format":"python_block","code":"print(read_file(\"pkg/mathutil.py\", 1, 12))","notes":[]},{"t":0.577,"ts":"2026-11-09T16:57:16.093893","type":"sandbox_start","step":2,"code":"print(read_file(\"pkg/mathutil.py\", 1, 12))"},{"t":0.577,"ts":"2026-11-09T16:57:16.094307","type":"tool_call","name":"read_file","args":{"filepath":"pkg/mathutil.py","start_line":1,"end_line":12},"line":1,"written":"read_file('pkg/mathutil.py', 1, 12)"},{"t":0.579,"ts":"2026-11-09T16:57:16.096077","type":"tool_result","name":"read_file","result":"1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)","is_error":false,"duration_ms":1.7708750674501061,"line":1,"args":{"filepath":"pkg/mathutil.py","start_line":1,"end_line":12},"written":"read_file('pkg/mathutil.py', 1, 12)","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"read_file","arguments":{"filepath":"pkg/mathutil.py","start_line":1,"end_line":12}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":1.7,"server":{"server":"agent-smith-swebench","tool":"read_file","handler":"SWEBenchTools.read_file","received_args":{"filepath":"pkg/mathutil.py","start_line":1,"end_line":12},"duration_ms":0.2,"ops":[{"op":"read","command":"open('/tmp/agent_smith_demo/testbed/pkg/mathutil.py').read()","exit_code":0,"duration_ms":0.1,"stdout_bytes":209,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"\"\"\"Small arithmetic helpers.\"\"\"\n\n\ndef add(a, b):\n    return a - b\n\n\nclass Calculator:\n    def total(self, xs):\n        result = 0\n        for x in xs:\n            result = add(result, x)\n        return result\n","stderr_head":"","timed_out":false}],"raw_output_bytes":209,"result_chars":225,"result_lines":12,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.58,"ts":"2026-11-09T16:57:16.096424","type":"sandbox_end","step":2,"status":"ok","output":"1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)\n[budget] step 2/30, output tokens left 9917, time left 892s","duration_s":0.002,"is_final":false,"stdout":"1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"read_file","a":{"filepath":"'pkg/mathutil.py'","start_line":"1","end_line":"12"}},{"e":"tool_result","l":1,"n":"read_file","ok":true,"r":"'1: \"\"\"Small arithmetic helpers.\"\"\"\\n2: \\n3: \\n4: def add(a, b):\\n5:     return a - b\\n6: \\n7: \\n8: class Calculator:\\n9:     def total(self, xs):\\n10:      ..."}],"dropped":0}},{"t":0.58,"ts":"2026-11-09T16:57:16.096477","type":"budget","iterations":2,"max_iterations":30,"input_tokens":2627,"max_input_tokens":300000,"output_tokens":83,"max_output_tokens":10000,"elapsed":0.08,"timeout":900.0},{"t":0.58,"ts":"2026-11-09T16:57:16.096493","type":"observation","step":2,"text":"1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)\n[budget] step 2/30, output tokens left 9917, time left 892s"},{"t":0.58,"ts":"2026-11-09T16:57:16.096518","type":"llm_request","step":3,"messages":6,"estimated_input_tokens":2191,"max_tokens":1024,"delivered":"Observation:\n1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)\n[budget] step 2/30, output tokens left 9917, time left 892s","compacted_steps":[]},{"t":0.581,"ts":"2026-11-09T16:57:16.098155","type":"llm_response","step":3,"text":"Thought: Reproduce before fixing.\n```python\nprint(run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\"))\n```","input_tokens":1471,"output_tokens":39,"request_time_ms":1.611832994967699,"retries":0,"finish_reason":"stop"},{"t":0.581,"ts":"2026-11-09T16:57:16.098223","type":"extraction","step":3,"format":"python_block","code":"print(run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\"))","notes":[]},{"t":0.581,"ts":"2026-11-09T16:57:16.098238","type":"sandbox_start","step":3,"code":"print(run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\"))"},{"t":0.582,"ts":"2026-11-09T16:57:16.098582","type":"tool_call","name":"run_command","args":{"command":"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'"},"line":1,"written":"run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\")"},{"t":0.612,"ts":"2026-11-09T16:57:16.129015","type":"tool_result","name":"run_command","result":"exit_code: 0\nstdout:\n-6\n\nstderr:\n","is_error":false,"duration_ms":30.428958008997142,"line":1,"args":{"command":"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'"},"written":"run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\")","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_command","arguments":{"command":"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'"}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":30.4,"server":{"server":"agent-smith-swebench","tool":"run_command","handler":"SWEBenchTools.run_command","received_args":{"command":"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'","workdir":null,"timeout":120},"duration_ms":28.3,"ops":[{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'python -c '\"'\"'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\"'\"'')","exit_code":0,"duration_ms":28.3,"stdout_bytes":3,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"-6\n","stderr_head":"","timed_out":false}],"raw_output_bytes":3,"result_chars":33,"result_lines":6,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.613,"ts":"2026-11-09T16:57:16.129495","type":"sandbox_end","step":3,"status":"ok","output":"exit_code: 0\nstdout:\n-6\n\nstderr:\n[budget] step 3/30, output tokens left 9878, time left 892s","duration_s":0.031,"is_final":false,"stdout":"exit_code: 0\nstdout:\n-6\n\nstderr:\n\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"run_command","a":{"command":"\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1,..."}},{"e":"tool_result","l":1,"n":"run_command","ok":true,"r":"'exit_code: 0\\nstdout:\\n-6\\n\\nstderr:\\n'"}],"dropped":0}},{"t":0.613,"ts":"2026-11-09T16:57:16.129559","type":"budget","iterations":3,"max_iterations":30,"input_tokens":4098,"max_input_tokens":300000,"output_tokens":122,"max_output_tokens":10000,"elapsed":0.11,"timeout":900.0},{"t":0.613,"ts":"2026-11-09T16:57:16.129593","type":"observation","step":3,"text":"exit_code: 0\nstdout:\n-6\n\nstderr:\n[budget] step 3/30, output tokens left 9878, time left 892s"},{"t":0.613,"ts":"2026-11-09T16:57:16.129627","type":"llm_request","step":4,"messages":8,"estimated_input_tokens":2301,"max_tokens":1024,"delivered":"Observation:\nexit_code: 0\nstdout:\n-6\n\nstderr:\n[budget] step 3/30, output tokens left 9878, time left 892s","compacted_steps":[]},{"t":0.617,"ts":"2026-11-09T16:57:16.134136","type":"llm_response","step":4,"text":"Thought: total() is fine; add() subtracts. Fix the root cause and run the tests.\n```python\nprint(edit_file(\"pkg/mathutil.py\", \"    return a - b\", \"    return a + b\"))\nprint(run_tests())\n```","input_tokens":1539,"output_tokens":48,"request_time_ms":4.475750029087067,"retries":0,"finish_reason":"stop"},{"t":0.617,"ts":"2026-11-09T16:57:16.134248","type":"extraction","step":4,"format":"python_block","code":"print(edit_file(\"pkg/mathutil.py\", \"    return a - b\", \"    return a + b\"))\nprint(run_tests())","notes":[]},{"t":0.617,"ts":"2026-11-09T16:57:16.134300","type":"sandbox_start","step":4,"code":"print(edit_file(\"pkg/mathutil.py\", \"    return a - b\", \"    return a + b\"))\nprint(run_tests())"},{"t":0.618,"ts":"2026-11-09T16:57:16.134710","type":"tool_call","name":"edit_file","args":{"filepath":"pkg/mathutil.py","old_str":"    return a - b","new_str":"    return a + b"},"line":1,"written":"edit_file('pkg/mathutil.py', '    return a - b', '    return a + b')"},{"t":0.632,"ts":"2026-11-09T16:57:16.149023","type":"tool_result","name":"edit_file","result":"Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:","is_error":false,"duration_ms":14.309209072962403,"line":1,"args":{"filepath":"pkg/mathutil.py","old_str":"    return a - b","new_str":"    return a + b"},"written":"edit_file('pkg/mathutil.py', '    return a - b', '    return a + b')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"edit_file","arguments":{"filepath":"pkg/mathutil.py","old_str":"    return a - b","new_str":"    return a + b"}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":14.3,"server":{"server":"agent-smith-swebench","tool":"edit_file","handler":"SWEBenchTools.edit_file","received_args":{"filepath":"pkg/mathutil.py","old_str":"    return a - b","new_str":"    return a + b"},"duration_ms":12.0,"ops":[{"op":"read","command":"open('/tmp/agent_smith_demo/testbed/pkg/mathutil.py').read()","exit_code":0,"duration_ms":0.1,"stdout_bytes":209,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"\"\"\"Small arithmetic helpers.\"\"\"\n\n\ndef add(a, b):\n    return a - b\n\n\nclass Calculator:\n    def total(self, xs):\n        result = 0\n        for x in xs:\n            result = add(result, x)\n        return result\n","stderr_head":"","timed_out":false},{"op":"write","command":"open('/tmp/agent_smith_demo/testbed/pkg/mathutil.py', 'w').write(<209 bytes>)","exit_code":0,"duration_ms":0.2,"stdout_bytes":0,"stderr_bytes":0,"stdin_bytes":209,"stdout_head":"","stderr_head":"","timed_out":false},{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'rm -f /tmp/agent_smith_demo/testbed/pkg/__pycache__/mathutil.*.pyc')","exit_code":0,"duration_ms":11.5,"stdout_bytes":0,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"","stderr_head":"","timed_out":false}],"raw_output_bytes":209,"result_chars":176,"result_lines":8,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.633,"ts":"2026-11-09T16:57:16.149460","type":"tool_call","name":"run_tests","args":{},"line":2,"written":"run_tests()"},{"t":0.843,"ts":"2026-11-09T16:57:16.359714","type":"tool_result","name":"run_tests","result":"exit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s","is_error":false,"duration_ms":210.24991699960083,"line":2,"args":{},"written":"run_tests()","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_tests","arguments":{}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":210.2,"server":{"server":"agent-smith-swebench","tool":"run_tests","handler":"SWEBenchTools.run_tests","received_args":{},"duration_ms":208.2,"ops":[{"op":"write","command":"open('/tmp/agent_eval.sh', 'w').write(<179 bytes>)","exit_code":0,"duration_ms":0.2,"stdout_bytes":0,"stderr_bytes":0,"stdin_bytes":179,"stdout_head":"","stderr_head":"","timed_out":false},{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'bash /tmp/agent_eval.sh')","exit_code":0,"duration_ms":207.5,"stdout_bytes":388,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":">>>>> Start Test Output\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::tes","stderr_head":"","timed_out":false}],"raw_output_bytes":388,"result_chars":417,"result_lines":9,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed","details":{"source":"eval_script field of the SWE-bench task.json (dumped by the moulinette, passed to the server via SWEBENCH_EVAL_SCRIPT_FILE); copied to /tmp/agent_eval.sh","script":"cd /tmp/agent_smith_demo/testbed\necho '>>>>> Start Test Output'\npython -m pytest -rA -q tests 2>&1\necho '>>>>> End Test Output'\n"}}},{"t":0.843,"ts":"2026-11-09T16:57:16.360148","type":"sandbox_end","step":4,"status":"ok","output":"Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:\nexit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s\n[budget] step 4/30, output tokens left 9830, time left 892s","duration_s":0.226,"is_final":false,"stdout":"Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:\nexit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"edit_file","a":{"filepath":"'pkg/mathutil.py'","old_str":"'    return a - b'","new_str":"'    return a + b'"}},{"e":"tool_result","l":1,"n":"edit_file","ok":true,"r":"'Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\\n2: \\n3: \\n4: def add(a, b):\\n5:     return a + b\\n6: ..."},{"e":"line","l":2,"f":"<module>","d":0},{"e":"tool","l":2,"n":"run_tests","a":{}},{"e":"tool_result","l":2,"n":"run_tests","ok":true,"r":"'exit_code: 0\\nsummary: 2 passed, 0 failed/errored\\n--- test output (tail) ---\\n..                                                                       [100..."}],"dropped":0}},{"t":0.843,"ts":"2026-11-09T16:57:16.360212","type":"budget","iterations":4,"max_iterations":30,"input_tokens":5637,"max_input_tokens":300000,"output_tokens":170,"max_output_tokens":10000,"elapsed":0.34,"timeout":900.0},{"t":0.843,"ts":"2026-11-09T16:57:16.360232","type":"observation","step":4,"text":"Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:\nexit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s\n[budget] step 4/30, output tokens left 9830, time left 892s"},{"t":0.843,"ts":"2026-11-09T16:57:16.360265","type":"llm_request","step":5,"messages":10,"estimated_input_tokens":2629,"max_tokens":1024,"delivered":"Observation:\nEdited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:\nexit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s\n[budget] step 4/30, output tokens left 9830, time left 892s","compacted_steps":[]},{"t":0.846,"ts":"2026-11-09T16:57:16.362559","type":"llm_response","step":5,"text":"Thought: Tests pass. Submit the patch.\n```python\nfinal_answer(get_patch())\n```","input_tokens":1755,"output_tokens":20,"request_time_ms":2.2624169941991568,"retries":0,"finish_reason":"stop"},{"t":0.846,"ts":"2026-11-09T16:57:16.362645","type":"extraction","step":5,"format":"python_block","code":"final_answer(get_patch())","notes":[]},{"t":0.846,"ts":"2026-11-09T16:57:16.362664","type":"sandbox_start","step":5,"code":"final_answer(get_patch())"},{"t":0.846,"ts":"2026-11-09T16:57:16.362983","type":"tool_call","name":"get_patch","args":{},"line":1,"written":"get_patch()"},{"t":0.866,"ts":"2026-11-09T16:57:16.382870","type":"tool_result","name":"get_patch","result":"diff --git a/pkg/mathutil.py b/pkg/mathutil.py\nindex 4b45324..fcceb32 100644\n--- a/pkg/mathutil.py\n+++ b/pkg/mathutil.py\n@@ -2,7 +2,7 @@\n \n \n def add(a, b):\n-    return a - b\n+    return a + b\n \n \n class Calculator:\n","is_error":false,"duration_ms":19.86604102421552,"line":1,"args":{},"written":"get_patch()","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"get_patch","arguments":{}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":19.8,"server":{"server":"agent-smith-swebench","tool":"get_patch","handler":"SWEBenchTools.get_patch","received_args":{},"duration_ms":16.8,"ops":[{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'git -c core.fileMode=false diff')","exit_code":0,"duration_ms":16.8,"stdout_bytes":216,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"diff --git a/pkg/mathutil.py b/pkg/mathutil.py\nindex 4b45324..fcceb32 100644\n--- a/pkg/mathutil.py\n+++ b/pkg/mathutil.py\n@@ -2,7 +2,7 @@\n \n \n def add(a, b):\n-    return a - b\n+    return a + b\n \n \n class Calculator:\n","stderr_head":"","timed_out":false}],"raw_output_bytes":216,"result_chars":216,"result_lines":14,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.867,"ts":"2026-11-09T16:57:16.383410","type":"sandbox_end","step":5,"status":"final_answer","output":"[final_answer received]\n[budget] step 5/30, output tokens left 9810, time left 892s","duration_s":0.021,"is_final":true,"stdout":"","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"get_patch","a":{}},{"e":"tool_result","l":1,"n":"get_patch","ok":true,"r":"'diff --git a/pkg/mathutil.py b/pkg/mathutil.py\\nindex 4b45324..fcceb32 100644\\n--- a/pkg/mathutil.py\\n+++ b/pkg/mathutil.py\\n@@ -2,7 +2,7 @@\\n \\n \\n def add..."},{"e":"final","l":1,"r":"'diff --git a/pkg/mathutil.py b/pkg/mathutil.py\\nindex 4b45324..fcceb32 100644\\n--- a/pkg/mathutil.py\\n+++ b/pkg/mathutil.py\\n@@ -2,7 +2,7 @@\\n \\n \\n def add..."}],"dropped":0}},{"t":0.867,"ts":"2026-11-09T16:57:16.383494","type":"budget","iterations":5,"max_iterations":30,"input_tokens":7392,"max_input_tokens":300000,"output_tokens":190,"max_output_tokens":10000,"elapsed":0.36,"timeout":900.0},{"t":0.867,"ts":"2026-11-09T16:57:16.383514","type":"final_answer","step":5,"answer":"diff --git a/pkg/mathutil.py b/pkg/mathutil.py\nindex 4b45324..fcceb32 100644\n--- a/pkg/mathutil.py\n+++ b/pkg/mathutil.py\n@@ -2,7 +2,7 @@\n \n \n def add(a, b):\n-    return a - b\n+    return a + b\n \n \n class Calculator:\n"},{"t":0.867,"ts":"2026-11-09T16:57:16.383550","type":"run_end","success":true,"error":null,"solution":"diff --git a/pkg/mathutil.py b/pkg/mathutil.py\nindex 4b45324..fcceb32 100644\n--- a/pkg/mathutil.py\n+++ b/pkg/mathutil.py\n@@ -2,7 +2,7 @@\n \n \n def add(a, b):\n-    return a - b\n+    return a + b\n \n \n class Calculator:\n","total_time_seconds":0.363,"iterations":5,"max_iterations":30,"input_tokens":7392,"max_input_tokens":300000,"output_tokens":190,"max_output_tokens":10000,"elapsed":0.36,"timeout":900.0}]}/*DEMO_END*/;
+
+/* ======================= architecture model ======================= */
+const NODES = {
+  task:    {x: 20, y: 30, w: 160, h: 84, c: "--c-task", title: "Task + CLI", sub: "task.json → agent_*",
+            info: ["Loads the moulinette task, API keys from .env, limits.", "Writes solution.json even when something fails."],
+            path: "src/agent_mbpp/__main__.py · src/agent_swebench/__main__.py · runner.py"},
+  orch:    {x: 270, y: 30, w: 210, h: 84, c: "--c-orch", title: "Orchestrator", sub: "agent loop · budget",
+            info: ["Thought → Code → Observation until final_answer().", "Checks cumulative tokens, iterations and time before every LLM call.", "Shortens old observations before re-sending them (shown as Δ)."],
+            path: "src/agent_smith/agent/loop.py · budget.py · prompts.py"},
+  llm:     {x: 650, y: 30, w: 220, h: 84, c: "--c-llm", title: "LLM API", sub: "OpenAI-compatible",
+            info: ["Several keys per provider, rotated on 429/401/402; backoff retries; optional fallback.", "Stop sequences (<end_code>, Observation:) prevent invented observations."],
+            path: "src/agent_smith/llm/client.py · key_pool.py · openai_compat.py"},
+  extract: {x: 270, y: 170, w: 210, h: 84, c: "--c-extract", title: "Code extraction", sub: "python · XML · JSON · ReAct",
+            info: ["Keeps only executable Python: the Thought and fences are dropped (Δ).", "XML invoke, Hermes <tool_call> and ReAct are converted to Python calls; repairs are reported to the LLM."],
+            path: "src/agent_smith/extraction/extractor.py"},
+  interp:  {x: 216, y: 338, w: 190, h: 96, c: "--c-sandbox", title: "Python interpreter", sub: "persistent namespace",
+            info: ["Separate process, empty environment; every executed line is traced (Interpreter tab).", "AST policy, restricted builtins, module proxies, import allowlist, audit hook.", "SIGALRM timeout (paused during tool calls), memory limit, streamed output."],
+            path: "src/agent_smith/sandbox/worker.py"},
+  mcpc:    {x: 432, y: 338, w: 196, h: 96, c: "--c-mcp", title: "MCP client", sub: "tool wrappers · proxy",
+            info: ["The wrapper maps positional arguments to parameter names and sends JSON to the host.", "The host forwards a JSON-RPC tools/call over stdio or HTTP and waits for the result."],
+            path: "src/agent_smith/sandbox/host.py · mcp_client/client.py"},
+  mcps:    {x: 690, y: 338, w: 180, h: 96, c: "--c-mcp", title: "MCP server", sub: "separate process",
+            info: ["FastMCP validates arguments and calls the Python handler.", "The result carries an execution report (_meta): commands run, exit codes, timings, sizes."],
+            path: "mcp_tools_*.py · src/agent_smith/tools/ (instrument.py)"},
+  repo:    {x: 690, y: 478, w: 180, h: 84, c: "--c-repo", title: "Repository", sub: "/testbed · docker exec",
+            info: ["SWE-bench: commands run via docker exec in the task container (--network none).", "Locally (tests, demo): the same commands run in TESTBED_PATH. MBPP: an isolated test sandbox."],
+            path: "src/agent_smith/tools/executor.py · docker_env.py"},
+  final:   {x: 20, y: 346, w: 160, h: 84, c: "--c-final", title: "SolutionOutput", sub: "solution.json",
+            info: ["success, solution (code or patch), iterations, requests, tokens, time.", "Every step keeps llm_output, sandbox_input, sandbox_output, retries."],
+            path: "src/agent_smith/models.py"},
+};
+const EDGES = {
+  task_orch:   {d: "M180 72 L268 72", c: "--c-task", label: "task prompt", lx: 186, ly: 62},
+  orch_llm:    {d: "M480 58 L648 58", c: "--c-llm", label: "messages", lx: 535, ly: 50, mid: [600, 58]},
+  llm_orch:    {d: "M650 92 L482 92", c: "--c-llm", label: "Thought + code", lx: 516, ly: 108},
+  orch_ext:    {d: "M375 114 L375 168", c: "--c-extract", label: "raw text", lx: 383, ly: 146},
+  ext_interp:  {d: "M330 254 L330 336", c: "--c-sandbox", label: "python", lx: 342, ly: 288, mid: [330, 274]},
+  interp_mcpc: {d: "M406 374 L430 374", c: "--c-mcp", mid: [418, 360]},
+  mcpc_interp: {d: "M430 402 L408 402", c: "--c-mcp"},
+  mcpc_mcps:   {d: "M628 374 L688 374", c: "--c-mcp", label: "JSON-RPC", lx: 652, ly: 331},
+  mcps_mcpc:   {d: "M690 406 L630 406", c: "--c-mcp", mid: [660, 421]},
+  mcps_repo:   {d: "M765 434 L765 476", c: "--c-repo", label: "commands", lx: 700, ly: 459},
+  repo_mcps:   {d: "M800 476 L800 436", c: "--c-repo", label: "stdout", lx: 818, ly: 459, mid: [800, 456]},
+  interp_orch: {d: "M250 338 C 250 270, 230 200, 292 116", c: "--c-sandbox", label: "observation", lx: 156, ly: 240, mid: [249, 268]},
+  interp_final:{d: "M216 392 L182 390", c: "--c-final", label: "final_answer", lx: 56, ly: 448},
+  orch_final:  {d: "M290 114 C 200 140, 100 200, 100 344", c: "--c-final"},
+};
+const KIND_COLOR = {
+  run_start: "--c-task", mcp_connected: "--c-mcp", llm_request: "--c-llm", llm_response: "--c-llm", llm_retry: "--c-error",
+  llm_fallback: "--c-warn", llm_error: "--c-error", extraction: "--c-extract", sandbox_start: "--c-sandbox", exec_line: "--c-sandbox",
+  tool_call: "--c-mcp", mcp_request: "--c-mcp", server_dispatch: "--c-mcp", repo_op: "--c-repo", mcp_response: "--c-mcp",
+  tool_result: "--c-mcp", sandbox_end: "--c-sandbox", observation: "--c-orch", budget: "--c-orch", final_answer: "--c-final",
+  fallback_answer: "--c-warn", budget_stop: "--c-error", run_end: "--c-final", docker_pull: "--c-repo", docker_started: "--c-repo",
+  docker_removed: "--c-repo", interrupted: "--c-error", exec_more: "--c-sandbox",
+};
+const SUB_EVENTS = new Set(["exec_line", "exec_more", "mcp_request", "server_dispatch", "repo_op", "mcp_response"]);
+
+function short(s, n = 110) { s = String(s ?? "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+function firstLine(s) { return String(s || "").split("\n")[0].slice(0, 120); }
+function argPreview(a) { return a ? Object.entries(a).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ").replace(/\s+/g, " ").slice(0, 90) : ""; }
+function kb(n) { return n == null ? "?" : n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`; }
+function vars(v) { return v ? Object.entries(v).map(([k, x]) => `${k}=${x}`).join(", ") : ""; }
+
+function activity(e) {
+  switch (e.type) {
+    case "run_start": return {nodes: ["task", "orch"], edges: ["task_orch"], text: `Run started: ${e.benchmark} task ${e.task_id} with ${e.model}`};
+    case "mcp_connected": return {nodes: ["mcpc", "mcps"], edges: ["mcpc_mcps", "mcps_mcpc"], text: `MCP server "${e.server}" connected: ${(e.tools || []).length} tools discovered (${(e.tools || []).join(", ")})`};
+    case "docker_pull": return {nodes: ["repo"], edges: [], text: `Ensuring image ${e.image}`};
+    case "docker_started": return {nodes: ["repo"], edges: [], text: `Container ${e.container} started (network disabled)`};
+    case "docker_removed": return {nodes: ["repo"], edges: [], text: `Container ${e.container} removed`};
+    case "llm_request": return {nodes: ["orch", "llm"], edges: ["orch_llm"], text: `Step ${e.step}: ${e.messages} messages sent (~${e.estimated_input_tokens} tokens est., max ${e.max_tokens} out)${(e.compacted_steps || []).length ? ` · observations of steps ${e.compacted_steps.join(", ")} shortened` : ""}`};
+    case "llm_retry": return {nodes: ["llm"], edges: [], error: true, text: `Retry: ${e.error || ""}`};
+    case "llm_fallback": return {nodes: ["llm"], edges: [], text: `Fallback ${e.from} → ${e.to}`};
+    case "llm_error": return {nodes: ["llm", "orch"], edges: [], error: true, text: `LLM failure: ${e.error}`};
+    case "llm_response": return {nodes: ["llm", "orch"], edges: ["llm_orch"], text: `Step ${e.step}: ${e.input_tokens} in / ${e.output_tokens} out tokens, ${Math.round(e.request_time_ms)} ms${e.retries ? `, ${e.retries} retries` : ""}`};
+    case "extraction": return {nodes: ["extract"], edges: ["orch_ext"], error: !e.code, text: e.code ? `Extracted ${e.format}: ${e.code.split("\n").length} lines kept${(e.notes || []).length ? " · " + e.notes[0] : ""}` : "No code found: feedback goes back to the LLM"};
+    case "sandbox_start": return {nodes: ["interp"], edges: ["ext_interp"], text: `Interpreter receives ${e.code.split("\n").length} lines`};
+    case "exec_line": return execActivity(e);
+    case "exec_more": return {nodes: ["interp"], edges: [], text: `… ${e.count} more traced events (see Interpreter tab)`};
+    case "tool_call": return {nodes: ["interp", "mcpc"], edges: ["interp_mcpc"], text: `line ${e.line ?? "?"}: ${e.written || e.name + "(" + argPreview(e.args) + ")"} → wrapper sends {"type":"tool_call","name":"${e.name}",…} to the host`};
+    case "mcp_request": return {nodes: ["mcpc", "mcps"], edges: ["mcpc_mcps"], text: `JSON-RPC tools/call "${e.name}" over ${short(e.transport || "MCP", 40)}`};
+    case "server_dispatch": return {nodes: ["mcps"], edges: [], text: `${e.server || "server"}: arguments validated → ${e.handler || e.name}(${argPreview(e.received_args)})`};
+    case "repo_op": return {nodes: ["mcps", "repo"], edges: ["mcps_repo", "repo_mcps"], error: e.op.exit_code !== 0, text: `${e.op.op}: ${short(e.op.command, 70)} → exit ${e.op.exit_code}, ${e.op.duration_ms} ms, ${kb(e.op.stdout_bytes)}`};
+    case "mcp_response": return {nodes: ["mcps", "mcpc"], edges: ["mcps_mcpc"], error: e.is_error, text: `CallToolResult: ${e.result_chars} chars, ${e.result_lines} lines${e.truncated ? " (truncated by the tool)" : ""}, isError=${!!e.is_error}`};
+    case "tool_result": return {nodes: ["mcpc", "interp"], edges: ["mcpc_interp"], error: e.is_error, text: `${e.name} returns to line ${e.line ?? "?"}: ${firstLine(e.result)} (${Math.round(e.duration_ms)} ms total)`};
+    case "sandbox_end": return {nodes: ["interp", "orch"], edges: ["interp_orch"], error: ["error", "timeout", "memory", "crash", "security_error", "syntax_error"].includes(e.status), text: `Sandbox finished: ${e.status}${e.duration_s != null ? ` in ${e.duration_s}s` : ""} → observation ${String(e.output || "").length} chars`};
+    case "observation": return {nodes: ["orch"], edges: [], text: `Observation stored for the next request`};
+    case "budget": return {nodes: ["orch"], edges: [], text: `Budget: ${e.input_tokens}/${e.max_input_tokens} in, ${e.output_tokens}/${e.max_output_tokens} out, ${e.elapsed}s`};
+    case "final_answer": return {nodes: ["interp", "final"], edges: ["interp_final"], text: `final_answer() at step ${e.step}`};
+    case "fallback_answer": return {nodes: ["orch", "final"], edges: ["orch_final"], text: "No final_answer: best candidate submitted"};
+    case "budget_stop": return {nodes: ["orch"], edges: [], error: true, text: `Stopped: ${e.reason}`};
+    case "interrupted": return {nodes: ["orch"], edges: [], error: true, text: "Interrupted"};
+    case "run_end": return {nodes: ["final"], edges: ["orch_final"], error: !e.success, text: `Run finished: ${e.success ? "success" : "no success"} · ${e.iterations} iterations · ${e.total_time_seconds}s`};
+    default: return {nodes: [], edges: [], text: e.type};
+  }
+}
+function execActivity(e) {
+  const x = e.entry, src = (e.codeLines || [])[x.l - 1] || "", where = x.f && x.f !== "<module>" ? ` in ${x.f}()` : "";
+  const ch = x.v ? ` · ${short(vars(x.v), 60)}` : "";
+  if (x.e === "line") return {nodes: ["interp"], edges: [], text: `line ${x.l}${where}: ${short(src, 60)}${ch}`};
+  if (x.e === "call") return {nodes: ["interp"], edges: [], text: `call ${x.f}(${short(vars(x.v), 60)})`};
+  if (x.e === "return") return {nodes: ["interp"], edges: [], text: `return ${x.r} from ${x.f}()`};
+  if (x.e === "exception") return {nodes: ["interp"], edges: [], error: true, text: `line ${x.l}: ${x.x} raised`};
+  if (x.e === "final") return {nodes: ["interp"], edges: [], text: `line ${x.l}: final_answer(${short(x.r, 60)})`};
+  return {nodes: ["interp"], edges: [], text: x.e};
+}
+
+/* ======================= trace expansion =======================
+   Raw events are expanded for display: the sandbox phase is replaced by the traced path of
+   code lines, and each tool result is split into its hops (request, server, repo ops, response). */
+const MAX_LINES_PER_STEP = 260;
+function expandTool(r) {
+  const out = [], m = r.server || {};
+  if (r.type !== "tool_result") return [r];
+  out.push({...r, type: "mcp_request", sub: true});
+  if (m.handler) out.push({...m, type: "server_dispatch", name: r.name, step: r.step, sub: true});
+  for (const op of m.ops || []) out.push({type: "repo_op", op, name: r.name, step: r.step, sub: true});
+  if (m.handler || r.request) out.push({type: "mcp_response", name: r.name, step: r.step, is_error: r.is_error, sub: true,
+    result_chars: m.result_chars ?? String(r.result || "").length, result_lines: m.result_lines ?? String(r.result || "").split("\n").length, truncated: m.truncated});
+  out.push(r);
+  return out;
+}
+function expandAll(raw, withLines) {
+  const out = [];
+  for (let i = 0; i < raw.length; i++) {
+    const e = raw[i];
+    if (e.type !== "sandbox_start") { out.push(e); continue; }
+    let j = i + 1; const inner = [];
+    while (j < raw.length && !["sandbox_end", "sandbox_start", "llm_request"].includes(raw[j].type)) { inner.push({...raw[j], step: raw[j].step ?? e.step}); j++; }
+    const end = raw[j] && raw[j].type === "sandbox_end" ? raw[j] : null;
+    out.push(e);
+    const entries = end && end.trace && end.trace.entries;
+    const block = [];
+    if (entries && entries.length) {
+      const codeLines = e.code.split("\n");
+      const calls = inner.filter((x) => x.type === "tool_call" || x.type === "tool_result");
+      const others = inner.filter((x) => x.type !== "tool_call" && x.type !== "tool_result");
+      let k = 0, shown = 0;
+      entries.forEach((x, idx) => {
+        if (x.e === "tool" && calls[k] && calls[k].type === "tool_call") { block.push({...calls[k], traceIdx: idx}); k++; return; }
+        if (x.e === "tool_result" && calls[k] && calls[k].type === "tool_result") { expandTool(calls[k]).forEach((h) => block.push({...h, traceIdx: idx})); k++; return; }
+        if (x.e === "tool" || x.e === "tool_result") return;
+        if (!withLines) return;
+        if (shown < MAX_LINES_PER_STEP) block.push({type: "exec_line", step: e.step, entry: x, traceIdx: idx, codeLines, sub: true});
+        else if (shown === MAX_LINES_PER_STEP) block.push({type: "exec_more", step: e.step, count: entries.length - idx, traceIdx: entries.length - 1, sub: true});
+        shown++;
+      });
+      calls.slice(k).forEach((c) => expandTool(c).forEach((h) => block.push(h)));
+      others.forEach((o) => block.push(o));
+    } else inner.forEach((x) => expandTool(x).forEach((h) => block.push(h)));
+    const t0 = e.t ?? 0, t1 = end ? (end.t ?? t0) : (inner.length ? inner[inner.length - 1].t ?? t0 : t0);
+    block.forEach((b, n) => { if (b.t == null || SUB_EVENTS.has(b.type) || b.type === "tool_call") b.t = +(t0 + (t1 - t0) * (n + 1) / (block.length + 1)).toFixed(3); out.push(b); });
+    if (end) { out.push(end); i = j; } else i = j - 1;
+  }
+  return out;
+}
+
+/* ======================= diff (line LCS) ======================= */
+function diffLines(a, b) {
+  // Trailing newlines/blank lines are not a content change.
+  const A = String(a ?? "").replace(/\s+$/, "").split("\n"), B = String(b ?? "").replace(/\s+$/, "").split("\n");
+  const n = A.length, m = B.length;
+  if (n * m > 400000) return [...A.map((s) => ({t: "-", s})), ...B.map((s) => ({t: "+", s}))];
+  const L = Array.from({length: n + 1}, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const ops = []; let i = 0, j = 0, ai = 1, bj = 1;
+  while (i < n && j < m) {
+    if (A[i] === B[j]) { ops.push({t: " ", s: A[i], a: ai++, b: bj++}); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) { ops.push({t: "-", s: A[i], a: ai++}); i++; }
+    else { ops.push({t: "+", s: B[j], b: bj++}); j++; }
+  }
+  while (i < n) { ops.push({t: "-", s: A[i++], a: ai++}); }
+  while (j < m) { ops.push({t: "+", s: B[j++], b: bj++}); }
+  return ops;
+}
+function diffStats(ops) { return {add: ops.filter((o) => o.t === "+").length, del: ops.filter((o) => o.t === "-").length}; }
+function renderDiff(ops, labelA, labelB) {
+  const wrap = document.createElement("div");
+  const head = document.createElement("div"); head.className = "diffhead";
+  const st = diffStats(ops);
+  head.append(Object.assign(document.createElement("span"), {className: "m", textContent: `--- ${labelA}`}),
+              Object.assign(document.createElement("span"), {className: "p", textContent: `+++ ${labelB}`}),
+              Object.assign(document.createElement("span"), {className: "muted", textContent: `−${st.del} +${st.add}`}));
+  const box = document.createElement("div"); box.className = "lines";
+  const CONTEXT = 3;
+  const keep = ops.map((o, idx) => o.t !== " " || ops.slice(Math.max(0, idx - CONTEXT), idx + CONTEXT + 1).some((x) => x.t !== " "));
+  let run = [];
+  const flush = () => {
+    if (!run.length) return;
+    const hidden = run; run = [];
+    const btn = document.createElement("button"); btn.className = "fold"; btn.textContent = `⋯ ${hidden.length} unchanged line${hidden.length > 1 ? "s" : ""}`;
+    btn.addEventListener("click", () => { const frag = document.createDocumentFragment(); hidden.forEach((o) => frag.appendChild(diffLine(o))); btn.replaceWith(frag); });
+    box.appendChild(btn);
+  };
+  ops.forEach((o, idx) => { if (!keep[idx]) { run.push(o); return; } flush(); box.appendChild(diffLine(o)); });
+  flush();
+  wrap.append(head, box);
+  return wrap;
+}
+function diffLine(o) {
+  const r = document.createElement("div"); r.className = `ln ${o.t === "+" ? "add" : o.t === "-" ? "del" : "ctx"}`;
+  r.append(Object.assign(document.createElement("span"), {className: "s", textContent: o.t === " " ? "" : o.t}),
+           Object.assign(document.createElement("span"), {className: "g", textContent: o.a ?? ""}),
+           Object.assign(document.createElement("span"), {className: "g", textContent: o.b ?? ""}),
+           Object.assign(document.createElement("code"), {textContent: o.s || " "}));
+  return r;
+}
+
+/* ======================= SVG ======================= */
+const NS = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs = {}, parent) { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (parent) parent.appendChild(n); return n; }
+function h(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+const nodeEls = {}, edgeEls = {};
+for (const [id, e] of Object.entries(EDGES)) {
+  const p = el("path", {d: e.d, class: "edge", "marker-end": "url(#arr)"}, $("edges"));
+  p.style.setProperty("--ec", `var(${e.c})`); edgeEls[id] = p;
+  if (e.label) el("text", {x: e.lx, y: e.ly, class: "edge-label"}, $("edges")).textContent = e.label;
+}
+for (const [id, n] of Object.entries(NODES)) {
+  const g = el("g", {class: "node", tabindex: "0", role: "button", "aria-label": n.title}, $("nodes"));
+  g.style.setProperty("--nc", `var(${n.c})`);
+  el("rect", {class: "box", x: n.x, y: n.y, width: n.w, height: n.h, rx: 9}, g);
+  el("rect", {class: "stripe", x: n.x, y: n.y + 10, width: 4, height: n.h - 20, rx: 2}, g);
+  el("text", {x: n.x + 16, y: n.y + 27, class: "title"}, g).textContent = n.title;
+  el("text", {x: n.x + 16, y: n.y + 46, class: "sub"}, g).textContent = n.sub;
+  const pill = el("text", {x: n.x + 16, y: n.y + n.h - 12, class: "pill"}, g); pill.style.fill = `var(${n.c})`;
+  nodeEls[id] = {g, pill};
+  g.addEventListener("click", () => showNode(id));
+  g.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); showNode(id); } });
+}
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function pulse(edgeId) {
+  if (reduceMotion || speed() > 4) return;
+  const path = edgeEls[edgeId]; if (!path) return;
+  const len = path.getTotalLength(), c = el("circle", {r: 5, class: "pulse"}, $("pulses"));
+  c.style.setProperty("--ec", `var(${EDGES[edgeId].c})`);
+  const start = performance.now(), dur = 480 / Math.max(0.5, speed());
+  (function frame(now) { const k = Math.min(1, (now - start) / dur), pt = path.getPointAtLength(len * k); c.setAttribute("cx", pt.x); c.setAttribute("cy", pt.y); if (k < 1) requestAnimationFrame(frame); else c.remove(); })(start);
+}
+
+/* ======================= state ======================= */
+let raw = [], events = [], cursor = -1, playing = false, timer = null, sourceKind = "demo";
+let selectedStep = null, activeTab = "flow", tabPinned = false, selectedNode = "interp";
+const speed = () => parseFloat($("speed").value);
+const withLines = () => $("opt-lines").checked;
+
+function setRaw(list, kind) {
+  stop(); raw = list; sourceKind = kind; selectedStep = null; tabPinned = false;
+  events = expandAll(raw, withLines()); $("scrub").max = Math.max(0, events.length - 1);
+  renderLog(); cursor = -1; go(kind === "live" ? events.length - 1 : 0);
+}
+$("opt-lines").addEventListener("change", () => {
+  const keepRaw = events[cursor] && !SUB_EVENTS.has(events[cursor].type) ? events[cursor] : null;
+  events = expandAll(raw, withLines()); $("scrub").max = Math.max(0, events.length - 1); renderLog();
+  go(keepRaw ? Math.max(0, events.indexOf(keepRaw)) : Math.min(cursor, events.length - 1));
+});
+
+/* Per-step model built from the events up to `upto`. */
+function derive(upto) {
+  const st = {steps: new Map(), run: null, end: null, mcp: null, cur: null};
+  const step = (n) => { if (!st.steps.has(n)) st.steps.set(n, {n, tools: [], status: "run", traceIdx: -1}); return st.steps.get(n); };
+  for (let i = 0; i <= upto && i < events.length; i++) {
+    const e = events[i];
+    if (e.type === "run_start") st.run = e;
+    else if (e.type === "mcp_connected") st.mcp = e;
+    else if (e.type === "llm_request") { const s = step(e.step); s.req = e; s.delivered = e.delivered; s.compacted = e.compacted_steps || []; }
+    else if (e.type === "llm_response") Object.assign(step(e.step), {llm: e.text, inTok: e.input_tokens, outTok: e.output_tokens, ms: e.request_time_ms, retries: e.retries});
+    else if (e.type === "extraction") { const s = step(e.step); s.code = e.code; s.format = e.format; s.notes = e.notes || []; if (!e.code) s.status = "nocode"; }
+    else if (e.type === "sandbox_start") { st.cur = e.step; step(e.step).running = true; }
+    else if (e.type === "exec_line" || e.type === "exec_more") step(e.step).traceIdx = e.traceIdx;
+    else if (e.type === "tool_call") { const s = step(e.step ?? st.cur); s.tools.push({name: e.name, args: e.args, line: e.line, written: e.written, call: e}); if (e.traceIdx != null) s.traceIdx = e.traceIdx; }
+    else if (e.type === "tool_result") { const s = step(e.step ?? st.cur); const t = s.tools.find((x) => x.name === e.name && !x.res); if (t) t.res = e; else s.tools.push({name: e.name, args: e.args, res: e}); if (e.traceIdx != null) s.traceIdx = e.traceIdx; }
+    else if (e.type === "sandbox_end") { const s = step(e.step); Object.assign(s, {obs: e.output, sbStatus: e.status, stdout: e.stdout, value: e.value, error: e.error, trace: e.trace, running: false, done: true}); s.status = e.is_final ? "final" : e.status === "ok" ? "ok" : "err"; }
+    else if (e.type === "observation") { const s = step(e.step); if (s.obs == null) s.obs = e.text; }
+    else if (e.type === "final_answer") { step(e.step).status = "final"; step(e.step).final = e.answer; }
+    else if (e.type === "run_end") st.end = e;
+  }
+  // The full trace (from the future sandbox_end) is needed to show skipped lines while executing.
+  for (const s of st.steps.values()) if (!s.trace) { const end = events.find((x) => x.type === "sandbox_end" && x.step === s.n); if (end) s.fullTrace = end.trace; }
+  return st;
+}
+/* Hand-offs between boxes for one step: what was sent vs what was received. */
+function handoffs(s, st) {
+  const list = [];
+  const prev = st.steps.get(s.n - 1);
+  if (s.delivered != null) {
+    if (s.n === 1) list.push({id: "orch_llm", title: "Task prompt → LLM", route: "Orchestrator → LLM API", sent: st.run && st.run.task_prompt, recv: s.delivered, sentLabel: "task prompt (Task + CLI)", recvLabel: "user message received by the LLM"});
+    else if (prev && prev.obs != null) list.push({id: "orch_llm", title: `Observation of step ${s.n - 1} → LLM`, route: "Interpreter → Orchestrator → LLM API", sent: "Observation:\n" + prev.obs, recv: s.delivered, sentLabel: `observation produced by the sandbox (step ${s.n - 1})`, recvLabel: `message received by the LLM (step ${s.n})`, note: (s.compacted || []).length ? `Older observations shortened in this request: steps ${s.compacted.join(", ")}.` : ""});
+  }
+  if (s.llm != null && s.code != null) list.push({id: "ext_interp", title: "LLM output → Interpreter", route: "LLM API → Code extraction → Python interpreter", sent: s.llm, recv: s.code || "", sentLabel: "raw LLM output", recvLabel: "sandbox input (code executed)", note: [s.format && `format: ${s.format}`, ...(s.notes || [])].filter(Boolean).join(" · ")});
+  for (const t of s.tools) {
+    const named = `${t.name}(${Object.entries(t.args || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")})`;
+    // Only positional calls are transformed (mapped to parameter names); keyword calls pass through as written.
+    const positional = t.written && /^\w+\(\s*[^)\s]/.test(t.written) && !/^\w+\(\s*\w+=/.test(t.written);
+    if (positional) list.push({id: "interp_mcpc", title: `Call ${t.name}: as written → as sent`, route: "Python interpreter → tool wrapper → MCP client", sent: t.written, recv: named, sentLabel: `line ${t.line ?? "?"} as written in the code`, recvLabel: "arguments sent to the MCP server (named)"});
+    const m = t.res && t.res.server;
+    if (m && m.ops && m.ops.length) {
+      const rawOut = m.ops.map((o) => o.stdout_head || "").join("\n");
+      if (m.truncated || m.raw_output_bytes > (m.result_chars || 0) * 1.5) list.push({id: "mcps_mcpc", title: `${t.name}: repository output → tool result`, route: "Repository → MCP server → MCP client", sent: rawOut, recv: t.res.result, sentLabel: `raw command output (first 300 chars of each op, ${kb(m.raw_output_bytes)} total)`, recvLabel: `result returned (${m.result_chars} chars)`, note: m.truncated ? "The tool truncated its output and said so in the result." : "The tool reformatted the raw command output."});
+    }
+  }
+  if (s.obs != null && s.stdout != null) {
+    const parts = [s.stdout, s.value != null ? `Out: ${s.value}` : "", s.error || ""].filter(Boolean).join("\n");
+    list.push({id: "interp_orch", title: "Program output → Observation", route: "Python interpreter → Orchestrator", sent: parts, recv: s.obs, sentLabel: "stdout + last value + error", recvLabel: "observation text (with sandbox notes)"});
+  }
+  for (const x of list) { x.ops = diffLines(x.sent, x.recv); x.stats = diffStats(x.ops); x.changed = x.stats.add + x.stats.del > 0; }
+  return list;
+}
+
+/* ======================= navigation ======================= */
+function go(i) {
+  if (!events.length) { renderEmpty(); return; }
+  const prev = cursor;
+  cursor = Math.max(0, Math.min(events.length - 1, i));
+  const e = events[cursor], act = activity(e);
+  for (const [k, v] of Object.entries(nodeEls)) { v.g.classList.toggle("active", act.nodes.includes(k)); v.g.classList.toggle("error", !!act.error && act.nodes.includes(k)); }
+  for (const [k, p] of Object.entries(edgeEls)) p.classList.toggle("active", act.edges.includes(k));
+  if (cursor === prev + 1) act.edges.forEach((id, j) => setTimeout(() => pulse(id), j * 140 / speed()));
+  const color = `var(${KIND_COLOR[e.type] || "--c-orch"})`;
+  $("caption").querySelector(".kind").textContent = e.type; $("caption").querySelector(".kind").style.background = color;
+  $("caption").querySelector(".txt").textContent = act.text;
+  $("scrub").value = cursor; $("pos").textContent = `${cursor + 1} / ${events.length}`;
+  const st = derive(cursor);
+  if (e.step != null && (playing || sourceKind === "live" || prev !== cursor)) selectedStep = e.step;
+  if (!tabPinned) {
+    if (e.type === "exec_line" || e.type === "exec_more" || e.type === "sandbox_start") setTab("interp");
+    else if (["tool_call", "mcp_request", "server_dispatch", "repo_op", "mcp_response", "tool_result"].includes(e.type)) setTab("tools");
+    else if (["llm_request", "llm_response", "extraction", "sandbox_end", "observation"].includes(e.type)) setTab("flow");
+  }
+  updatePills(e, st);
+  renderState(st);
+  renderLogCursor();
+}
+function updatePills(e, st) {
+  const s = st.steps.get(selectedStep);
+  const set = (id, t) => { const max = Math.floor((NODES[id].w - 26) / 6.4); t = t || ""; nodeEls[id].pill.textContent = t.length > max ? t.slice(0, max - 1) + "…" : t; };
+  set("llm", s && s.outTok != null ? `${s.inTok} in · ${s.outTok} out` : "");
+  set("extract", s && s.format ? s.format : "");
+  set("interp", e.type === "exec_line" ? short(`line ${e.entry.l}${e.entry.v ? " · " + vars(e.entry.v) : ""}`, 26) : s && s.sbStatus ? `status: ${s.sbStatus}` : s && s.running ? "running…" : "");
+  set("mcpc", ["tool_call", "mcp_request", "mcp_response", "tool_result"].includes(e.type) ? short(e.name, 24) : s && s.tools.length ? `${s.tools.length} call(s)` : "");
+  set("mcps", e.type === "server_dispatch" ? short(e.handler, 24) : st.mcp ? `${(st.mcp.tools || []).length} tools` : "");
+  set("repo", e.type === "repo_op" ? `exit ${e.op.exit_code} · ${e.op.duration_ms} ms` : "");
+  set("orch", st.run ? `step ${selectedStep ?? "–"}` : "");
+  set("final", st.end ? (st.end.success ? "success" : "no success") : "");
+  set("task", st.run ? `${st.run.benchmark} · ${short(st.run.task_id, 14)}` : "");
+}
+
+/* ======================= rendering ======================= */
+function renderEmpty() { $("caption").querySelector(".txt").textContent = "No events in this trace."; $("steps").replaceChildren(h("div", "empty", "Steps appear here as the agent runs.")); }
+function meter(label, used, max, fmt = (v) => v.toLocaleString("en-US")) {
+  const m = h("div", "meter"), top = h("div", "meter-top"); top.append(h("span", "", label), h("span", "", `${fmt(used)} / ${fmt(max)}`));
+  const bar = h("div", "bar"), fill = document.createElement("i"), r = max ? used / max : 0;
+  fill.style.width = `${Math.min(100, r * 100)}%`; if (r > .9) fill.className = "crit"; else if (r > .7) fill.className = "warn";
+  bar.appendChild(fill); m.append(top, bar); return m;
+}
+function renderState(st) {
+  const run = st.run || {}, lim = run.limits || {};
+  const steps = [...st.steps.values()].filter((s) => s.n > 0).sort((a, b) => a.n - b.n);
+  const inTok = steps.reduce((a, s) => a + (s.inTok || 0), 0), outTok = steps.reduce((a, s) => a + (s.outTok || 0), 0);
+  const t = events[cursor] ? events[cursor].t ?? 0 : 0;
+  $("meters").replaceChildren(meter("Iterations", steps.filter((s) => s.llm !== undefined).length, lim.max_iterations || 0), meter("Input tokens", inTok, lim.max_input_tokens || 0), meter("Output tokens", outTok, lim.max_output_tokens || 0), meter("Wall-clock", t, lim.timeout_seconds || 0, (v) => `${Number(v).toFixed(1)}s`));
+  $("model").textContent = run.model || "";
+  $("result").textContent = st.end ? (st.end.success ? "solved" : "not solved") : (st.run ? "running" : "");
+  $("result").style.color = st.end ? `var(${st.end.success ? "--c-final" : "--c-error"})` : "var(--muted)";
+  $("sysprompt").textContent = run.system_prompt || "(not available in this trace)";
+  const list = $("steps"); list.replaceChildren();
+  if (!steps.length) list.appendChild(h("div", "empty", "No step yet: the first LLM call starts step 1."));
+  for (const s of steps) {
+    const b = h("button", "step"); b.setAttribute("aria-current", String(s.n === selectedStep));
+    const mid = document.createElement("span"); mid.style.minWidth = "0";
+    mid.append(h("div", "t", thought(s.llm) || "waiting for the LLM…"), h("div", "tools", s.tools.map((x) => x.name).join(" · ") || (s.code ? "no tool calls" : "")));
+    const cls = s.status === "final" ? "final" : s.status === "err" ? "err" : s.status === "nocode" ? "nocode" : s.status === "ok" ? "ok" : "run";
+    b.append(h("span", "n", String(s.n).padStart(2, "0")), mid, h("span", `st ${cls}`, s.status === "final" ? "final" : s.status === "err" ? (s.sbStatus || "error") : s.status === "nocode" ? "no code" : s.status === "ok" ? "ok" : "…"));
+    b.addEventListener("click", () => { selectedStep = s.n; tabPinned = false; renderState(derive(cursor)); updatePills(events[cursor], derive(cursor)); });
+    list.appendChild(b);
+  }
+  const cur = list.querySelector('[aria-current="true"]'); if (cur && (playing || sourceKind === "live")) cur.scrollIntoView({block: "nearest"});
+  const s = st.steps.get(selectedStep);
+  const hands = s ? handoffs(s, st) : [];
+  renderDeltas(hands);
+  renderDetail(s, st, hands);
+  showNode(selectedNode, st, s, hands);
+}
+function renderDeltas(hands) {
+  const g = $("deltas"); g.replaceChildren();
+  for (const p of Object.values(edgeEls)) p.classList.remove("changed");
+  const changed = new Map();
+  for (const x of hands) if (x.changed) changed.set(x.id, (changed.get(x.id) || []).concat(x));
+  for (const [id, xs] of changed) {
+    const e = EDGES[id]; if (!e || !e.mid) continue;
+    edgeEls[id].classList.add("changed");
+    const d = el("g", {class: "delta"}, g);
+    const tt = el("title", {}, d); tt.textContent = xs.map((x) => `${x.title}: −${x.stats.del} +${x.stats.add} lines`).join("\n");
+    el("circle", {cx: e.mid[0], cy: e.mid[1], r: 9}, d);
+    el("text", {x: e.mid[0], y: e.mid[1] + 4}, d).textContent = "Δ";
+    d.style.cursor = "pointer"; d.addEventListener("click", () => { tabPinned = true; setTab("flow"); renderState(derive(cursor)); });
+  }
+}
+function thought(text) { if (!text) return ""; const m = text.match(/Thought:\s*([^\n]+)/); return (m ? m[1] : text.split("\n")[0]).slice(0, 140); }
+function pre(text, cls = "code") { const p = document.createElement("pre"); p.className = cls; p.textContent = text; return p; }
+
+/* ---------- node info: input/output of the selected box for the selected step ---------- */
+function nodeIO(id, s, st) {
+  if (!s) return null;
+  const t = s.tools, lastRes = [...t].reverse().find((x) => x.res);
+  switch (id) {
+    case "task": return st.run && {in: `task ${st.run.task_id} (${st.run.benchmark})`, out: st.run.task_prompt};
+    case "orch": return {in: s.n > 1 && st.steps.get(s.n - 1) ? "Observation:\n" + (st.steps.get(s.n - 1).obs || "") : st.run && st.run.task_prompt, out: s.delivered, edge: "orch_llm"};
+    case "llm": return {in: s.delivered, out: s.llm};
+    case "extract": return {in: s.llm, out: s.code, edge: "ext_interp"};
+    case "interp": return {in: s.code, out: s.obs, noDiff: true};
+    case "mcpc": return t.length ? {in: t.map((x) => x.written || x.name).join("\n"), out: t.map((x) => x.res ? firstLine(x.res.result) : "(pending)").join("\n"), noDiff: true} : null;
+    case "mcps": return lastRes && lastRes.res.server ? {in: JSON.stringify(lastRes.res.server.received_args, null, 1), out: lastRes.res.result, noDiff: true} : null;
+    case "repo": { const ops = t.flatMap((x) => (x.res && x.res.server && x.res.server.ops) || []); return ops.length ? {in: ops.map((o) => "$ " + o.command).join("\n"), out: ops.map((o) => `exit ${o.exit_code} · ${kb(o.stdout_bytes)}\n${o.stdout_head || ""}`).join("\n—\n"), noDiff: true} : null; }
+    case "final": return st.end ? {in: s.final ?? "", out: st.end.solution, noDiff: true} : null;
+  }
+  return null;
+}
+function showNode(id, st, s, hands) {
+  selectedNode = id;
+  st = st || derive(cursor); s = s || st.steps.get(selectedStep); hands = hands || (s ? handoffs(s, st) : []);
+  for (const [k, v] of Object.entries(nodeEls)) v.g.classList.toggle("selected", k === id);
+  const n = NODES[id], box = $("node-info"); box.replaceChildren();
+  const head = h("h3", "", n.title); head.style.color = `var(${n.c})`;
+  const ul = document.createElement("ul"); n.info.forEach((line) => ul.appendChild(h("li", "", line)));
+  box.append(head, ul, h("div", "path mono", n.path));
+  const io = nodeIO(id, s, st);
+  if (io && (io.in != null || io.out != null)) {
+    const grid = h("div", "io");
+    const delta = hands.find((x) => x.id === io.edge);
+    for (const [label, text] of [["Input", io.in], ["Output", io.out]]) {
+      const c = document.createElement("div"); const hh = h("h4", "", `${label} · step ${s.n}`);
+      if (label === "Output" && delta) hh.appendChild(h("span", `st ${delta.changed ? "chg" : "same"}`, delta.changed ? `Δ −${delta.stats.del} +${delta.stats.add}` : "unchanged"));
+      c.append(hh, pre(text == null || text === "" ? "(nothing recorded)" : String(text), ""));
+      grid.appendChild(c);
+    }
+    box.appendChild(grid);
+  }
+}
+$("nodes").addEventListener("click", () => {});
+
+/* ---------- step detail tabs ---------- */
+function renderDetail(s, st, hands) {
+  const body = $("detail-body"), meta = $("detail-meta");
+  body.replaceChildren(); meta.replaceChildren();
+  if (!s) { $("detail-title").textContent = "Step detail"; body.appendChild(pre(st.end && st.end.solution ? "Solution:\n\n" + st.end.solution : "Select a step.")); return; }
+  $("detail-title").textContent = `Step ${s.n}`;
+  [s.inTok != null && `${s.inTok} in`, s.outTok != null && `${s.outTok} out`, s.ms != null && `${Math.round(s.ms)} ms`, s.retries ? `${s.retries} retries` : null, s.format && `format: ${s.format}`, s.sbStatus && `sandbox: ${s.sbStatus}`].filter(Boolean).forEach((b) => meta.appendChild(h("span", "", b)));
+  if (activeTab === "flow") body.appendChild(renderFlow(s, hands));
+  else if (activeTab === "interp") body.appendChild(renderInterp(s));
+  else if (activeTab === "tools") body.appendChild(renderTools(s));
+  else if (activeTab === "llm") body.appendChild(s.llm == null ? pre("(waiting for the response)") : markedText(s.llm, s.code, "-", "Lines in red did not reach the interpreter (removed by code extraction)."));
+  else if (activeTab === "code") body.appendChild(s.code ? markedText(s.code, s.llm, "+", "Lines in green were not in the LLM output verbatim (added or converted by code extraction).", true) : pre("(no code extracted for this step)"));
+  else if (activeTab === "obs") {
+    const next = st.steps.get(s.n + 1);
+    if (s.obs == null) body.appendChild(pre("(not executed yet)"));
+    else if (next && next.delivered != null && next.delivered !== "Observation:\n" + s.obs) { body.append(h("div", "note warn", `The LLM received a shortened version at step ${s.n + 1} — see Flow & diffs.`), pre(s.obs)); }
+    else body.appendChild(pre(s.obs));
+  }
+}
+/* Text with git-style marks: lines not present on the other side are tinted. */
+function markedText(text, other, mark, legend, reverse) {
+  const ops = reverse ? diffLines(other || "", text) : diffLines(text, other || "");
+  const wrap = document.createElement("div"); wrap.appendChild(h("div", "note", legend));
+  const box = h("div", "lines");
+  ops.filter((o) => o.t === " " || o.t === mark).forEach((o) => {
+    const r = h("div", `ln ${o.t === "+" ? "add" : o.t === "-" ? "del" : "ctx"}`);
+    r.append(h("span", "s", o.t === " " ? "" : o.t), h("span", "g", reverse ? (o.b ?? "") : (o.a ?? "")), h("span", "g", ""), h("code", "", o.s || " "));
+    box.appendChild(r);
+  });
+  wrap.appendChild(box); return wrap;
+}
+function renderFlow(s, hands) {
+  const flow = h("div", "flow");
+  if (!hands.length) { flow.appendChild(h("div", "empty", "Hand-offs appear as the step progresses.")); return flow; }
+  for (const x of hands) {
+    const card = h("div", "hand"), head = h("div", "hand-h");
+    head.append(h("h4", "", x.title), h("span", "route", x.route), h("span", `st ${x.changed ? "chg" : "same"}`, x.changed ? `changed −${x.stats.del} +${x.stats.add}` : "identical"));
+    const views = h("div", "views"); const content = document.createElement("div");
+    const show = (v) => { for (const b of views.children) b.setAttribute("aria-pressed", String(b.dataset.v === v)); content.replaceChildren(v === "diff" ? renderDiff(x.ops, x.sentLabel, x.recvLabel) : pre(v === "sent" ? x.sent ?? "" : x.recv ?? "")); };
+    for (const [v, label] of [["diff", "Diff"], ["sent", "Sent"], ["recv", "Received"]]) { const b = h("button", "mini", label); b.dataset.v = v; b.addEventListener("click", () => show(v)); views.appendChild(b); }
+    head.appendChild(views); card.appendChild(head);
+    if (x.note) card.appendChild(h("div", "note", x.note));
+    card.appendChild(content); show(x.changed ? "diff" : "recv");
+    flow.appendChild(card);
+  }
+  return flow;
+}
+function renderInterp(s) {
+  const trace = s.trace || s.fullTrace;
+  const box = document.createElement("div");
+  if (!s.code) { box.appendChild(pre("(no code was executed in this step)")); return box; }
+  const entries = (trace && trace.entries) || [];
+  if (!entries.length) box.appendChild(h("div", "note", "No line trace in this source (solution.json files do not keep one; run the agent with --trace-file). Showing the executed code."));
+  const pos = s.done && s.traceIdx < 0 ? entries.length - 1 : s.traceIdx < 0 && !s.running ? entries.length - 1 : s.traceIdx;
+  const upto = entries.slice(0, pos + 1);
+  const hits = new Map(), fullHits = new Map(), tags = new Map();
+  for (const x of entries) if (x.e === "line") fullHits.set(x.l, (fullHits.get(x.l) || 0) + 1);
+  for (const x of upto) {
+    if (x.e === "line") hits.set(x.l, (hits.get(x.l) || 0) + 1);
+    if (x.e === "tool") tags.set(x.l, ["tool", `⇄ ${x.n}`]);
+    if (x.e === "exception") tags.set(x.l, ["exc", x.x]);
+    if (x.e === "final") tags.set(x.l, ["fin", "final_answer"]);
+  }
+  const cur = upto.length ? upto[upto.length - 1] : null;
+  const finished = s.done && pos >= entries.length - 1;
+  const grid = h("div", "interp"), codeBox = h("div", "interp-code"), lines = h("div", "lines");
+  s.code.split("\n").forEach((src, i) => {
+    const ln = i + 1, n = hits.get(ln) || 0;
+    const skipped = entries.length && finished && !fullHits.get(ln) && src.trim() && !/^\s*(#|"""|'''|else:|try:|finally:)/.test(src) && !isInsideString(s.code, ln);
+    const r = h("div", `xl${n ? " ran" : ""}${skipped ? " skip" : ""}${cur && cur.l === ln && !finished ? " cur" : ""}`);
+    const code = h("code", "", src || " ");
+    const tg = tags.get(ln); if (tg) code.appendChild(h("span", `tag ${tg[0]}`, tg[1]));
+    if (skipped) code.title = "never executed in this step";
+    r.append(h("span", "h", n ? `${n}×` : ""), h("span", "g", ln), code);
+    lines.appendChild(r);
+  });
+  codeBox.appendChild(lines);
+  const legend = h("div", "note", entries.length ? (finished ? `Path complete: ${entries.filter((x) => x.e === "line").length} line executions${trace.dropped ? ` (+${trace.dropped} not recorded)` : ""}. Struck-through lines never ran in this step.` : `Executing… event ${pos + 1} of ${entries.length}. The highlighted line is running now.`) : "");
+  codeBox.prepend(legend);
+  // variables (module scope + current function frame)
+  const varsBox = h("div", "vars");
+  const module = {}, frames = []; let fresh = new Set();
+  for (const x of upto) {
+    if (x.e === "call") frames.push({f: x.f, v: {...(x.v || {})}});
+    const target = x.d > 0 && frames.length ? frames[frames.length - 1].v : module;
+    if (x.v && x.e !== "call") Object.assign(target, x.v);
+    if (x.e === "return" && x.f !== "<module>") frames.pop();
+  }
+  if (cur && cur.v) fresh = new Set(Object.keys(cur.v));
+  const table = (title, obj) => { const wrap = document.createElement("div"); wrap.appendChild(h("h4", "", title)); const tb = document.createElement("table");
+    const keys = Object.keys(obj); if (!keys.length) { wrap.appendChild(h("div", "muted mono", "(none)")); return wrap; }
+    keys.forEach((k) => { const tr = document.createElement("tr"); if (fresh.has(k)) tr.className = "fresh"; tr.append(h("td", "", k), h("td", "", obj[k])); tb.appendChild(tr); }); wrap.appendChild(tb); return wrap; };
+  varsBox.appendChild(table("Variables (module)", module));
+  if (frames.length) varsBox.appendChild(table(`Frame ${frames[frames.length - 1].f}()`, frames[frames.length - 1].v));
+  if (cur && cur.e === "return" && cur.r != null) varsBox.appendChild(h("div", "mono", `↩ ${cur.f}() returned ${cur.r}`));
+  if (s.stdout) { varsBox.appendChild(h("h4", "", "stdout")); varsBox.appendChild(pre(short(s.stdout, 600), "mono")); }
+  grid.append(codeBox, varsBox); box.appendChild(grid);
+  // execution path chips
+  if (entries.length) {
+    const path = h("div", "path"); path.appendChild(h("b", "muted", "path:"));
+    entries.slice(0, 400).forEach((x, i) => {
+      let label = null, cls = "";
+      if (x.e === "line") label = (x.f && x.f !== "<module>" ? `${x.f}:` : "") + x.l;
+      else if (x.e === "call") label = `→${x.f}`;
+      else if (x.e === "return") { label = `↩${x.r ?? ""}`.slice(0, 18); }
+      else if (x.e === "tool") { label = `⇄${x.n}`; cls = "t"; }
+      else if (x.e === "exception") { label = `✕${x.x}`; cls = "x"; }
+      else if (x.e === "final") { label = "final_answer"; cls = "f"; }
+      if (!label) return;
+      const sp = h("span", `${cls}${i === pos && !finished ? " now" : ""}`, label); if (i > pos) sp.style.opacity = ".35"; path.appendChild(sp);
+    });
+    box.appendChild(path);
+  }
+  return box;
+}
+function isInsideString(code, ln) {
+  // Lines inside a triple-quoted string literal never produce trace events: don't mark them as skipped.
+  let inside = false; const lines = code.split("\n");
+  for (let i = 0; i < ln - 1; i++) { const c = (lines[i].match(/"""|'''/g) || []).length; if (c % 2) inside = !inside; }
+  const here = (lines[ln - 1].match(/"""|'''/g) || []).length;
+  return inside || (here % 2 === 1 && inside === false && !/^\s*\w+\s*=\s*r?("""|''')/.test(lines[ln - 1]) ? false : inside);
+}
+function renderTools(s) {
+  const box = document.createElement("div");
+  if (!s.tools.length) { box.appendChild(pre("(no MCP tool calls in this step)")); return box; }
+  for (const t of s.tools) box.appendChild(renderCall(t));
+  return box;
+}
+function hop(color, title, where, ...children) {
+  const li = document.createElement("li"); li.style.setProperty("--hc", `var(${color})`);
+  const d = h("div", "hop"), head = h("div", "hop-h"); head.append(h("b", "", title)); if (where) head.append(h("span", "where", where));
+  d.append(head, ...children.filter(Boolean)); li.appendChild(d); return li;
+}
+function kv(pairs) { const d = h("div", "kv"); for (const [k, v] of pairs) { if (v == null || v === "") continue; const s = document.createElement("span"); s.append(`${k} `, h("b", "", String(v))); d.appendChild(s); } return d; }
+function renderCall(t) {
+  const r = t.res || {}, m = r.server || {}, ops = m.ops || [];
+  const card = h("div", "call");
+  card.appendChild(h("h4", "", `${t.written || t.name + "(" + argPreview(t.args) + ")"}  ·  line ${t.line ?? "?"}`));
+  // timing bar
+  const total = r.duration_ms || 0, rtt = r.rtt_ms || 0, server = m.duration_ms || 0, opsMs = ops.reduce((a, o) => a + (o.duration_ms || 0), 0);
+  if (total) {
+    const segs = [["repository commands", opsMs, "--c-repo"], ["server handler (validation, formatting)", Math.max(0, server - opsMs), "--c-mcp"], ["MCP transport (JSON-RPC)", Math.max(0, rtt - server), "--c-llm"], ["sandbox ↔ host proxy", Math.max(0, total - rtt), "--c-sandbox"]];
+    const bar = h("div", "timing"), leg = h("div", "timing-legend");
+    for (const [label, ms, c] of segs) { const i = document.createElement("i"); i.style.width = `${(ms / total) * 100}%`; i.style.background = `var(${c})`; i.title = `${label}: ${ms.toFixed(1)} ms`; bar.appendChild(i); const sp = h("span", "", `${label} ${ms.toFixed(1)} ms`); sp.style.setProperty("--sw", `var(${c})`); leg.appendChild(sp); }
+    card.append(bar, leg);
+  }
+  const ol = h("ol", "hops");
+  const positional = t.written && !/\w+=/.test(t.written.slice(t.written.indexOf("(")));
+  ol.appendChild(hop("--c-sandbox", "Python interpreter calls the tool", `sandbox worker · line ${t.line ?? "?"}`,
+    pre(t.written || `${t.name}(…)`, ""), h("div", "note", "The name resolves to a wrapper injected into the namespace from the server's tool schema. The sandbox timer is paused while the call is out.")));
+  ol.appendChild(hop("--c-sandbox", "Wrapper → host", "JSON line over a private fd",
+    pre(JSON.stringify({type: "tool_call", name: t.name, args: t.args || {}, line: t.line}, null, 2), ""),
+    positional ? h("div", "note warn", "Δ positional arguments were mapped to parameter names using the tool schema.") : null));
+  ol.appendChild(hop("--c-mcp", "Host → MCP server", r.transport || "MCP client",
+    r.request ? pre(JSON.stringify(r.request, null, 2), "") : h("div", "note", "(request not recorded in this source)")));
+  if (m.handler) ol.appendChild(hop("--c-mcp", "MCP server dispatches", `${m.server} · ${m.executor || ""}${m.target ? " @ " + m.target : ""}`,
+    kv([["handler", m.handler], ["server time", `${m.duration_ms} ms`]]), pre("received_args = " + JSON.stringify(m.received_args, null, 2), "")));
+  const dt = m.details;
+  if (dt) {
+    const parts = [h("div", "note", dt.source || "")];
+    if (dt.tests) parts.push(pre("# tests (" + dt.tests.length + ")\n" + [...(dt.test_imports || []), ...dt.tests].join("\n"), ""));
+    if (dt.generated) parts.push(h("div", "note", dt.generated));
+    const code = dt.harness || dt.script;
+    if (code) {
+      const det = document.createElement("details"); det.className = "sys";
+      det.append(h("summary", "", dt.harness ? `Generated test program (${code.split("\n").length} lines) — open` : `Eval script (${code.split("\n").length} lines) — open`), pre(code, "code"));
+      parts.push(det);
+    }
+    ol.appendChild(hop("--c-task", "Where the tool's inputs come from", dt.tests ? "not generated by the LLM" : "task data", ...parts));
+  }
+  if (ops.length) {
+    const list = h("div", ""); list.style.display = "grid"; list.style.gap = "6px";
+    ops.forEach((o, i) => {
+      const op = h("div", "op"), oh = h("div", "op-h");
+      oh.append(h("span", "", `#${i + 1} ${o.op}`), h("span", o.exit_code === 0 ? "ex0" : "exn", `exit ${o.exit_code}${o.timed_out ? " (timeout)" : ""}`), h("span", "", `${o.duration_ms} ms`), h("span", "", `stdout ${kb(o.stdout_bytes)}`), o.stderr_bytes ? h("span", "", `stderr ${kb(o.stderr_bytes)}`) : "", o.stdin_bytes ? h("span", "", `stdin ${kb(o.stdin_bytes)}`) : "");
+      op.append(oh, h("code", "cmd", "$ " + o.command));
+      if (o.stdout_head) op.appendChild(pre(o.stdout_head + (o.stdout_bytes > 300 ? "\n…" : ""), ""));
+      if (o.stderr_head) op.appendChild(pre(o.stderr_head, ""));
+      list.appendChild(op);
+    });
+    ol.appendChild(hop("--c-repo", `Repository: ${ops.length} operation${ops.length > 1 ? "s" : ""}`, m.executor === "docker" ? `docker exec into ${m.target}` : m.executor === "sandbox" ? "isolated test sandbox" : `local ${m.repo_root || ""}`, list));
+  }
+  if (m.handler) ol.appendChild(hop("--c-mcp", "Tool formats the result", "raw output → returned text",
+    kv([["raw output", kb(m.raw_output_bytes)], ["returned", `${m.result_chars} chars, ${m.result_lines} lines`], ["truncated", m.truncated ? "yes (announced in the text)" : "no"]])));
+  if (r.result != null) {
+    ol.appendChild(hop("--c-mcp", "MCP server → host", `CallToolResult · isError=${!!r.is_error}${rtt ? ` · round trip ${rtt} ms` : ""}`, pre(r.result, "")));
+    ol.appendChild(hop("--c-sandbox", "Host → interpreter", `tool_result · total ${Math.round(total)} ms`,
+      h("div", "note", r.is_error ? `The wrapper raises ToolError on line ${t.line ?? "?"}; the code can catch it.` : `The wrapper returns this str to line ${t.line ?? "?"}; the timer resumes.`)));
+  } else ol.appendChild(hop("--c-mcp", "Waiting for the server…", ""));
+  card.appendChild(ol);
+  return card;
+}
+function setTab(t) { activeTab = t; for (const b of $("tabs").querySelectorAll(".tab")) b.setAttribute("aria-selected", String(b.dataset.tab === t)); }
+$("tabs").addEventListener("click", (ev) => { const b = ev.target.closest(".tab"); if (!b) return; tabPinned = true; setTab(b.dataset.tab); renderState(derive(cursor)); });
+
+function renderLog() {
+  const log = $("log"); log.replaceChildren();
+  const frag = document.createDocumentFragment();
+  events.forEach((e, i) => {
+    const b = document.createElement("button"); b.dataset.i = i; if (SUB_EVENTS.has(e.type)) b.className = "sub";
+    b.style.setProperty("--kc", `var(${KIND_COLOR[e.type] || "--c-orch"})`);
+    b.append(h("span", "tt", (e.t ?? 0).toFixed(2)), h("span", "ty", e.type), h("span", "ds", activity(e).text));
+    b.addEventListener("click", () => { stop(); tabPinned = false; go(i); });
+    frag.appendChild(b);
+  });
+  log.appendChild(frag);
+}
+function renderLogCursor() {
+  const kids = $("log").children;
+  for (let i = 0; i < kids.length; i++) { kids[i].classList.toggle("cur", i === cursor); kids[i].classList.toggle("future", i > cursor); }
+  const cur = kids[cursor]; if (cur && (playing || sourceKind === "live")) cur.scrollIntoView({block: "nearest"});
+}
+
+/* ======================= playback ======================= */
+function play() { if (!events.length) return; if (cursor >= events.length - 1) go(0); playing = true; tabPinned = false; setPlayIcon(); tick(); }
+function tick() {
+  if (!playing) return;
+  if (cursor >= events.length - 1) { stop(); return; }
+  const next = events[cursor + 1];
+  const gap = ((next.t ?? 0) - (events[cursor].t ?? 0)) * 1000;
+  const base = next.type === "exec_line" ? 260 : SUB_EVENTS.has(next.type) ? 420 : Math.min(1400, Math.max(420, gap));
+  timer = setTimeout(() => { go(cursor + 1); tick(); }, base / speed());
+}
+function stop() { playing = false; clearTimeout(timer); setPlayIcon(); }
+function setPlayIcon() { $("i-play").innerHTML = playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M4 2v12l10-6z"/>'; $("b-play").setAttribute("aria-label", playing ? "Pause" : "Play"); }
+$("b-play").addEventListener("click", () => playing ? stop() : play());
+$("b-next").addEventListener("click", () => { stop(); go(cursor + 1); });
+$("b-prev").addEventListener("click", () => { stop(); go(cursor - 1); });
+$("b-first").addEventListener("click", () => { stop(); go(0); });
+$("b-last").addEventListener("click", () => { stop(); go(events.length - 1); });
+$("scrub").addEventListener("input", (ev) => { stop(); go(+ev.target.value); });
+document.addEventListener("keydown", (ev) => {
+  if (ev.target.closest("input, select, textarea")) return;
+  if (ev.key === "ArrowRight") { stop(); go(cursor + 1); } else if (ev.key === "ArrowLeft") { stop(); go(cursor - 1); }
+  else if (ev.key === " " && !ev.target.closest("button, [role=button]")) { ev.preventDefault(); playing ? stop() : play(); }
+});
+
+/* ======================= sources ======================= */
+function pressed(id) { for (const b of document.querySelectorAll(".sources .chip-btn")) b.setAttribute("aria-pressed", String(b.id === id)); }
+function banner(kind, text) { const b = $("banner"); b.replaceChildren(h("span", `badge ${kind}`, kind === "demo" ? "scripted demo" : kind), h("span", "", text)); }
+function loadDemo(which) {
+  pressed(which === "mbpp" ? "src-mbpp" : "src-swe");
+  banner("demo", which === "mbpp"
+    ? "Real framework run on MBPP task 282: sandbox, MCP server, run_tests in an isolated test sandbox. Only the LLM answers are scripted; the first attempt is wrong on purpose so you can watch the path change."
+    : "Real framework run on a small local repository with the SWE-bench MCP tools (search, read, reproduce, edit, run_tests, get_patch). Only the LLM answers are scripted.");
+  setRaw((DEMO && DEMO[which]) || [], "demo");
+}
+$("src-mbpp").addEventListener("click", () => loadDemo("mbpp"));
+$("src-swe").addEventListener("click", () => loadDemo("swebench"));
+$("src-file").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", (ev) => { const f = ev.target.files[0]; if (f) readFile(f); ev.target.value = ""; });
+function readFile(file) {
+  const r = new FileReader();
+  r.onload = () => {
+    try { const list = parseTrace(String(r.result)); pressed("src-file"); banner("file", `${file.name}: ${list.length} events`); setRaw(list, "file"); }
+    catch (err) { banner("file", `Could not read ${file.name}: ${err.message}. Expected events.jsonl (from --trace-file) or solution.json.`); }
+  };
+  r.readAsText(file);
+}
+function parseTrace(text) {
+  const trimmed = text.trim();
+  if (trimmed.startsWith("{") && !trimmed.includes("\n{")) {
+    const obj = JSON.parse(trimmed);
+    if (Array.isArray(obj.steps)) return solutionToEvents(obj);
+    if (obj.type) return [obj];
+    throw new Error("unknown JSON shape");
+  }
+  return trimmed.split("\n").filter(Boolean).map((l) => JSON.parse(l));
+}
+const LIMITS = {mbpp: {max_iterations: 10, max_input_tokens: 6000, max_output_tokens: 1500, timeout_seconds: 120}, swebench: {max_iterations: 30, max_input_tokens: 300000, max_output_tokens: 10000, timeout_seconds: 900}};
+function solutionToEvents(sol) {
+  const out = [], t0 = sol.steps.length ? Date.parse(sol.steps[0].timestamp) - (sol.steps[0].request_time_ms || 0) : 0;
+  const rel = (ts) => Math.max(0, (Date.parse(ts) - t0) / 1000), first = sol.steps[0] || {}, lim = LIMITS[sol.benchmark] || LIMITS.swebench;
+  out.push({t: 0, type: "run_start", benchmark: sol.benchmark, task_id: sol.task_id, model: first.model_name, api_url: first.api_url, limits: lim, system_prompt: sol.system_prompt});
+  let inTok = 0, outTok = 0;
+  sol.steps.forEach((s, i) => {
+    const t = rel(s.timestamp);
+    out.push({t: Math.max(0, t - s.request_time_ms / 1000), type: "llm_request", step: s.step, messages: 2 + 2 * i, estimated_input_tokens: s.input_tokens, max_tokens: "?"});
+    for (let r = 0; r < (s.retries || 0); r++) out.push({t: Math.max(0, t - s.request_time_ms / 1000), type: "llm_retry", error: "(retry recorded in solution.json)"});
+    out.push({t, type: "llm_response", step: s.step, text: s.llm_output, input_tokens: s.input_tokens, output_tokens: s.output_tokens, request_time_ms: s.request_time_ms, retries: s.retries});
+    out.push({t, type: "extraction", step: s.step, format: s.sandbox_input ? "python" : "none", code: s.sandbox_input, notes: []});
+    if (s.sandbox_input) {
+      out.push({t, type: "sandbox_start", step: s.step, code: s.sandbox_input});
+      const isFinal = /final_answer\(/.test(s.sandbox_input) && i === sol.steps.length - 1 && sol.success;
+      out.push({t, type: "sandbox_end", step: s.step, status: /Error|Traceback/.test(s.sandbox_output) ? "error" : "ok", output: s.sandbox_output, is_final: isFinal});
+      if (isFinal) out.push({t, type: "final_answer", step: s.step, answer: sol.solution});
+    }
+    inTok += s.input_tokens; outTok += s.output_tokens;
+    out.push({t, type: "budget", iterations: s.step, input_tokens: inTok, output_tokens: outTok, max_input_tokens: lim.max_input_tokens, max_output_tokens: lim.max_output_tokens, elapsed: t});
+  });
+  out.push({t: sol.total_time_seconds, type: "run_end", success: sol.success, error: sol.error, solution: sol.solution, iterations: sol.iterations, total_time_seconds: sol.total_time_seconds});
+  return out;
+}
+let dragDepth = 0;
+window.addEventListener("dragenter", (e) => { if ([...(e.dataTransfer?.types || [])].includes("Files")) { dragDepth++; $("drop").hidden = false; } });
+window.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $("drop").hidden = true; });
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => { e.preventDefault(); dragDepth = 0; $("drop").hidden = true; const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+
+/* live mode: only when served by `uv run agent-ui` */
+let es = null;
+async function probeLive() {
+  if (!/^https?:$/.test(location.protocol)) return;
+  try {
+    const r = await fetch("api/info", {cache: "no-store"}); if (!r.ok) return;
+    const info = await r.json(); if (!info || info.app !== "agent-smith-ui") return;
+    $("src-live").disabled = false; $("src-live").title = `Follow ${info.trace}`;
+    $("src-live").addEventListener("click", startLive); startLive();
+  } catch (_) { /* static hosting: demo and file modes only */ }
+}
+function startLive() {
+  pressed("src-live"); banner("live", "Following the agent's trace file in real time.");
+  setRaw([], "live"); if (es) es.close();
+  es = new EventSource("events");
+  es.onmessage = (m) => {
+    const e = JSON.parse(m.data);
+    if (e.type === "run_start" && raw.some((x) => x.type === "run_start")) raw = [];
+    raw.push(e); events = expandAll(raw, withLines()); $("scrub").max = events.length - 1; renderLog(); go(events.length - 1);
+  };
+}
+
+showNode("interp");
+loadDemo("mbpp");
+probeLive();
+</script>

@@ -1,0 +1,22 @@
+{
+  "providers": [
+    {"name": "openrouter", "base_url": "https://openrouter.ai/api/v1", "key_env": "OPENROUTER_API_KEY", "hosts": ["openrouter.ai"]},
+    {"name": "groq", "base_url": "https://api.groq.com/openai/v1", "key_env": "GROQ_API_KEY", "hosts": ["groq.com"]},
+    {"name": "gemini", "base_url": "https://generativelanguage.googleapis.com/v1beta/openai", "key_env": "GEMINI_API_KEY", "hosts": ["generativelanguage.googleapis.com"]},
+    {"name": "mistral", "base_url": "https://api.mistral.ai/v1", "key_env": "MISTRAL_API_KEY", "hosts": ["mistral.ai"]},
+    {"name": "together", "base_url": "https://api.together.xyz/v1", "key_env": "TOGETHER_API_KEY", "hosts": ["together.xyz", "together.ai"]},
+    {"name": "cerebras", "base_url": "https://api.cerebras.ai/v1", "key_env": "CEREBRAS_API_KEY", "hosts": ["cerebras.ai"]},
+    {"name": "nvidia", "base_url": "https://integrate.api.nvidia.com/v1", "key_env": "NVIDIA_API_KEY", "hosts": ["nvidia.com"]},
+    {"name": "ollama", "base_url": "http://localhost:11434/v1", "key_env": null, "hosts": ["localhost", "127.0.0.1"]}
+  ],
+  "models": [
+    {"provider": "openrouter", "model": "qwen/qwen3-coder:free", "notes": "non-reasoning coder model"},
+    {"provider": "openrouter", "model": "deepseek/deepseek-chat-v3-0324:free"},
+    {"provider": "groq", "model": "llama-3.3-70b-versatile"},
+    {"provider": "gemini", "model": "gemini-2.5-flash"},
+    {"provider": "mistral", "model": "devstral-small-latest"}
+  ],
+  "fallbacks": [
+    {"provider": "groq", "model": "llama-3.3-70b-versatile"}
+  ]
+}
