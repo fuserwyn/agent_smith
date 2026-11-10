@@ -33,7 +33,10 @@ for task in "${TASKS[@]}"; do
   for entry in "${MODELS[@]}"; do
     url="${entry%%|*}"; model="${entry#*|}"
     slug="$(echo "$model" | tr '/:' '__')"
-    dir="$OUT/$slug/$task"; mkdir -p "$dir"
+    dir="$OUT/$slug/$task"
+    # Resumable: a pair that already has a validation result is skipped (delete the folder to redo it).
+    if [[ -f "$dir/validation.txt" ]]; then echo "=== $model on $task (already done, skipped)"; continue; fi
+    rm -rf "$dir"; mkdir -p "$dir"
     echo "=== $model on $task"
     (cd "$ROOT" && uv run python -m agent_swebench --task-file "$task_file" --output "$dir/solution.json" \
         --model-name "$model" --provider-url "$url" --env-file "$ENV_FILE" --trace-file "$dir/events.jsonl" \

@@ -82,6 +82,18 @@
         "localhost",
         "127.0.0.1"
       ]
+    },
+    {
+      "name": "cohere",
+      "base_url": "https://api.cohere.ai/compatibility/v1",
+      "key_env": "COHERE_API_KEY",
+      "hosts": [
+        "cohere.ai",
+        "cohere.com"
+      ],
+      "extra_body": {
+        "reasoning_effort": "none"
+      }
     }
   ],
   "models": [
@@ -154,6 +166,16 @@
       "provider": "groq",
       "model": "openai/gpt-oss-120b",
       "notes": "free (Groq): needs reasoning_effort=low; 8k tokens/min -> MBPP only"
+    },
+    {
+      "provider": "cohere",
+      "model": "north-mini-code-1.0",
+      "notes": "free trial key: 1000 calls/month, 20/min"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-a-03-2025",
+      "notes": "free trial key: 1000 calls/month, 20/min"
     }
   ],
   "fallbacks": [

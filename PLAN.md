@@ -245,3 +245,16 @@ agent_smith/
 - [ ] BENCHMARK_REPORT.md с реальными цифрами (`scripts/run_benchmark.sh` + `scripts/benchmark_table.py` готовы) → этап 9.
 - [ ] Логин(ы) в первой строке README (сейчас `johnytaker` — проверить, что это логин 42).
 - [ ] Прочитать и уметь объяснить каждый модуль: на защите будут «живые правки» (VI.4).
+
+### 7.9 Продолжение работы (пауза 2026-11-10)
+Сделано на момент паузы: генеральная репетиция на бесплатных моделях пройдена (песочница 19/19, MBPP 5/5 на Groq
+`qwen/qwen3.8-27b` и на Cohere `north-mini-code-1.0`, SWE-bench 3/3 на NVIDIA `nemotron-3-ultra`).
+Бенчмарк SWE-bench `benchmarks/swebench/main` остановлен на 9 из 15 прогонов; скрипт продолжаемый.
+
+Чтобы продолжить:
+1. Запустить Docker Desktop; убрать возможные остатки: `docker ps -aq --filter label=agent-smith | xargs docker rm -f`
+2. Досчитать бенчмарк (готовые пары пропускаются):
+   `MODELS="https://integrate.api.nvidia.com/v1|nvidia/nemotron-3-ultra-550b-a55b https://integrate.api.nvidia.com/v1|nvidia/nemotron-3.5-lightning-30b-a3b https://integrate.api.nvidia.com/v1|mistralai/mistral-large-4-1t-a52b https://generativelanguage.googleapis.com/v1beta/openai|gemini-3.5-flash-lite https://generativelanguage.googleapis.com/v1beta/openai|gemini-3-flash-preview" ./scripts/run_benchmark.sh main`
+3. Ablation (та же модель и задачи, минимальный промпт):
+   `MODELS="https://integrate.api.nvidia.com/v1|nvidia/nemotron-3-ultra-550b-a55b" AGENT_ARGS="--prompt-variant minimal" ./scripts/run_benchmark.sh ablation-minimal-prompt`
+4. Таблицы для отчёта: `uv run python scripts/benchmark_table.py benchmarks/swebench/main` → BENCHMARK_REPORT.md.
