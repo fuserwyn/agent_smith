@@ -40,6 +40,18 @@ Instant fails: an API key in the code; solution from PRs/issues/internet; bypass
 
 ---
 
+## 1a. Recommended exam setup (all free, verified by the mock exam)
+
+| Exam | Model | Provider URL | Key | Mock exam result |
+|---|---|---|---|---|
+| MBPP | `qwen/qwen3.8-27b` | `https://api.groq.com/openai/v1` | `GROQ_API_KEY` | 5/5, 1 iteration, ~1 s per task |
+| SWE-bench | `nvidia/nemotron-3-ultra-550b-a55b` | `https://integrate.api.nvidia.com/v1` | `NVIDIA_API_KEY` | 3/3, ≤ 30 iterations, ≤ 210 s per task |
+
+Why not one model for both: Groq allows only 8,000 tokens per minute (a SWE-bench prompt is 5–15k tokens); NVIDIA is
+slower but has no such limit. Free OpenRouter models: only 50 requests/day per account. Mistral: API keys need a paid
+plan. Cerebras: needs a payment method. Reasoning is disabled per provider in `config/models.json` (`extra_body`).
+Rehearse with `./scripts/mock_exam.sh all --student-path . --moulinette-path ./moulinette --env-file .env`.
+
 ## 2. Demo script (what to run, what to say)
 
 ### 2.1 Sandbox (exam_sandbox.sh categories)

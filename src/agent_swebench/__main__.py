@@ -40,6 +40,8 @@ SWE_SETTINGS = AgentSettings(
 def main(argv=None) -> int:
     parser = common_parser("agent_swebench", "Fix a SWE-bench issue with the Agent Smith code agent")
     parser.add_argument("--keep-network", action="store_true", help="do not start the container with --network none")
+    parser.add_argument("--prompt-variant", choices=["full", "minimal"], default="full",
+                        help="system prompt variant (minimal = no method section; ablation study)")
     args = parser.parse_args(argv)
     events = setup(args)
     with open(args.task_file, encoding="utf-8") as fh:
@@ -84,7 +86,7 @@ def main(argv=None) -> int:
                         return "" if out.is_error or "diff --git" not in out.text else out.text
 
                     with Sandbox(config, mcp, event_hook=events.emit, trace_execution=bool(args.trace_file)) as sandbox:
-                        agent = CodeAgent(llm, sandbox, swebench_system_prompt(config, mcp, REPO_ROOT), limits,
+                        agent = CodeAgent(llm, sandbox, swebench_system_prompt(config, mcp, REPO_ROOT, args.prompt_variant), limits,
                                           "swebench", task.instance_id, settings=SWE_SETTINGS, events=events,
                                           fallback_answer=current_patch, started=started)
                         output = agent.run(swebench_task_prompt(task, REPO_ROOT))

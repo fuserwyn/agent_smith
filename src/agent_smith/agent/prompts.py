@@ -88,7 +88,13 @@ print(search_code("def _eval_col_insert", "*.py"))
 ```<end_code>'''
 
 
-def swebench_system_prompt(config: SandboxConfig, mcp, repo_root: str = "/testbed") -> str:
+SWE_MINIMAL = """Fix the issue, check it, then call final_answer(get_patch()).
+Solve it using this repository only (no internet)."""
+
+
+def swebench_system_prompt(config: SandboxConfig, mcp, repo_root: str = "/testbed", variant: str = "full") -> str:
+    """``variant="minimal"`` drops the method section and the example (used for the ablation study)."""
+    guidance = f"{SWE_METHOD}\n\n{SWE_EXAMPLE}" if variant == "full" else SWE_MINIMAL
     return f"""You are an autonomous software engineer fixing a real issue in the repository at {repo_root}.
 You act by writing Python code that calls tools (Python functions). The repository lives in a separate
 environment: you can only reach it through the tools, never with open() or imports.
@@ -97,9 +103,7 @@ environment: you can only reach it through the tools, never with open() or impor
 
 {build_manual(config, mcp)}
 
-{SWE_METHOD}
-
-{SWE_EXAMPLE}"""
+{guidance}"""
 
 
 def swebench_task_prompt(task: SWEBenchTaskInput, repo_root: str = "/testbed") -> str:

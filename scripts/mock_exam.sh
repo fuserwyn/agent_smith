@@ -2,7 +2,8 @@
 # Local rehearsal of the evaluation (subject chapter VI), without the official exam scripts.
 #
 #   ./scripts/mock_exam.sh <mbpp|swebench|sandbox|all> --student-path . --moulinette-path ./moulinette --env-file .env \
-#       [--model-name M] [--provider-url URL]
+#       [--model-name M --provider-url URL]            (same model for every part)
+#       [--mbpp-model-name M --mbpp-provider-url URL]  (MBPP only; default qwen/qwen3.8-27b on Groq)
 #
 # Mirrors the official flow: tasks are dumped by the moulinette, the agent runs with the exam CLI,
 # the moulinette validates. Results: evaluations/<type>/<YYYY-MM-DD_HH-MM-SS>/<task_id>/
@@ -14,14 +15,18 @@ set -uo pipefail
 
 TYPE="${1:-all}"; shift || true
 STUDENT="."; MOULINETTE="./moulinette"; ENV_FILE=".env"
+# Defaults = recommended free exam setup (docs/DEFENSE.*.md, section 1a).
+MBPP_MODEL="qwen/qwen3.8-27b"; MBPP_URL="https://api.groq.com/openai/v1"
 MODEL="nvidia/nemotron-3-ultra-550b-a55b"; URL="https://integrate.api.nvidia.com/v1"; TASKS=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --student-path) STUDENT="$2"; shift 2 ;;
     --moulinette-path) MOULINETTE="$2"; shift 2 ;;
     --env-file) ENV_FILE="$2"; shift 2 ;;
-    --model-name) MODEL="$2"; shift 2 ;;
-    --provider-url) URL="$2"; shift 2 ;;
+    --model-name) MODEL="$2"; MBPP_MODEL="$2"; shift 2 ;;      # one model for every part
+    --provider-url) URL="$2"; MBPP_URL="$2"; shift 2 ;;
+    --mbpp-model-name) MBPP_MODEL="$2"; shift 2 ;;
+    --mbpp-provider-url) MBPP_URL="$2"; shift 2 ;;
     --tasks) TASKS="$2"; shift 2 ;;   # SWE-bench only: space-separated instance ids instead of a random selection
     *) echo "unknown option $1"; exit 2 ;;
   esac
@@ -37,14 +42,14 @@ summary=()
 # --------------------------------------------------------------------------- MBPP
 exam_mbpp() {
   local dir="$STUDENT/evaluations/mbpp/$STAMP" passed=0
-  echo "${Y}=== exam_mbpp: 5 random tasks · model $MODEL${N}"
+  echo "${Y}=== exam_mbpp: 5 random tasks · model $MBPP_MODEL${N}"
   for i in 1 2 3 4 5; do
     local tmp="$dir/_task$i.json"; mkdir -p "$dir"
     moul dump mbpp --output "$tmp" >/dev/null 2>&1
     local tid; tid=$(python3 -c "import json;print(json.load(open('$tmp'))['task_id'])")
     local d="$dir/$tid"; mkdir -p "$d"; mv "$tmp" "$d/task.json"
     (cd "$STUDENT" && AGENT_TRACE_FILE="$d/events.jsonl" uv run python -m agent_mbpp --task-file "$d/task.json" --output "$d/solution.json" \
-       --model-name "$MODEL" --provider-url "$URL" --env-file "$ENV_FILE") > "$d/stdout.log" 2> "$d/stderr.log"
+       --model-name "$MBPP_MODEL" --provider-url "$MBPP_URL" --env-file "$ENV_FILE") > "$d/stdout.log" 2> "$d/stderr.log"
     moul validate mbpp "$d/task.json" "$d/solution.json" > "$d/validation.txt" 2>&1
     local v; v=$(verdict "$d/validation.txt"); [[ "$v" == "PASSED" ]] && passed=$((passed+1))
     printf "  task %-4s %s  %s\n" "$tid" "$([[ $v == PASSED ]] && echo "${G}PASSED${N}" || echo "${R}${v:-ERROR}${N}")" \

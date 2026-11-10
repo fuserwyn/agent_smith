@@ -19,7 +19,10 @@
       "key_env": "GROQ_API_KEY",
       "hosts": [
         "groq.com"
-      ]
+      ],
+      "extra_body": {
+        "reasoning_effort": "low"
+      }
     },
     {
       "name": "gemini",
@@ -141,6 +144,16 @@
       "provider": "gemini",
       "model": "gemini-3.5-flash-lite",
       "notes": "free (AI Studio), larger daily quota; rejects reasoning_effort (retried without)"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "notes": "free (Groq): 1000 req/day, 8k tokens/min -> MBPP only"
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "notes": "free (Groq): needs reasoning_effort=low; 8k tokens/min -> MBPP only"
     }
   ],
   "fallbacks": [
@@ -160,11 +173,6 @@
       "notes": "same account quota: helps only for per-model limits"
     },
     {
-      "provider": "groq",
-      "model": "llama-3.3-70b-versatile",
-      "notes": "free tier, needs GROQ_API_KEY"
-    },
-    {
       "provider": "cerebras",
       "model": "qwen-3-coder-480b",
       "notes": "free tier, needs CEREBRAS_API_KEY"
@@ -173,6 +181,11 @@
       "provider": "mistral",
       "model": "devstral-small-latest",
       "notes": "free tier, needs MISTRAL_API_KEY"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "notes": "free; small prompts only"
     }
   ],
   "fallback_enabled": false

@@ -55,7 +55,8 @@ class LLMClient:
         retries, requests, errors = 0, 0, []
         for ep_index, endpoint in enumerate(self.endpoints):
             attempts = 0
-            while attempts < self.max_attempts:
+            network_attempts = 0
+            while attempts - network_attempts < self.max_attempts:
                 remaining = None if deadline is None else deadline - time.monotonic()
                 if remaining is not None and remaining < 2:
                     raise LLMError("time budget exhausted before the LLM answered: " + "; ".join(errors[-3:]),
@@ -81,6 +82,9 @@ class LLMClient:
                                                       timeout=timeout)
                 except LLMError as exc:
                     retries += 1
+                    if exc.status is None and "network error" in str(exc) and deadline is not None:
+                        # Connectivity problems (DNS, reset): keep trying until the time budget, not a fixed count.
+                        network_attempts += 1
                     errors.append(f"{endpoint.label} key {KeyPool.mask(key)}: {exc}")
                     log.warning("LLM attempt failed (%s): %s", endpoint.label, exc)
                     self._on_event("llm_retry", {"endpoint": endpoint.label, "error": str(exc)[:300],

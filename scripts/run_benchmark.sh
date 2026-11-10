@@ -3,6 +3,7 @@
 # and keep solution.json + validation output under benchmarks/<run-name>/.
 #
 #   ./scripts/run_benchmark.sh main            # run name (e.g. main, ablation-before, ablation-after)
+#   AGENT_ARGS="--prompt-variant minimal" ./scripts/run_benchmark.sh ablation-minimal
 #
 # Requirements: Docker running, moulinette next to this repo (or MOULINETTE=path), keys in .env.
 set -uo pipefail
@@ -35,7 +36,8 @@ for task in "${TASKS[@]}"; do
     dir="$OUT/$slug/$task"; mkdir -p "$dir"
     echo "=== $model on $task"
     (cd "$ROOT" && uv run python -m agent_swebench --task-file "$task_file" --output "$dir/solution.json" \
-        --model-name "$model" --provider-url "$url" --env-file "$ENV_FILE" --trace-file "$dir/events.jsonl") \
+        --model-name "$model" --provider-url "$url" --env-file "$ENV_FILE" --trace-file "$dir/events.jsonl" \
+        ${AGENT_ARGS:-}) \
         > "$dir/stdout.log" 2> "$dir/stderr.log"
     (cd "$MOULINETTE" && PYTHONPATH=. uv run moulinette_eval validate swebench "$task_file" "$dir/solution.json") \
         > "$dir/validation.txt" 2>&1
