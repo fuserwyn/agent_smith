@@ -27,7 +27,10 @@
       "key_env": "GEMINI_API_KEY",
       "hosts": [
         "generativelanguage.googleapis.com"
-      ]
+      ],
+      "extra_body": {
+        "reasoning_effort": "none"
+      }
     },
     {
       "name": "mistral",
@@ -60,7 +63,13 @@
       "key_env": "NVIDIA_API_KEY",
       "hosts": [
         "nvidia.com"
-      ]
+      ],
+      "extra_body": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        },
+        "reasoning_effort": "none"
+      }
     },
     {
       "name": "ollama",
@@ -73,6 +82,16 @@
     }
   ],
   "models": [
+    {
+      "provider": "nvidia",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "notes": "free (build.nvidia.com), reasoning off"
+    },
+    {
+      "provider": "nvidia",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "notes": "free (build.nvidia.com), fast"
+    },
     {
       "provider": "openrouter",
       "model": "deepseek/deepseek-v4-flash",
@@ -102,9 +121,39 @@
       "provider": "openrouter",
       "model": "dots-studio/dots-3-note-preview:free",
       "notes": "free; no stop support (client-side stop)"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash",
+      "notes": "free (AI Studio), reasoning off"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.6-flash",
+      "notes": "free (AI Studio)"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3-flash-preview",
+      "notes": "free (AI Studio)"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite",
+      "notes": "free (AI Studio), larger daily quota; rejects reasoning_effort (retried without)"
     }
   ],
   "fallbacks": [
+    {
+      "provider": "nvidia",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "notes": "free"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite",
+      "notes": "free"
+    },
     {
       "provider": "openrouter",
       "model": "cohere/north-mini-code:free",
@@ -119,11 +168,6 @@
       "provider": "cerebras",
       "model": "qwen-3-coder-480b",
       "notes": "free tier, needs CEREBRAS_API_KEY"
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-2.5-flash",
-      "notes": "free tier, needs GEMINI_API_KEY"
     },
     {
       "provider": "mistral",

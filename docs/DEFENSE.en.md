@@ -344,6 +344,8 @@ Revert: `git checkout . && git clean -fd cache` (keep your `.env`!).
 ---
 
 ## 8. Honest limitations (say them before you are asked)
+- Some MBPP tasks contradict their hidden test. Example, task 452: "return none if there is no loss", while the
+  hidden first test expects `loss_amount(1500,1200)==0`. The agent follows the statement; this is why the threshold is 4/5.
 - MBPP `run_tests` sandbox is stricter than the moulinette's Docker Python (allowlist): a solution using a
   non-allowed import fails our tests but could pass theirs (checked: all 425 reference solutions pass ours).
 - Token estimate before a call is heuristic (chars/3 with a margin); real counts come from the provider.

@@ -14,7 +14,7 @@ set -uo pipefail
 
 TYPE="${1:-all}"; shift || true
 STUDENT="."; MOULINETTE="./moulinette"; ENV_FILE=".env"
-MODEL="deepseek/deepseek-v4-flash"; URL="https://openrouter.ai/api/v1"; TASKS=""
+MODEL="nvidia/nemotron-3-ultra-550b-a55b"; URL="https://integrate.api.nvidia.com/v1"; TASKS=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --student-path) STUDENT="$2"; shift 2 ;;

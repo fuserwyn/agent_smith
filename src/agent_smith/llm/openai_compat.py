@@ -30,10 +30,12 @@ class OpenAICompatProvider:
             payload["stop"] = stop[:4]  # many providers accept at most 4 stop sequences
         payload.update(self.extra_body)
         resp = self._post(payload, headers, timeout)
-        if resp.status_code == 400 and "reasoning" in self.extra_body and "reasoning" in resp.text.lower():
-            # Some models cannot disable reasoning: drop the option for this model and retry once.
-            self.extra_body.pop("reasoning", None)
-            payload.pop("reasoning", None)
+        if resp.status_code in (400, 422) and self.extra_body:
+            # Some models reject provider-specific options (e.g. "reasoning cannot be disabled"):
+            # drop them for this model and retry once.
+            for key in self.extra_body:
+                payload.pop(key, None)
+            self.extra_body = {}
             resp = self._post(payload, headers, timeout)
         result = self._parse(resp, messages)
         # Providers that ignore `stop` would let the model invent an Observation: cut it client-side.
