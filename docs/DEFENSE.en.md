@@ -54,6 +54,13 @@ slower but has no such limit. Free OpenRouter models: only 50 requests/day per a
 plan. Cerebras: needs a payment method. Reasoning is disabled per provider in `config/models.json` (`extra_body`).
 Rehearse with `./scripts/mock_exam.sh all --student-path . --moulinette-path ./moulinette --env-file .env`.
 
+## 1b. Cleaning up between evaluations
+
+`./scripts/clean.sh` removes generated files only (never `.env`, `moulinette/` sources or committed files):
+`cache/ runs/ evaluations/ /tmp/agent`, caches and leftover `agent-smith` containers. Options: `--traces`
+(benchmark traces/logs, `solution.json` stays), `--images` (SWE-bench images, GBs), `--all` (+ virtualenvs,
+recreate with `uv sync`), `--dry-run`. Do **not** use `git clean -X`: it deletes `.env` and `moulinette/`.
+
 ## 2. Demo script (what to run, what to say)
 
 ### 2.1 Sandbox (exam_sandbox.sh categories)

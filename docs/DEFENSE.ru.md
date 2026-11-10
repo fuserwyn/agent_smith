@@ -54,6 +54,13 @@ MBPP — 10 итераций · 6 000 входных · 1 500 выходных �
 платном плане. Cerebras: нужна привязка карты. Рассуждения отключены по провайдерам в `config/models.json` (`extra_body`).
 Репетиция: `./scripts/mock_exam.sh all --student-path . --moulinette-path ./moulinette --env-file .env`.
 
+## 1b. Уборка между сдачами
+
+`./scripts/clean.sh` удаляет только сгенерированное (никогда не трогает `.env`, исходники `moulinette/` и
+закоммиченные файлы): `cache/ runs/ evaluations/ /tmp/agent`, кэши и оставшиеся контейнеры `agent-smith`. Опции:
+`--traces` (трассы и логи бенчмарков, `solution.json` остаются), `--images` (образы SWE-bench, гигабайты), `--all`
+(+ виртуальные окружения, восстановить: `uv sync`), `--dry-run`. **Не используйте `git clean -X`**: он удалит `.env` и `moulinette/`.
+
 ## 2. Сценарий демонстрации (что запускать, что говорить)
 
 ### 2.1 Песочница (категории exam_sandbox.sh)
