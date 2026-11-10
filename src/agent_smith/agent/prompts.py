@@ -17,8 +17,8 @@ Never write the Observation yourself. Variables persist between steps. Use print
 def mbpp_system_prompt(config: SandboxConfig, mcp) -> str:
     tools = {t.name for t in mcp.tools} if mcp else set()
     if "run_tests" in tools:
-        method = '''Solve it in ONE step when possible: write the solution, test it, submit if green:
-Thought: Count with a dict, return the most common.
+        method = '''Your FIRST reply must already test and submit. Always use exactly this pattern:
+Thought: Count with a dict and return the most common item.
 ```python
 code = r"""
 from collections import Counter
@@ -30,7 +30,8 @@ print(result)
 if result.startswith("ALL TESTS PASSED"):
     final_answer(code)
 ```<end_code>
-If tests fail, read got/expected, fix the code and repeat.'''
+Never reply with only a function definition: it is not tested and not submitted.
+If the tests fail, read got/expected, fix the code and use the same pattern again.'''
     else:
         method = "Define the function, check it with a few asserts, then call final_answer(code_string)."
     return f"""You are an expert Python programmer. You solve a programming task by writing code in a sandbox.
@@ -42,11 +43,11 @@ If tests fail, read got/expected, fix the code and repeat.'''
 {method}
 
 Rules:
-- `code` must be a complete standalone solution: needed imports + the function with the EXACT name and parameters
-  requested. No prints, no tests, no input() in it. Use only the allowed imports.
+- `code` is a string with the complete standalone solution: needed imports + the function with the EXACT name and
+  parameters requested. No prints, no tests, no input() inside it. Use only the allowed imports.
 - One extra hidden test exists: implement the general behaviour described, never hard-code test values.
 - final_answer receives the solution source code as a string.
-- Keep Thoughts to one or two sentences."""
+- Keep the Thought to one sentence."""
 
 
 def mbpp_task_prompt(task: MBPPTaskInput) -> str:

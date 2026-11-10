@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by johnytaker.*
+*This project has been created as part of the 42 curriculum by iugolin, fuserwyn.*
 
 # Agent Smith
 
@@ -163,6 +163,13 @@ each assertion with got/expected values. Task context comes from `MBPP_TASK_FILE
 | `run_tests()` | task eval script (or `/eval.sh`), pass/fail summary + output tail |
 | `get_patch()` | `git -c core.fileMode=false diff` |
 | `run_command(command, workdir)` | exit code, stdout, stderr (with timeout) |
+
+## Evaluation guide
+
+A step-by-step defense manual (demo script, expected sandbox results, architecture walkthrough, likely questions,
+live-modification drills) is available in [docs/DEFENSE.en.md](docs/DEFENSE.en.md) and
+[docs/DEFENSE.ru.md](docs/DEFENSE.ru.md). On macOS the moulinette's Docker SDK needs
+`export DOCKER_HOST=unix://$HOME/.docker/run/docker.sock`.
 
 ## Benchmark results and analysis
 

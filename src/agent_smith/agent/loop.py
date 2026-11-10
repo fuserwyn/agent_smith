@@ -34,6 +34,7 @@ class AgentSettings:
     old_observation_chars: int = 800      # observations older than `keep_recent_steps`
     keep_recent_steps: int = 3
     show_budget: bool = False             # append a budget line to each observation
+    idle_hint: Optional[str] = None       # added when a step printed nothing and called no tool
     safety_seconds: float = 8.0
     input_estimate_margin: float = 1.1
 
@@ -90,6 +91,9 @@ class CodeAgent:
         parts = [f"[NOTE] {n}" for n in notes]
         if result is not None:
             parts.append(result.render())
+        if (self.settings.idle_hint and result is not None and result.status == "ok" and not result.stdout
+                and result.value is None and not result.tool_calls):
+            parts.append(f"[HINT] {self.settings.idle_hint}")
         if self.steps and code and self.steps[-1].sandbox_input == code:
             parts.append("[WARNING] You executed exactly the same code as in the previous step. Change approach.")
         if self.settings.show_budget:

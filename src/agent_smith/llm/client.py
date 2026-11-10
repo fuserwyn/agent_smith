@@ -120,7 +120,8 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
     if not keys and spec is not None and spec.key_env:
         raise SystemExit(f"error: no API key found. Set {spec.key_env} (or {spec.key_env}_2.., "
                          f"{spec.key_env}S=k1,k2) in the environment or .env file.")
-    endpoints = [Endpoint(OpenAICompatProvider(provider_url, model_name, spec.extra_headers if spec else None),
+    endpoints = [Endpoint(OpenAICompatProvider(provider_url, model_name, spec.extra_headers if spec else None,
+                                               extra_body=spec.extra_body if spec else None),
                           KeyPool(keys), spec.name if spec else "")]
     if use_fallbacks:
         for fb in cfg.fallbacks:
@@ -130,6 +131,7 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
             fkeys = keys_from_env(fspec.key_env)
             if fspec.key_env and not fkeys:
                 continue
-            endpoints.append(Endpoint(OpenAICompatProvider(fspec.base_url, fb.model, fspec.extra_headers),
+            endpoints.append(Endpoint(OpenAICompatProvider(fspec.base_url, fb.model, fspec.extra_headers,
+                                                           extra_body=fspec.extra_body),
                                       KeyPool(fkeys), fspec.name))
     return LLMClient(endpoints, on_event=on_event)

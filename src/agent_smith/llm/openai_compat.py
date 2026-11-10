@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -11,10 +11,12 @@ from agent_smith.llm.base import LLMError, LLMResponse, Message, estimate_messag
 
 class OpenAICompatProvider:
     def __init__(self, base_url: str, model: str, extra_headers: Optional[Dict[str, str]] = None,
-                 transport: Optional[httpx.BaseTransport] = None):
+                 transport: Optional[httpx.BaseTransport] = None, extra_body: Optional[Dict[str, Any]] = None):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.extra_headers = extra_headers or {}
+        # e.g. {"reasoning": {"enabled": false}}: thinking tokens count toward the output budget.
+        self.extra_body = dict(extra_body or {})
         self._client = httpx.Client(transport=transport)
 
     def complete(self, messages: List[Message], *, api_key: Optional[str], max_tokens: int,
@@ -26,14 +28,28 @@ class OpenAICompatProvider:
                    "temperature": temperature}
         if stop:
             payload["stop"] = stop[:4]  # many providers accept at most 4 stop sequences
+        payload.update(self.extra_body)
+        resp = self._post(payload, headers, timeout)
+        if resp.status_code == 400 and "reasoning" in self.extra_body and "reasoning" in resp.text.lower():
+            # Some models cannot disable reasoning: drop the option for this model and retry once.
+            self.extra_body.pop("reasoning", None)
+            payload.pop("reasoning", None)
+            resp = self._post(payload, headers, timeout)
+        result = self._parse(resp, messages)
+        # Providers that ignore `stop` would let the model invent an Observation: cut it client-side.
+        for s in stop or []:
+            if s in result.text:
+                result.text = result.text.split(s, 1)[0]
+        return result
+
+    def _post(self, payload: Dict[str, Any], headers: Dict[str, str], timeout: float) -> httpx.Response:
         try:
-            resp = self._client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers,
+            return self._client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers,
                                      timeout=httpx.Timeout(timeout, connect=min(10.0, timeout)))
         except httpx.TimeoutException as exc:
             raise LLMError(f"request timed out: {exc}", retryable=True) from exc
         except httpx.HTTPError as exc:
             raise LLMError(f"network error: {exc}", retryable=True) from exc
-        return self._parse(resp, messages)
 
     @staticmethod
     def _retry_after(resp: httpx.Response) -> Optional[float]:

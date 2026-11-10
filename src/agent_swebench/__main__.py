@@ -75,8 +75,7 @@ def main(argv=None) -> int:
                 else:
                     mcp = MCPClient(stdio_command=args.mcp_stdio or default_server("mcp_tools_swebench.py"), env=env)
                 with mcp.connect():
-                    events.emit("mcp_connected", {"server": mcp.server_name, "tools": mcp.tool_names(),
-                                                  "resources": mcp.has_resources, "prompts": mcp.has_prompts})
+                    events.emit("mcp_connected", mcp.describe())
 
                     def current_patch() -> str:
                         if "get_patch" not in mcp.tool_names():

@@ -105,8 +105,7 @@ def run_swe(tmp: Path) -> list:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "scripted-demo"), KeyPool(["demo"]))],
                         on_event=events.emit)
         with MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp:
-            events.emit("mcp_connected", {"server": mcp.server_name, "tools": mcp.tool_names(),
-                                          "resources": mcp.has_resources, "prompts": mcp.has_prompts})
+            events.emit("mcp_connected", mcp.describe())
             with Sandbox(SandboxConfig(), mcp, event_hook=events.emit, trace_execution=True) as sb:
                 agent = CodeAgent(llm, sb, swebench_system_prompt(SandboxConfig(), mcp, str(repo)), SWEBENCH_LIMITS,
                                   "swebench", "demo__calculator-1", settings=AgentSettings(show_budget=True),
