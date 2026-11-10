@@ -46,7 +46,8 @@ Instant fails: an API key in the code; solution from PRs/issues/internet; bypass
 |---|---|---|---|---|
 | MBPP | `qwen/qwen3.8-27b` | `https://api.groq.com/openai/v1` | `GROQ_API_KEY` | 5/5, 1 iteration, ~1 s per task |
 | MBPP (backup) | `north-mini-code-1.0` | `https://api.cohere.ai/compatibility/v1` | `COHERE_API_KEY` (trial: 1000 calls/month, 20/min) | 5/5, 1 iteration, ~1 s per task |
-| SWE-bench | `nvidia/nemotron-3-ultra-550b-a55b` | `https://integrate.api.nvidia.com/v1` | `NVIDIA_API_KEY` | 3/3, ≤ 30 iterations, ≤ 210 s per task |
+| SWE-bench | `nvidia/nemotron-3.5-lightning-30b-a3b` | `https://integrate.api.nvidia.com/v1` | `NVIDIA_API_KEY` | benchmark 3/3, 146 s for 3 tasks |
+| SWE-bench (backup) | `nvidia/nemotron-3-ultra-550b-a55b` | `https://integrate.api.nvidia.com/v1` | `NVIDIA_API_KEY` | mock exam 3/3 (random tasks), benchmark 2/3 |
 
 Why not one model for both: Groq allows only 8,000 tokens per minute (a SWE-bench prompt is 5–15k tokens); NVIDIA is
 slower but has no such limit. Free OpenRouter models: only 50 requests/day per account. Mistral: API keys need a paid

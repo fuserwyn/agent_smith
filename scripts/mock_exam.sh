@@ -17,7 +17,7 @@ TYPE="${1:-all}"; shift || true
 STUDENT="."; MOULINETTE="./moulinette"; ENV_FILE=".env"
 # Defaults = recommended free exam setup (docs/DEFENSE.*.md, section 1a).
 MBPP_MODEL="qwen/qwen3.8-27b"; MBPP_URL="https://api.groq.com/openai/v1"
-MODEL="nvidia/nemotron-3-ultra-550b-a55b"; URL="https://integrate.api.nvidia.com/v1"; TASKS=""
+MODEL="nvidia/nemotron-3.5-lightning-30b-a3b"; URL="https://integrate.api.nvidia.com/v1"; TASKS=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --student-path) STUDENT="$2"; shift 2 ;;

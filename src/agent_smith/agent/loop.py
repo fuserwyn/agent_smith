@@ -63,7 +63,8 @@ def navigation_hint(previous_output: str) -> str:
 class CodeAgent:
     def __init__(self, llm: LLMClient, sandbox: Sandbox, system_prompt: str, limits: Limits, benchmark: str,
                  task_id: str, settings: Optional[AgentSettings] = None, events: EventSink = NULL_SINK,
-                 fallback_answer: Optional[Callable[[], Optional[str]]] = None, started: Optional[float] = None):
+                 fallback_answer: Optional[Callable[[], Optional[str]]] = None, started: Optional[float] = None,
+                 answer_validator: Optional[Callable[[str], Optional[str]]] = None):
         self.llm = llm
         self.sandbox = sandbox
         self.system_prompt = system_prompt
@@ -73,6 +74,8 @@ class CodeAgent:
         self.settings = settings or AgentSettings()
         self.events = events
         self.fallback_answer = fallback_answer
+        # Returns an error message when a final answer is not acceptable (the loop then continues).
+        self.answer_validator = answer_validator
         self.budget = Budget(limits, started=started or time.monotonic(), safety_seconds=self.settings.safety_seconds)
         self.steps: List[StepMetrics] = []
         self.history: List[tuple] = []  # (assistant_text, observation_text)
@@ -175,7 +178,7 @@ class CodeAgent:
                                          "next_temperature": min(1.0, 0.4 * self.loop_streak)})
                     self._record_step(step_no, chat, code, observation)
                     ev("budget", self.budget.snapshot())
-                    assistant = chat.text.rstrip() + ("" if END_CODE in chat.text else END_CODE)
+                    assistant = (chat.text.rstrip() or "(empty response)") + ("" if END_CODE in chat.text else END_CODE)
                     self.history.append((assistant, observation))
                     ev("observation", {"step": step_no, "text": observation})
                     continue
@@ -200,14 +203,21 @@ class CodeAgent:
                 self._record_step(step_no, chat, code, observation if extraction.found else "")
                 ev("budget", self.budget.snapshot())
 
-                if result is not None and result.is_final:
+                rejection = (self.answer_validator(result.final_answer or "")
+                             if result is not None and result.is_final and self.answer_validator else None)
+                if rejection:
+                    observation += f"\n[REJECTED final_answer] {rejection}"
+                    ev("final_answer_rejected", {"step": step_no, "reason": rejection})
+                    self.steps[-1].sandbox_output = observation
+                elif result is not None and result.is_final:
                     solution = result.final_answer or ""
                     success = bool(solution.strip())
                     if not success:
                         error = "final_answer was called with an empty answer"
                     ev("final_answer", {"step": step_no, "answer": solution})
                     break
-                assistant = chat.text.rstrip()
+                # Some providers reject an empty assistant message: keep an explicit placeholder.
+                assistant = chat.text.rstrip() or "(empty response)"
                 if extraction.format.startswith("python_block") and END_CODE not in assistant:
                     assistant += END_CODE
                 self.history.append((assistant, observation))

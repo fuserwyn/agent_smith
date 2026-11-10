@@ -46,7 +46,8 @@ MBPP — 10 итераций · 6 000 входных · 1 500 выходных �
 |---|---|---|---|---|
 | MBPP | `qwen/qwen3.8-27b` | `https://api.groq.com/openai/v1` | `GROQ_API_KEY` | 5/5, 1 итерация, ~1 с на задачу |
 | MBPP (запасной) | `north-mini-code-1.0` | `https://api.cohere.ai/compatibility/v1` | `COHERE_API_KEY` (trial: 1000 запросов/месяц, 20/мин) | 5/5, 1 итерация, ~1 с на задачу |
-| SWE-bench | `nvidia/nemotron-3-ultra-550b-a55b` | `https://integrate.api.nvidia.com/v1` | `NVIDIA_API_KEY` | 3/3, ≤ 30 итераций, ≤ 210 с на задачу |
+| SWE-bench | `nvidia/nemotron-3.5-lightning-30b-a3b` | `https://integrate.api.nvidia.com/v1` | `NVIDIA_API_KEY` | бенчмарк 3/3, 146 с на 3 задачи |
+| SWE-bench (запасной) | `nvidia/nemotron-3-ultra-550b-a55b` | `https://integrate.api.nvidia.com/v1` | `NVIDIA_API_KEY` | репетиция 3/3 (случайные задачи), бенчмарк 2/3 |
 
 Почему не одна модель на оба: у Groq лимит 8 000 токенов в минуту (промпт SWE-bench — 5–15 тыс.); NVIDIA медленнее,
 но такого лимита нет. Бесплатные модели OpenRouter: только 50 запросов в сутки на аккаунт. Mistral: ключи только на
