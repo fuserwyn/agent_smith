@@ -51,3 +51,16 @@ def test_all_attempts_fail_raises():
     with FakeLLMServer([{"status": 503}] * 10) as srv:
         with pytest.raises(LLMError):
             client(srv.url, ["k"], max_attempts=3).chat([{"role": "user", "content": "x"}], 10)
+
+
+
+def test_daily_quota_is_detected_and_key_disabled():
+    """A per-day 429 must disable the key at once instead of being retried until the time budget is gone."""
+    import httpx
+
+    provider = OpenAICompatProvider("http://unused", "m")
+    assert provider._quota_exhausted(httpx.Response(429, text='{"error":{"message":"free-models-per-day"}}'))
+    assert not provider._quota_exhausted(httpx.Response(429, text='{"error":"slow down"}'))
+    with pytest.raises(LLMError) as err:
+        provider._parse(httpx.Response(429, text='{"error":{"message":"Rate limit exceeded: free-models-per-day"}}'), [])
+    assert err.value.disable_key

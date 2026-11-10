@@ -195,13 +195,20 @@ class SWEBenchTools:
     def search_code(self, pattern: str, file_pattern: str = "*.py") -> str:
         include = f"--include={quote(file_pattern)}" if file_pattern and file_pattern != "*" else ""
         lines = self._grep(f"-E {include} -e {quote(pattern)}", self.ex.root)
-        if lines and lines[0].startswith("grep:") and ("Unmatched" in lines[0] or "Invalid" in lines[0]):
-            lines = self._grep(f"-F {include} -e {quote(pattern)}", self.ex.root)
-            prefix = "[note: pattern is not a valid extended regex; searched it as a literal string]\n"
-        else:
-            prefix = ""
+        prefix = ""
+        invalid = bool(lines) and lines[0].startswith("grep:")
+        if invalid or not lines:
+            # Agents often search for literal code such as "def f(x):", where ( ) are regex groups:
+            # retry as plain text before answering "no matches".
+            literal = self._grep(f"-F {include} -e {quote(pattern)}", self.ex.root)
+            if literal and not literal[0].startswith("grep:"):
+                lines = literal
+                prefix = ("[note: the pattern is not a valid extended regex; searched it as literal text]\n" if invalid
+                          else "[note: no regex match; these are literal-text matches]\n")
+            elif invalid:
+                lines = []
         if not lines:
-            return f"No matches for '{pattern}' in files matching '{file_pattern}'."
+            return f"No matches for '{pattern}' in files matching '{file_pattern}' (searched as regex and as literal text)."
         return prefix + self._format_grep(lines)
 
     def search_function_or_class_definition_in_code(self, name: str) -> str:

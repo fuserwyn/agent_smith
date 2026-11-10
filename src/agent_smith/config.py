@@ -84,6 +84,8 @@ class ModelsConfig(BaseModel):
     providers: List[ProviderSpec] = Field(default_factory=list)
     models: List[ModelSpec] = Field(default_factory=list)
     fallbacks: List[ModelSpec] = Field(default_factory=list)
+    fallback_enabled: bool = Field(
+        default=False, description="Use `fallbacks` even without --fallback (only providers with a key in env)")
 
     def provider_by_name(self, name: str) -> Optional[ProviderSpec]:
         return next((p for p in self.providers if p.name == name), None)

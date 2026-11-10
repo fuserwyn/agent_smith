@@ -54,3 +54,8 @@ def test_patch_run_command_and_run_tests(git_repo):
     out = t.run_command("echo hi; echo err >&2; exit 3")
     assert "exit_code: 3" in out and "hi" in out and "err" in out
     assert "1 passed" in t.run_tests()
+
+
+def test_search_code_falls_back_to_literal_text(git_repo):
+    out = tools(git_repo).search_code("def add(a, b):", "*.py")  # ( ) are regex groups: no regex match
+    assert "literal-text matches" in out and "mathutil.py:1 def add(a, b):" in out

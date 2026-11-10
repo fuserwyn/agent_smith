@@ -59,10 +59,27 @@ class OpenAICompatProvider:
         except ValueError:
             return None
 
+    @staticmethod
+    def _quota_exhausted(resp: httpx.Response) -> bool:
+        text = resp.text.lower()
+        if any(marker in text for marker in ("per-day", "per day", "daily", "quota", "per-month")):
+            return True
+        reset = resp.headers.get("x-ratelimit-reset")
+        try:  # reset more than 10 minutes away (seconds or milliseconds since epoch)
+            value = float(reset) / (1000 if reset and float(reset) > 1e11 else 1)
+            import time
+            return value - time.time() > 600
+        except (TypeError, ValueError):
+            return False
+
     def _parse(self, resp: httpx.Response, messages: List[Message]) -> LLMResponse:
         status = resp.status_code
         body_text = resp.text[:500]
         if status == 429:
+            # A daily/monthly quota will not come back within this task: disable the key and move on
+            # (next key or fallback provider) instead of waiting until the time budget is gone.
+            if self._quota_exhausted(resp):
+                raise LLMError(f"quota exhausted (429): {body_text}", status, disable_key=True, rotate_key=True)
             raise LLMError(f"rate limited (429): {body_text}", status, rotate_key=True,
                            retry_after=self._retry_after(resp))
         if status in (401, 403):

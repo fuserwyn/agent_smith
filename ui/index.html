@@ -402,7 +402,7 @@ const KIND_COLOR = {
   llm_fallback: "--c-warn", llm_error: "--c-error", extraction: "--c-extract", sandbox_start: "--c-sandbox", exec_line: "--c-sandbox",
   tool_call: "--c-mcp", mcp_request: "--c-mcp", server_dispatch: "--c-mcp", repo_op: "--c-repo", mcp_response: "--c-mcp",
   tool_result: "--c-mcp", sandbox_end: "--c-sandbox", observation: "--c-orch", budget: "--c-orch", final_answer: "--c-final",
-  fallback_answer: "--c-warn", budget_stop: "--c-error", run_end: "--c-final", docker_pull: "--c-repo", docker_started: "--c-repo",
+  fallback_answer: "--c-warn", budget_stop: "--c-error", loop_detected: "--c-warn", run_end: "--c-final", docker_pull: "--c-repo", docker_started: "--c-repo",
   docker_removed: "--c-repo", interrupted: "--c-error", exec_more: "--c-sandbox",
 };
 const SUB_EVENTS = new Set(["exec_line", "exec_more", "mcp_request", "server_dispatch", "repo_op", "mcp_response"]);
@@ -441,6 +441,7 @@ function activity(e) {
     case "final_answer": return {nodes: ["interp", "final"], edges: ["interp_final"], text: `final_answer() at step ${e.step}`};
     case "fallback_answer": return {nodes: ["orch", "final"], edges: ["orch_final"], text: "No final_answer: best candidate submitted"};
     case "budget_stop": return {nodes: ["orch"], edges: [], error: true, text: `Stopped: ${e.reason}`};
+    case "loop_detected": return {nodes: ["orch", "interp"], edges: [], error: true, text: `Loop: step ${e.step} repeats step ${e.repeat_of}, not executed; next temperature ${e.next_temperature}`};
     case "interrupted": return {nodes: ["orch"], edges: [], error: true, text: "Interrupted"};
     case "run_end": return {nodes: ["final"], edges: ["orch_final"], error: !e.success, text: `Run finished: ${e.success ? "success" : "no success"} · ${e.iterations} iterations · ${e.total_time_seconds}s`};
     default: return {nodes: [], edges: [], text: e.type};

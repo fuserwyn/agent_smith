@@ -21,8 +21,8 @@ MODELS=(${MODELS:-
   "https://openrouter.ai/api/v1|nvidia/nemotron-3-ultra-550b-a55b:free"
   "https://openrouter.ai/api/v1|cohere/north-mini-code:free"
   "https://openrouter.ai/api/v1|nvidia/nemotron-3.5-lightning:free"
-  "https://openrouter.ai/api/v1|google/gemma-4-31b-it:free"
-  "https://openrouter.ai/api/v1|xingchen-agi/xing4.0-29b-a4b:free"
+  "https://openrouter.ai/api/v1|nvidia/nemotron-3.5-super-vl:free"
+  "https://openrouter.ai/api/v1|dots-studio/dots-3-note-preview:free"
 })
 
 mkdir -p "$CACHE" "$OUT"

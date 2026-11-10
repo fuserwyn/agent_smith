@@ -75,6 +75,11 @@
   "models": [
     {
       "provider": "openrouter",
+      "model": "deepseek/deepseek-v4-flash",
+      "notes": "default (paid, very cheap): used for development runs"
+    },
+    {
+      "provider": "openrouter",
       "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
       "notes": "free; reasoning disabled"
     },
@@ -90,19 +95,41 @@
     },
     {
       "provider": "openrouter",
-      "model": "xingchen-agi/xing4.0-29b-a4b:free",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
       "notes": "free; reasoning disabled"
     },
     {
       "provider": "openrouter",
-      "model": "google/gemma-4-31b-it:free",
-      "notes": "free; often rate limited upstream"
+      "model": "dots-studio/dots-3-note-preview:free",
+      "notes": "free; no stop support (client-side stop)"
     }
   ],
   "fallbacks": [
     {
       "provider": "openrouter",
-      "model": "cohere/north-mini-code:free"
+      "model": "cohere/north-mini-code:free",
+      "notes": "same account quota: helps only for per-model limits"
+    },
+    {
+      "provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "notes": "free tier, needs GROQ_API_KEY"
+    },
+    {
+      "provider": "cerebras",
+      "model": "qwen-3-coder-480b",
+      "notes": "free tier, needs CEREBRAS_API_KEY"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "notes": "free tier, needs GEMINI_API_KEY"
+    },
+    {
+      "provider": "mistral",
+      "model": "devstral-small-latest",
+      "notes": "free tier, needs MISTRAL_API_KEY"
     }
-  ]
+  ],
+  "fallback_enabled": false
 }

@@ -50,7 +50,7 @@ class LLMClient:
         return self.endpoints[0]
 
     def chat(self, messages: List[Message], max_tokens: int, stop: Optional[List[str]] = None,
-             deadline: Optional[float] = None) -> ChatResult:
+             deadline: Optional[float] = None, temperature: Optional[float] = None) -> ChatResult:
         """Complete ``messages``. ``deadline`` is a ``time.monotonic()`` instant we must not exceed."""
         retries, requests, errors = 0, 0, []
         for ep_index, endpoint in enumerate(self.endpoints):
@@ -77,7 +77,8 @@ class LLMClient:
                 t0 = time.monotonic()
                 try:
                     resp = endpoint.provider.complete(messages, api_key=key, max_tokens=max_tokens, stop=stop,
-                                                      temperature=self.temperature, timeout=timeout)
+                                                      temperature=self.temperature if temperature is None else temperature,
+                                                      timeout=timeout)
                 except LLMError as exc:
                     retries += 1
                     errors.append(f"{endpoint.label} key {KeyPool.mask(key)}: {exc}")
@@ -123,7 +124,7 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
     endpoints = [Endpoint(OpenAICompatProvider(provider_url, model_name, spec.extra_headers if spec else None,
                                                extra_body=spec.extra_body if spec else None),
                           KeyPool(keys), spec.name if spec else "")]
-    if use_fallbacks:
+    if use_fallbacks or cfg.fallback_enabled:
         for fb in cfg.fallbacks:
             fspec = cfg.provider_by_name(fb.provider)
             if not fspec or (fspec.base_url.rstrip("/") == provider_url.rstrip("/") and fb.model == model_name):

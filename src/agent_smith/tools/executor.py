@@ -173,9 +173,26 @@ class LocalExecutor(Executor):
         return os.path.isdir(path)
 
 
+def _running_swebench_container() -> Optional[str]:
+    """The single running container started from a SWE-bench image, if there is exactly one."""
+    res = _run(["docker", "ps", "--format", "{{.ID}} {{.Image}}"], 15, None)
+    if res.exit_code != 0:
+        return None
+    ids = [line.split()[0] for line in res.stdout.splitlines() if "sweb.eval" in line]
+    return ids[0] if len(ids) == 1 else None
+
+
 def executor_from_env() -> Executor:
+    """SWEBENCH_CONTAINER -> docker; else TESTBED_PATH on disk; else the one running SWE-bench container."""
     container = os.environ.get("SWEBENCH_CONTAINER")
     root = os.environ.get("TESTBED_PATH", "/testbed")
     if container:
         return DockerExecutor(container, root)
+    if not os.path.isdir(root):
+        found = _running_swebench_container()
+        if found:
+            import sys
+            print(f"[mcp_tools_swebench] SWEBENCH_CONTAINER not set: using running SWE-bench container {found}",
+                  file=sys.stderr)
+            return DockerExecutor(found, root)
     return LocalExecutor(root)

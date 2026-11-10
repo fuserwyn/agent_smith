@@ -13,6 +13,7 @@ Every step is recorded as a StepMetrics; the run produces a SolutionOutput.
 from __future__ import annotations
 
 import logging
+import re
 import time
 from dataclasses import dataclass
 from typing import Callable, List, Optional
@@ -47,6 +48,18 @@ def truncate_observation(text: str, limit: int) -> str:
             f"last {tail}. Print less or narrow your query ...]\n" + text[-tail:])
 
 
+_LOCATION_RE = re.compile(r"(/[\w./-]+\.py):(\d+)")
+
+
+def navigation_hint(previous_output: str) -> str:
+    """Suggest the obvious next move after a repeated search: open the first location it found."""
+    m = _LOCATION_RE.search(previous_output or "")
+    if not m:
+        return "Try a different search term, or read_file a file you already know."
+    path, line = m.group(1), int(m.group(2))
+    return f"You already found {path}:{line}. Next step: print(read_file({path!r}, {max(1, line - 20)}, {line + 60}))"
+
+
 class CodeAgent:
     def __init__(self, llm: LLMClient, sandbox: Sandbox, system_prompt: str, limits: Limits, benchmark: str,
                  task_id: str, settings: Optional[AgentSettings] = None, events: EventSink = NULL_SINK,
@@ -64,6 +77,7 @@ class CodeAgent:
         self.steps: List[StepMetrics] = []
         self.history: List[tuple] = []  # (assistant_text, observation_text)
         self.interrupted = False
+        self.loop_streak = 0  # consecutive exact repeats: raises the sampling temperature to break the loop
         self.known_tools = [t.name for t in sandbox.mcp.tools] if sandbox.mcp else []
 
     # ------------------------------------------------------------------ #
@@ -94,8 +108,11 @@ class CodeAgent:
         if (self.settings.idle_hint and result is not None and result.status == "ok" and not result.stdout
                 and result.value is None and not result.tool_calls):
             parts.append(f"[HINT] {self.settings.idle_hint}")
-        if self.steps and code and self.steps[-1].sandbox_input == code:
-            parts.append("[WARNING] You executed exactly the same code as in the previous step. Change approach.")
+        repeated = [st.step for st in self.steps[-6:] if code and st.sandbox_input == code]
+        if repeated:
+            parts.append(f"[WARNING] You already executed exactly this code at step {repeated[-1]} and got the same "
+                         f"result. Repeating it will not help: use what you learned (e.g. read_file on a file you "
+                         f"found, or edit it) and do something different.")
         if self.settings.show_budget:
             b = self.budget
             parts.append(f"[budget] step {b.iterations}/{b.limits.max_iterations}, "
@@ -131,8 +148,9 @@ class CodeAgent:
                                    "max_tokens": max_tokens, "delivered": messages[-1]["content"],
                                    "compacted_steps": self._compacted(messages)})
                 try:
+                    temperature = min(1.0, 0.4 * self.loop_streak) if self.loop_streak else None
                     chat = self.llm.chat(messages, max_tokens=max_tokens, stop=STOP_SEQUENCES,
-                                         deadline=self.budget.deadline)
+                                         deadline=self.budget.deadline, temperature=temperature)
                 except LLMError as exc:
                     error = f"LLM failure: {exc}"
                     ev("llm_error", {"step": step_no, "error": str(exc)[:500]})
@@ -147,6 +165,21 @@ class CodeAgent:
                                   "notes": extraction.notes})
                 result: Optional[ExecutionResult] = None
                 code = extraction.code or ""
+                previous = next((st for st in reversed(self.steps[-6:]) if code and st.sandbox_input == code), None)
+                if extraction.found and previous is not None:
+                    # Exact repeat of a recent step: running it again cannot give new information.
+                    observation = (f"[LOOP] This is exactly the code of step {previous.step}; it was NOT executed "
+                                   f"again (same result as before). {navigation_hint(previous.sandbox_output)}")
+                    self.loop_streak += 1
+                    ev("loop_detected", {"step": step_no, "repeat_of": previous.step, "hint": observation,
+                                         "next_temperature": min(1.0, 0.4 * self.loop_streak)})
+                    self._record_step(step_no, chat, code, observation)
+                    ev("budget", self.budget.snapshot())
+                    assistant = chat.text.rstrip() + ("" if END_CODE in chat.text else END_CODE)
+                    self.history.append((assistant, observation))
+                    ev("observation", {"step": step_no, "text": observation})
+                    continue
+                self.loop_streak = 0
                 if extraction.found:
                     ev("sandbox_start", {"step": step_no, "code": code})
                     try:
