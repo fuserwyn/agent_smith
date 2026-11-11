@@ -13,6 +13,7 @@ Every step is recorded as a StepMetrics; the run produces a SolutionOutput.
 from __future__ import annotations
 
 import logging
+import re
 import time
 from dataclasses import dataclass
 from typing import Callable, List, Optional
@@ -34,6 +35,7 @@ class AgentSettings:
     old_observation_chars: int = 800      # observations older than `keep_recent_steps`
     keep_recent_steps: int = 3
     show_budget: bool = False             # append a budget line to each observation
+    idle_hint: Optional[str] = None       # added when a step printed nothing and called no tool
     safety_seconds: float = 8.0
     input_estimate_margin: float = 1.1
 
@@ -46,10 +48,23 @@ def truncate_observation(text: str, limit: int) -> str:
             f"last {tail}. Print less or narrow your query ...]\n" + text[-tail:])
 
 
+_LOCATION_RE = re.compile(r"(/[\w./-]+\.py):(\d+)")
+
+
+def navigation_hint(previous_output: str) -> str:
+    """Suggest the obvious next move after a repeated search: open the first location it found."""
+    m = _LOCATION_RE.search(previous_output or "")
+    if not m:
+        return "Try a different search term, or read_file a file you already know."
+    path, line = m.group(1), int(m.group(2))
+    return f"You already found {path}:{line}. Next step: print(read_file({path!r}, {max(1, line - 20)}, {line + 60}))"
+
+
 class CodeAgent:
     def __init__(self, llm: LLMClient, sandbox: Sandbox, system_prompt: str, limits: Limits, benchmark: str,
                  task_id: str, settings: Optional[AgentSettings] = None, events: EventSink = NULL_SINK,
-                 fallback_answer: Optional[Callable[[], Optional[str]]] = None, started: Optional[float] = None):
+                 fallback_answer: Optional[Callable[[], Optional[str]]] = None, started: Optional[float] = None,
+                 answer_validator: Optional[Callable[[str], Optional[str]]] = None):
         self.llm = llm
         self.sandbox = sandbox
         self.system_prompt = system_prompt
@@ -59,10 +74,13 @@ class CodeAgent:
         self.settings = settings or AgentSettings()
         self.events = events
         self.fallback_answer = fallback_answer
+        # Returns an error message when a final answer is not acceptable (the loop then continues).
+        self.answer_validator = answer_validator
         self.budget = Budget(limits, started=started or time.monotonic(), safety_seconds=self.settings.safety_seconds)
         self.steps: List[StepMetrics] = []
         self.history: List[tuple] = []  # (assistant_text, observation_text)
         self.interrupted = False
+        self.loop_streak = 0  # consecutive exact repeats: raises the sampling temperature to break the loop
         self.known_tools = [t.name for t in sandbox.mcp.tools] if sandbox.mcp else []
 
     # ------------------------------------------------------------------ #
@@ -90,8 +108,14 @@ class CodeAgent:
         parts = [f"[NOTE] {n}" for n in notes]
         if result is not None:
             parts.append(result.render())
-        if self.steps and code and self.steps[-1].sandbox_input == code:
-            parts.append("[WARNING] You executed exactly the same code as in the previous step. Change approach.")
+        if (self.settings.idle_hint and result is not None and result.status == "ok" and not result.stdout
+                and result.value is None and not result.tool_calls):
+            parts.append(f"[HINT] {self.settings.idle_hint}")
+        repeated = [st.step for st in self.steps[-6:] if code and st.sandbox_input == code]
+        if repeated:
+            parts.append(f"[WARNING] You already executed exactly this code at step {repeated[-1]} and got the same "
+                         f"result. Repeating it will not help: use what you learned (e.g. read_file on a file you "
+                         f"found, or edit it) and do something different.")
         if self.settings.show_budget:
             b = self.budget
             parts.append(f"[budget] step {b.iterations}/{b.limits.max_iterations}, "
@@ -127,8 +151,9 @@ class CodeAgent:
                                    "max_tokens": max_tokens, "delivered": messages[-1]["content"],
                                    "compacted_steps": self._compacted(messages)})
                 try:
+                    temperature = min(1.0, 0.4 * self.loop_streak) if self.loop_streak else None
                     chat = self.llm.chat(messages, max_tokens=max_tokens, stop=STOP_SEQUENCES,
-                                         deadline=self.budget.deadline)
+                                         deadline=self.budget.deadline, temperature=temperature)
                 except LLMError as exc:
                     error = f"LLM failure: {exc}"
                     ev("llm_error", {"step": step_no, "error": str(exc)[:500]})
@@ -143,6 +168,21 @@ class CodeAgent:
                                   "notes": extraction.notes})
                 result: Optional[ExecutionResult] = None
                 code = extraction.code or ""
+                previous = next((st for st in reversed(self.steps[-6:]) if code and st.sandbox_input == code), None)
+                if extraction.found and previous is not None:
+                    # Exact repeat of a recent step: running it again cannot give new information.
+                    observation = (f"[LOOP] This is exactly the code of step {previous.step}; it was NOT executed "
+                                   f"again (same result as before). {navigation_hint(previous.sandbox_output)}")
+                    self.loop_streak += 1
+                    ev("loop_detected", {"step": step_no, "repeat_of": previous.step, "hint": observation,
+                                         "next_temperature": min(1.0, 0.4 * self.loop_streak)})
+                    self._record_step(step_no, chat, code, observation)
+                    ev("budget", self.budget.snapshot())
+                    assistant = (chat.text.rstrip() or "(empty response)") + ("" if END_CODE in chat.text else END_CODE)
+                    self.history.append((assistant, observation))
+                    ev("observation", {"step": step_no, "text": observation})
+                    continue
+                self.loop_streak = 0
                 if extraction.found:
                     ev("sandbox_start", {"step": step_no, "code": code})
                     try:
@@ -163,14 +203,21 @@ class CodeAgent:
                 self._record_step(step_no, chat, code, observation if extraction.found else "")
                 ev("budget", self.budget.snapshot())
 
-                if result is not None and result.is_final:
+                rejection = (self.answer_validator(result.final_answer or "")
+                             if result is not None and result.is_final and self.answer_validator else None)
+                if rejection:
+                    observation += f"\n[REJECTED final_answer] {rejection}"
+                    ev("final_answer_rejected", {"step": step_no, "reason": rejection})
+                    self.steps[-1].sandbox_output = observation
+                elif result is not None and result.is_final:
                     solution = result.final_answer or ""
                     success = bool(solution.strip())
                     if not success:
                         error = "final_answer was called with an empty answer"
                     ev("final_answer", {"step": step_no, "answer": solution})
                     break
-                assistant = chat.text.rstrip()
+                # Some providers reject an empty assistant message: keep an explicit placeholder.
+                assistant = chat.text.rstrip() or "(empty response)"
                 if extraction.format.startswith("python_block") and END_CODE not in assistant:
                     assistant += END_CODE
                 self.history.append((assistant, observation))

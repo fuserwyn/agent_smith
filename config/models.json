@@ -1,22 +1,199 @@
 {
   "providers": [
-    {"name": "openrouter", "base_url": "https://openrouter.ai/api/v1", "key_env": "OPENROUTER_API_KEY", "hosts": ["openrouter.ai"]},
-    {"name": "groq", "base_url": "https://api.groq.com/openai/v1", "key_env": "GROQ_API_KEY", "hosts": ["groq.com"]},
-    {"name": "gemini", "base_url": "https://generativelanguage.googleapis.com/v1beta/openai", "key_env": "GEMINI_API_KEY", "hosts": ["generativelanguage.googleapis.com"]},
-    {"name": "mistral", "base_url": "https://api.mistral.ai/v1", "key_env": "MISTRAL_API_KEY", "hosts": ["mistral.ai"]},
-    {"name": "together", "base_url": "https://api.together.xyz/v1", "key_env": "TOGETHER_API_KEY", "hosts": ["together.xyz", "together.ai"]},
-    {"name": "cerebras", "base_url": "https://api.cerebras.ai/v1", "key_env": "CEREBRAS_API_KEY", "hosts": ["cerebras.ai"]},
-    {"name": "nvidia", "base_url": "https://integrate.api.nvidia.com/v1", "key_env": "NVIDIA_API_KEY", "hosts": ["nvidia.com"]},
-    {"name": "ollama", "base_url": "http://localhost:11434/v1", "key_env": null, "hosts": ["localhost", "127.0.0.1"]}
+    {
+      "name": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "key_env": "OPENROUTER_API_KEY",
+      "hosts": [
+        "openrouter.ai"
+      ],
+      "extra_body": {
+        "reasoning": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "groq",
+      "base_url": "https://api.groq.com/openai/v1",
+      "key_env": "GROQ_API_KEY",
+      "hosts": [
+        "groq.com"
+      ],
+      "extra_body": {
+        "reasoning_effort": "low"
+      }
+    },
+    {
+      "name": "gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "key_env": "GEMINI_API_KEY",
+      "hosts": [
+        "generativelanguage.googleapis.com"
+      ],
+      "extra_body": {
+        "reasoning_effort": "none"
+      }
+    },
+    {
+      "name": "mistral",
+      "base_url": "https://api.mistral.ai/v1",
+      "key_env": "MISTRAL_API_KEY",
+      "hosts": [
+        "mistral.ai"
+      ]
+    },
+    {
+      "name": "together",
+      "base_url": "https://api.together.xyz/v1",
+      "key_env": "TOGETHER_API_KEY",
+      "hosts": [
+        "together.xyz",
+        "together.ai"
+      ]
+    },
+    {
+      "name": "cerebras",
+      "base_url": "https://api.cerebras.ai/v1",
+      "key_env": "CEREBRAS_API_KEY",
+      "hosts": [
+        "cerebras.ai"
+      ]
+    },
+    {
+      "name": "nvidia",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "key_env": "NVIDIA_API_KEY",
+      "hosts": [
+        "nvidia.com"
+      ],
+      "extra_body": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        },
+        "reasoning_effort": "none"
+      }
+    },
+    {
+      "name": "ollama",
+      "base_url": "http://localhost:11434/v1",
+      "key_env": null,
+      "hosts": [
+        "localhost",
+        "127.0.0.1"
+      ]
+    },
+    {
+      "name": "cohere",
+      "base_url": "https://api.cohere.ai/compatibility/v1",
+      "key_env": "COHERE_API_KEY",
+      "hosts": [
+        "cohere.ai",
+        "cohere.com"
+      ],
+      "extra_body": {
+        "reasoning_effort": "none"
+      }
+    }
   ],
   "models": [
-    {"provider": "openrouter", "model": "qwen/qwen3-coder:free", "notes": "non-reasoning coder model"},
-    {"provider": "openrouter", "model": "deepseek/deepseek-chat-v3-0324:free"},
-    {"provider": "groq", "model": "llama-3.3-70b-versatile"},
-    {"provider": "gemini", "model": "gemini-2.5-flash"},
-    {"provider": "mistral", "model": "devstral-small-latest"}
+    {
+      "provider": "nvidia",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "notes": "free (build.nvidia.com), reasoning off"
+    },
+    {
+      "provider": "nvidia",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "notes": "free (build.nvidia.com), fast"
+    },
+    {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "notes": "free; reasoning disabled"
+    },
+    {
+      "provider": "openrouter",
+      "model": "cohere/north-mini-code:free",
+      "notes": "free code model; supports stop"
+    },
+    {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "notes": "free; reasoning disabled"
+    },
+    {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "notes": "free; reasoning disabled"
+    },
+    {
+      "provider": "openrouter",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "notes": "free; no stop support (client-side stop)"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash",
+      "notes": "free (AI Studio), reasoning off"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.6-flash",
+      "notes": "free (AI Studio)"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3-flash-preview",
+      "notes": "free (AI Studio)"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite",
+      "notes": "free (AI Studio), larger daily quota; rejects reasoning_effort (retried without)"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "notes": "free (Groq): 1000 req/day, 8k tokens/min -> MBPP only"
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "notes": "free (Groq): needs reasoning_effort=low; 8k tokens/min -> MBPP only"
+    },
+    {
+      "provider": "cohere",
+      "model": "north-mini-code-1.0",
+      "notes": "free trial key: 1000 calls/month, 20/min"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-a-03-2025",
+      "notes": "free trial key: 1000 calls/month, 20/min"
+    }
   ],
   "fallbacks": [
-    {"provider": "groq", "model": "llama-3.3-70b-versatile"}
-  ]
+    {
+      "provider": "nvidia",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "notes": "free"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite",
+      "notes": "free"
+    },
+    {
+      "provider": "openrouter",
+      "model": "cohere/north-mini-code:free",
+      "notes": "same account quota: helps only for per-model limits"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "notes": "free; small prompts only"
+    }
+  ],
+  "fallback_enabled": false
 }

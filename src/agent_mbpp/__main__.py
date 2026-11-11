@@ -28,6 +28,8 @@ MBPP_SETTINGS = AgentSettings(
     old_observation_chars=400,
     keep_recent_steps=2,
     safety_seconds=10.0,
+    idle_hint=("Nothing was tested or submitted. Put the full solution in a string `code`, call "
+               "result = run_tests(code), print(result), and if it passed call final_answer(code) — in ONE block."),
 )
 
 
@@ -65,8 +67,7 @@ def main(argv=None) -> int:
             else:
                 mcp = MCPClient(stdio_command=args.mcp_stdio or default_server("mcp_tools_mbpp.py"), env=env)
             with mcp.connect():
-                events.emit("mcp_connected", {"server": mcp.server_name, "tools": mcp.tool_names(),
-                                              "resources": mcp.has_resources, "prompts": mcp.has_prompts})
+                events.emit("mcp_connected", mcp.describe())
                 with Sandbox(config, mcp, event_hook=events.emit, trace_execution=bool(args.trace_file)) as sandbox:
                     agent = CodeAgent(llm, sandbox, mbpp_system_prompt(config, mcp), limits, "mbpp", task_id,
                                       settings=MBPP_SETTINGS, events=events,

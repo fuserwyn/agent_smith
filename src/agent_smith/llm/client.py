@@ -50,12 +50,13 @@ class LLMClient:
         return self.endpoints[0]
 
     def chat(self, messages: List[Message], max_tokens: int, stop: Optional[List[str]] = None,
-             deadline: Optional[float] = None) -> ChatResult:
+             deadline: Optional[float] = None, temperature: Optional[float] = None) -> ChatResult:
         """Complete ``messages``. ``deadline`` is a ``time.monotonic()`` instant we must not exceed."""
         retries, requests, errors = 0, 0, []
         for ep_index, endpoint in enumerate(self.endpoints):
             attempts = 0
-            while attempts < self.max_attempts:
+            network_attempts = 0
+            while attempts - network_attempts < self.max_attempts:
                 remaining = None if deadline is None else deadline - time.monotonic()
                 if remaining is not None and remaining < 2:
                     raise LLMError("time budget exhausted before the LLM answered: " + "; ".join(errors[-3:]),
@@ -77,9 +78,13 @@ class LLMClient:
                 t0 = time.monotonic()
                 try:
                     resp = endpoint.provider.complete(messages, api_key=key, max_tokens=max_tokens, stop=stop,
-                                                      temperature=self.temperature, timeout=timeout)
+                                                      temperature=self.temperature if temperature is None else temperature,
+                                                      timeout=timeout)
                 except LLMError as exc:
                     retries += 1
+                    if exc.status is None and "network error" in str(exc) and deadline is not None:
+                        # Connectivity problems (DNS, reset): keep trying until the time budget, not a fixed count.
+                        network_attempts += 1
                     errors.append(f"{endpoint.label} key {KeyPool.mask(key)}: {exc}")
                     log.warning("LLM attempt failed (%s): %s", endpoint.label, exc)
                     self._on_event("llm_retry", {"endpoint": endpoint.label, "error": str(exc)[:300],
@@ -120,9 +125,10 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
     if not keys and spec is not None and spec.key_env:
         raise SystemExit(f"error: no API key found. Set {spec.key_env} (or {spec.key_env}_2.., "
                          f"{spec.key_env}S=k1,k2) in the environment or .env file.")
-    endpoints = [Endpoint(OpenAICompatProvider(provider_url, model_name, spec.extra_headers if spec else None),
+    endpoints = [Endpoint(OpenAICompatProvider(provider_url, model_name, spec.extra_headers if spec else None,
+                                               extra_body=spec.extra_body if spec else None),
                           KeyPool(keys), spec.name if spec else "")]
-    if use_fallbacks:
+    if use_fallbacks or cfg.fallback_enabled:
         for fb in cfg.fallbacks:
             fspec = cfg.provider_by_name(fb.provider)
             if not fspec or (fspec.base_url.rstrip("/") == provider_url.rstrip("/") and fb.model == model_name):
@@ -130,6 +136,7 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
             fkeys = keys_from_env(fspec.key_env)
             if fspec.key_env and not fkeys:
                 continue
-            endpoints.append(Endpoint(OpenAICompatProvider(fspec.base_url, fb.model, fspec.extra_headers),
+            endpoints.append(Endpoint(OpenAICompatProvider(fspec.base_url, fb.model, fspec.extra_headers,
+                                                           extra_body=fspec.extra_body),
                                       KeyPool(fkeys), fspec.name))
     return LLMClient(endpoints, on_event=on_event)

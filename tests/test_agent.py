@@ -93,3 +93,36 @@ def test_swebench_loop_on_local_repo(git_repo, tmp_path):
     assert out.success and out.iterations == 3
     assert out.solution.startswith("diff --git") and "+    return a + b" in out.solution
     assert "1 passed" in out.steps[1].sandbox_output and "[budget]" in out.steps[0].sandbox_output
+
+
+def test_exact_repeat_is_not_executed_and_gets_a_navigation_hint(git_repo):
+    step = 'Thought: find it\n```python\nprint(search_code("def add(a, b):"))\n```<end_code>'
+    fix = ('Thought: fix\n```python\nprint(edit_file("pkg/mathutil.py", "return a - b", "return a + b"))\n'
+           'final_answer(get_patch())\n```<end_code>')
+    env = dict(os.environ, TESTBED_PATH=str(git_repo))
+    with FakeLLMServer([step, step, fix]) as srv, \
+            MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp, \
+            Sandbox(SandboxConfig(), mcp) as sb:
+        llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
+        out = CodeAgent(llm, sb, "system", SWEBENCH_LIMITS, "swebench", "t").run("task")
+    assert out.success and "[LOOP]" in out.steps[1].sandbox_output
+    assert "read_file(" in out.steps[1].sandbox_output and "mathutil.py" in out.steps[1].sandbox_output
+    assert [c.name for c in sb.tool_log].count("search_code") == 1  # the repeat did not reach the tool
+
+
+def test_rejected_final_answer_and_empty_response(git_repo):
+    """A description instead of a patch is refused; an empty LLM reply never becomes an empty message."""
+    describe = 'Thought: done\n```python\nfinal_answer("I fixed the typo in add()")\n```<end_code>'
+    fix = ('Thought: fix\n```python\nprint(edit_file("pkg/mathutil.py", "return a - b", "return a + b"))\n'
+           'final_answer(get_patch())\n```<end_code>')
+    env = dict(os.environ, TESTBED_PATH=str(git_repo))
+    with FakeLLMServer(["", describe, fix]) as srv, \
+            MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp, \
+            Sandbox(SandboxConfig(), mcp) as sb:
+        llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
+        out = CodeAgent(llm, sb, "system", SWEBENCH_LIMITS, "swebench", "t",
+                        answer_validator=lambda a: None if "diff --git" in a else "must be the patch").run("task")
+        sent = srv.requests
+    assert out.success and out.solution.startswith("diff --git") and out.iterations == 3
+    assert "[REJECTED final_answer]" in out.steps[1].sandbox_output
+    assert all(m["content"] for r in sent for m in r["messages"])  # no empty message was ever sent

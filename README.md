@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by johnytaker.*
+*This project has been created as part of the 42 curriculum by iugolin, fuserwyn.*
 
 # Agent Smith
 
@@ -53,6 +53,21 @@ cd moulinette && uv run moulinette_eval validate mbpp ../cache/mbpp_task.json ..
 uv run python -m agent_swebench --task-file cache/swebench_task.json --output cache/swebench_solution.json \
     --model-name "qwen/qwen3-coder:free" --provider-url "https://openrouter.ai/api/v1"
 ```
+
+**Free LLM without quota: a self-hosted model** (the subject allows self-hosted models):
+
+```bash
+brew install ollama            # or https://ollama.com/download (Linux: curl -fsSL https://ollama.com/install.sh | sh)
+OLLAMA_CONTEXT_LENGTH=32768 ollama serve &      # default 4k context is too small for SWE-bench
+ollama pull qwen2.5-coder:7b
+uv run python -m agent_mbpp --task-file cache/mbpp_task.json --output cache/mbpp_solution.json \
+    --model-name "qwen2.5-coder:7b" --provider-url "http://localhost:11434/v1"
+```
+
+No key is needed for `localhost`. Free cloud tiers have small quotas (OpenRouter `:free` models: 50 requests per
+day per account without purchased credits), so use several providers/keys; a daily-quota error disables the key at
+once and the agent moves to the next key or to the providers listed in `fallbacks` (`config/models.json`,
+enabled by `fallback_enabled`, only providers with a key in the environment are used).
 
 Useful options: `--env-file PATH`, `--trace-file runs/live.jsonl` (event trace for the UI), `--fallback`
 (fall back to providers listed in `config/models.json`), `--max-iterations N`, `--mcp-stdio CMD` / `--mcp-server URL`
@@ -163,6 +178,13 @@ each assertion with got/expected values. Task context comes from `MBPP_TASK_FILE
 | `run_tests()` | task eval script (or `/eval.sh`), pass/fail summary + output tail |
 | `get_patch()` | `git -c core.fileMode=false diff` |
 | `run_command(command, workdir)` | exit code, stdout, stderr (with timeout) |
+
+## Evaluation guide
+
+A step-by-step defense manual (demo script, expected sandbox results, architecture walkthrough, likely questions,
+live-modification drills) is available in [docs/DEFENSE.en.md](docs/DEFENSE.en.md) and
+[docs/DEFENSE.ru.md](docs/DEFENSE.ru.md). On macOS the moulinette's Docker SDK needs
+`export DOCKER_HOST=unix://$HOME/.docker/run/docker.sock`.
 
 ## Benchmark results and analysis
 

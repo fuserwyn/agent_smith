@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field
@@ -70,6 +70,8 @@ class ProviderSpec(BaseModel):
     )
     hosts: List[str] = Field(default_factory=list, description="Hostnames that identify this provider")
     extra_headers: Dict[str, str] = Field(default_factory=dict)
+    extra_body: Dict[str, Any] = Field(
+        default_factory=dict, description="Extra JSON fields sent with every request (e.g. reasoning off)")
 
 
 class ModelSpec(BaseModel):
@@ -82,6 +84,8 @@ class ModelsConfig(BaseModel):
     providers: List[ProviderSpec] = Field(default_factory=list)
     models: List[ModelSpec] = Field(default_factory=list)
     fallbacks: List[ModelSpec] = Field(default_factory=list)
+    fallback_enabled: bool = Field(
+        default=False, description="Use `fallbacks` even without --fallback (only providers with a key in env)")
 
     def provider_by_name(self, name: str) -> Optional[ProviderSpec]:
         return next((p for p in self.providers if p.name == name), None)

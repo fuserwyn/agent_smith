@@ -54,3 +54,24 @@ def test_patch_run_command_and_run_tests(git_repo):
     out = t.run_command("echo hi; echo err >&2; exit 3")
     assert "exit_code: 3" in out and "hi" in out and "err" in out
     assert "1 passed" in t.run_tests()
+
+
+def test_search_code_falls_back_to_literal_text(git_repo):
+    out = tools(git_repo).search_code("def add(a, b):", "*.py")  # ( ) are regex groups: no regex match
+    assert "literal-text matches" in out and "mathutil.py:1 def add(a, b):" in out
+
+
+def test_summarize_sympy_django_pytest_formats():
+    from agent_smith.tools.swebench_tools import summarize_test_output as summ
+    sympy = "test_Vector ok\ntest_Vector_diffs E\ntest_vector_var_in_dcm E\n= tests finished: 1 passed, 3 exceptions, in 0.66 seconds ="
+    assert summ(sympy).startswith("summary: 1 passed, 3 failed/errored") and "test_Vector_diffs E" in summ(sympy)
+    django = "test_a (m.T) ... ok\ntest_b (m.T) ... FAIL\nRan 2 tests in 0.1s\nFAILED (failures=1)"
+    assert summ(django).startswith("summary: 1 passed, 1 failed/errored")
+    pytest_out = "PASSED t.py::a\nFAILED t.py::b - assert 0\n==== 1 failed, 1 passed in 0.1s ===="
+    assert summ(pytest_out).startswith("summary: 1 passed, 1 failed/errored")
+
+
+def test_run_tests_keeps_stdout_stderr_order(git_repo):
+    script = "echo noise >&2\nset -x\n: '>>>>> Start Test Output'\necho 'test_add ok'\n: '>>>>> End Test Output'\necho late >&2\n"
+    out = tools(git_repo, script=script).run_tests()
+    assert "summary: 1 passed, 0 failed" in out and "late" not in out

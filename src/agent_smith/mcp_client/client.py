@@ -222,6 +222,15 @@ class MCPClient:
         future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         return future.result(timeout or self.call_timeout)
 
+    def describe(self) -> Dict[str, Any]:
+        """Connection summary for traces/UI: server name, tool schemas, capabilities."""
+        return {"server": self.server_name, "tools": self.tool_names(), "transport": self.transport,
+                "resources": self.has_resources, "prompts": self.has_prompts,
+                "tool_specs": [{"name": t.name, "signature": t.signature(), "description": t.description,
+                                "params": [{"name": p.name, "type": p.type, "required": p.required,
+                                            "description": p.description} for p in t.params]}
+                               for t in self.tools]}
+
     def tool_names(self) -> List[str]:
         return [t.name for t in self.tools]
 

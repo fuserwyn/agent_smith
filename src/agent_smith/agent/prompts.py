@@ -17,8 +17,8 @@ Never write the Observation yourself. Variables persist between steps. Use print
 def mbpp_system_prompt(config: SandboxConfig, mcp) -> str:
     tools = {t.name for t in mcp.tools} if mcp else set()
     if "run_tests" in tools:
-        method = '''Solve it in ONE step when possible: write the solution, test it, submit if green:
-Thought: Count with a dict, return the most common.
+        method = '''Your FIRST reply must already test and submit. Always use exactly this pattern:
+Thought: Count with a dict and return the most common item.
 ```python
 code = r"""
 from collections import Counter
@@ -30,7 +30,8 @@ print(result)
 if result.startswith("ALL TESTS PASSED"):
     final_answer(code)
 ```<end_code>
-If tests fail, read got/expected, fix the code and repeat.'''
+Never reply with only a function definition: it is not tested and not submitted.
+If the tests fail, read got/expected, fix the code and use the same pattern again.'''
     else:
         method = "Define the function, check it with a few asserts, then call final_answer(code_string)."
     return f"""You are an expert Python programmer. You solve a programming task by writing code in a sandbox.
@@ -42,11 +43,11 @@ If tests fail, read got/expected, fix the code and repeat.'''
 {method}
 
 Rules:
-- `code` must be a complete standalone solution: needed imports + the function with the EXACT name and parameters
-  requested. No prints, no tests, no input() in it. Use only the allowed imports.
+- `code` is a string with the complete standalone solution: needed imports + the function with the EXACT name and
+  parameters requested. No prints, no tests, no input() inside it. Use only the allowed imports.
 - One extra hidden test exists: implement the general behaviour described, never hard-code test values.
 - final_answer receives the solution source code as a string.
-- Keep Thoughts to one or two sentences."""
+- Keep the Thought to one sentence."""
 
 
 def mbpp_task_prompt(task: MBPPTaskInput) -> str:
@@ -59,18 +60,19 @@ def mbpp_task_prompt(task: MBPPTaskInput) -> str:
 
 SWE_METHOD = """## Method (follow it; it is how an experienced engineer fixes a bug)
 1. Understand: restate the bug in one sentence. Identify symbols, error messages and files mentioned in the issue.
-2. Locate: search_function_or_class_definition_in_code / search_code for those symbols. Read only the relevant
-   ranges with read_file(path, start, end) (not whole big files).
-3. Reproduce: write a tiny script that shows the bug, e.g.
-   run_command("cat > /tmp/repro.py << 'EOF'\\n<python>\\nEOF\\npython /tmp/repro.py"). Confirm you see the failure.
+2. Locate: search_function_or_class_definition_in_code / search_code for those symbols, then read the relevant
+   region in ONE call with a wide range, e.g. read_file(path, 1, 200). Do not page through a file 50 lines at a time.
+3. Reproduce: run the snippet from the issue once, e.g.
+   run_command("cd /testbed && python -c '<snippet>'"), and confirm the failure.
 4. Fix: make the minimal, general change at the root cause with edit_file(path, old_str, new_str).
    old_str must be copied EXACTLY (indentation included) from read_file output and be unique.
-5. Verify: re-run the reproduction, then run_tests(). Inspect failing test names; iterate if needed.
-6. Submit: as soon as the fix is verified call final_answer(get_patch()). Do not keep exploring after tests pass.
+5. Verify in the SAME code block as the edit: print(edit_file(...)), then print(run_tests()). run_tests runs the
+   task's real test suite: it is the only verification that counts. Read the failing test names and fix regressions.
+6. Submit: as soon as run_tests shows no failures, call final_answer(get_patch()). Do not keep exploring.
 
 ## Efficiency
-- Batch several tool calls in ONE code block (search + read, edit + re-run). Print only what you need.
-- You have a limited number of steps and tokens: no long essays in Thoughts.
+- Batch several tool calls in ONE code block (search + read, edit + run_tests). Print only what you need.
+- You have a limited number of steps and tokens: no long essays in Thoughts, no repeated manual experiments.
 - Never modify test files. Keep scratch files in /tmp, never inside the repository.
 
 ## Integrity (mandatory)
@@ -86,7 +88,13 @@ print(search_code("def _eval_col_insert", "*.py"))
 ```<end_code>'''
 
 
-def swebench_system_prompt(config: SandboxConfig, mcp, repo_root: str = "/testbed") -> str:
+SWE_MINIMAL = """Fix the issue, check it, then call final_answer(get_patch()).
+Solve it using this repository only (no internet)."""
+
+
+def swebench_system_prompt(config: SandboxConfig, mcp, repo_root: str = "/testbed", variant: str = "full") -> str:
+    """``variant="minimal"`` drops the method section and the example (used for the ablation study)."""
+    guidance = f"{SWE_METHOD}\n\n{SWE_EXAMPLE}" if variant == "full" else SWE_MINIMAL
     return f"""You are an autonomous software engineer fixing a real issue in the repository at {repo_root}.
 You act by writing Python code that calls tools (Python functions). The repository lives in a separate
 environment: you can only reach it through the tools, never with open() or imports.
@@ -95,9 +103,7 @@ environment: you can only reach it through the tools, never with open() or impor
 
 {build_manual(config, mcp)}
 
-{SWE_METHOD}
-
-{SWE_EXAMPLE}"""
+{guidance}"""
 
 
 def swebench_task_prompt(task: SWEBenchTaskInput, repo_root: str = "/testbed") -> str:

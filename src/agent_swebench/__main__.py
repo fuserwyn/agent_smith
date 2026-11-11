@@ -15,6 +15,7 @@ import os
 import sys
 import tempfile
 import time
+from typing import Optional
 
 from agent_smith.agent import AgentSettings, CodeAgent
 from agent_smith.agent.prompts import swebench_system_prompt, swebench_task_prompt
@@ -40,6 +41,8 @@ SWE_SETTINGS = AgentSettings(
 def main(argv=None) -> int:
     parser = common_parser("agent_swebench", "Fix a SWE-bench issue with the Agent Smith code agent")
     parser.add_argument("--keep-network", action="store_true", help="do not start the container with --network none")
+    parser.add_argument("--prompt-variant", choices=["full", "minimal"], default="full",
+                        help="system prompt variant (minimal = no method section; ablation study)")
     args = parser.parse_args(argv)
     events = setup(args)
     with open(args.task_file, encoding="utf-8") as fh:
@@ -75,8 +78,7 @@ def main(argv=None) -> int:
                 else:
                     mcp = MCPClient(stdio_command=args.mcp_stdio or default_server("mcp_tools_swebench.py"), env=env)
                 with mcp.connect():
-                    events.emit("mcp_connected", {"server": mcp.server_name, "tools": mcp.tool_names(),
-                                                  "resources": mcp.has_resources, "prompts": mcp.has_prompts})
+                    events.emit("mcp_connected", mcp.describe())
 
                     def current_patch() -> str:
                         if "get_patch" not in mcp.tool_names():
@@ -84,10 +86,17 @@ def main(argv=None) -> int:
                         out = mcp.call_tool("get_patch", {})
                         return "" if out.is_error or "diff --git" not in out.text else out.text
 
+                    def patch_only(answer: str) -> Optional[str]:
+                        if "diff --git" in answer:
+                            return None
+                        return ("the final answer must be the git patch, not a description. "
+                                "Call final_answer(get_patch()) (check first that get_patch() is not empty).")
+
                     with Sandbox(config, mcp, event_hook=events.emit, trace_execution=bool(args.trace_file)) as sandbox:
-                        agent = CodeAgent(llm, sandbox, swebench_system_prompt(config, mcp, REPO_ROOT), limits,
+                        agent = CodeAgent(llm, sandbox, swebench_system_prompt(config, mcp, REPO_ROOT, args.prompt_variant), limits,
                                           "swebench", task.instance_id, settings=SWE_SETTINGS, events=events,
-                                          fallback_answer=current_patch, started=started)
+                                          fallback_answer=current_patch, started=started,
+                                          answer_validator=patch_only)
                         output = agent.run(swebench_task_prompt(task, REPO_ROOT))
                         if agent.interrupted:
                             raise KeyboardInterrupt

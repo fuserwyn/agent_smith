@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -11,10 +11,12 @@ from agent_smith.llm.base import LLMError, LLMResponse, Message, estimate_messag
 
 class OpenAICompatProvider:
     def __init__(self, base_url: str, model: str, extra_headers: Optional[Dict[str, str]] = None,
-                 transport: Optional[httpx.BaseTransport] = None):
+                 transport: Optional[httpx.BaseTransport] = None, extra_body: Optional[Dict[str, Any]] = None):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.extra_headers = extra_headers or {}
+        # e.g. {"reasoning": {"enabled": false}}: thinking tokens count toward the output budget.
+        self.extra_body = dict(extra_body or {})
         self._client = httpx.Client(transport=transport)
 
     def complete(self, messages: List[Message], *, api_key: Optional[str], max_tokens: int,
@@ -26,14 +28,30 @@ class OpenAICompatProvider:
                    "temperature": temperature}
         if stop:
             payload["stop"] = stop[:4]  # many providers accept at most 4 stop sequences
+        payload.update(self.extra_body)
+        resp = self._post(payload, headers, timeout)
+        if resp.status_code in (400, 422) and self.extra_body:
+            # Some models reject provider-specific options (e.g. "reasoning cannot be disabled"):
+            # drop them for this model and retry once.
+            for key in self.extra_body:
+                payload.pop(key, None)
+            self.extra_body = {}
+            resp = self._post(payload, headers, timeout)
+        result = self._parse(resp, messages)
+        # Providers that ignore `stop` would let the model invent an Observation: cut it client-side.
+        for s in stop or []:
+            if s in result.text:
+                result.text = result.text.split(s, 1)[0]
+        return result
+
+    def _post(self, payload: Dict[str, Any], headers: Dict[str, str], timeout: float) -> httpx.Response:
         try:
-            resp = self._client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers,
+            return self._client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers,
                                      timeout=httpx.Timeout(timeout, connect=min(10.0, timeout)))
         except httpx.TimeoutException as exc:
             raise LLMError(f"request timed out: {exc}", retryable=True) from exc
         except httpx.HTTPError as exc:
             raise LLMError(f"network error: {exc}", retryable=True) from exc
-        return self._parse(resp, messages)
 
     @staticmethod
     def _retry_after(resp: httpx.Response) -> Optional[float]:
@@ -43,10 +61,27 @@ class OpenAICompatProvider:
         except ValueError:
             return None
 
+    @staticmethod
+    def _quota_exhausted(resp: httpx.Response) -> bool:
+        text = resp.text.lower()
+        if any(marker in text for marker in ("per-day", "per day", "daily", "quota", "per-month")):
+            return True
+        reset = resp.headers.get("x-ratelimit-reset")
+        try:  # reset more than 10 minutes away (seconds or milliseconds since epoch)
+            value = float(reset) / (1000 if reset and float(reset) > 1e11 else 1)
+            import time
+            return value - time.time() > 600
+        except (TypeError, ValueError):
+            return False
+
     def _parse(self, resp: httpx.Response, messages: List[Message]) -> LLMResponse:
         status = resp.status_code
         body_text = resp.text[:500]
         if status == 429:
+            # A daily/monthly quota will not come back within this task: disable the key and move on
+            # (next key or fallback provider) instead of waiting until the time budget is gone.
+            if self._quota_exhausted(resp):
+                raise LLMError(f"quota exhausted (429): {body_text}", status, disable_key=True, rotate_key=True)
             raise LLMError(f"rate limited (429): {body_text}", status, rotate_key=True,
                            retry_after=self._retry_after(resp))
         if status in (401, 403):

@@ -195,13 +195,20 @@ class SWEBenchTools:
     def search_code(self, pattern: str, file_pattern: str = "*.py") -> str:
         include = f"--include={quote(file_pattern)}" if file_pattern and file_pattern != "*" else ""
         lines = self._grep(f"-E {include} -e {quote(pattern)}", self.ex.root)
-        if lines and lines[0].startswith("grep:") and ("Unmatched" in lines[0] or "Invalid" in lines[0]):
-            lines = self._grep(f"-F {include} -e {quote(pattern)}", self.ex.root)
-            prefix = "[note: pattern is not a valid extended regex; searched it as a literal string]\n"
-        else:
-            prefix = ""
+        prefix = ""
+        invalid = bool(lines) and lines[0].startswith("grep:")
+        if invalid or not lines:
+            # Agents often search for literal code such as "def f(x):", where ( ) are regex groups:
+            # retry as plain text before answering "no matches".
+            literal = self._grep(f"-F {include} -e {quote(pattern)}", self.ex.root)
+            if literal and not literal[0].startswith("grep:"):
+                lines = literal
+                prefix = ("[note: the pattern is not a valid extended regex; searched it as literal text]\n" if invalid
+                          else "[note: no regex match; these are literal-text matches]\n")
+            elif invalid:
+                lines = []
         if not lines:
-            return f"No matches for '{pattern}' in files matching '{file_pattern}'."
+            return f"No matches for '{pattern}' in files matching '{file_pattern}' (searched as regex and as literal text)."
         return prefix + self._format_grep(lines)
 
     def search_function_or_class_definition_in_code(self, name: str) -> str:
@@ -244,12 +251,12 @@ class SWEBenchTools:
         self.details = {}
         if script:
             self.ex.write_text("/tmp/agent_eval.sh", script)
-            cmd = "bash /tmp/agent_eval.sh"
+            cmd = "bash /tmp/agent_eval.sh 2>&1"  # keep stdout/stderr order: markers are printed by `set -x`
             self.details = {"source": "eval_script field of the SWE-bench task.json (dumped by the moulinette, "
                                       "passed to the server via SWEBENCH_EVAL_SCRIPT_FILE); copied to /tmp/agent_eval.sh",
                             "script": script[:6000]}
         elif self.ex.exists("/eval.sh"):
-            cmd = "bash /eval.sh"
+            cmd = "bash /eval.sh 2>&1"
             self.details = {"source": "/eval.sh found inside the container (SWE-bench harness location)"}
         else:
             return ("Error: no evaluation script configured (set SWEBENCH_EVAL_SCRIPT_FILE or provide /eval.sh). "
@@ -275,22 +282,37 @@ class SWEBenchTools:
                 f"\nstdout:\n{truncate_middle(res.stdout, 8000)}\nstderr:\n{truncate_middle(res.stderr, 4000)}")
 
 
-_RESULT_RE = re.compile(r"^(.*?)\s+(PASSED|FAILED|ERROR|XFAIL|XPASS|SKIPPED)\b|^(PASSED|FAILED|ERROR)\s+(\S+)")
-
-
 def summarize_test_output(output: str) -> str:
-    """Count pass/fail lines (pytest -rA style and sympy's bin/test style)."""
-    failed, passed = [], 0
+    """Pass/fail summary for the test runners used by SWE-bench repositories.
+
+    pytest -rA: ``PASSED path::test`` / ``FAILED path::test - msg``; sympy bin/test --verbose:
+    ``test_name ok`` / ``test_name F`` / ``test_name E`` and ``tests finished: 1 passed, 3 exceptions``;
+    django runtests: ``test_x (mod.Class) ... ok|FAIL|ERROR`` and ``FAILED (failures=1, errors=2)``.
+    """
+    passed, failed = 0, []
     for line in output.splitlines():
         s = line.strip()
-        if s.startswith(("FAILED ", "ERROR ")):
+        if s.startswith(("FAILED ", "ERROR ")) and not s.startswith("FAILED ("):  # "FAILED (failures=1)" = django total
             failed.append(s)
-        elif s.startswith("PASSED ") or s.endswith(" PASSED") or s.endswith(" ok"):
+        elif s.startswith("PASSED "):
             passed += 1
-        elif re.match(r"^test_\w+ (F|E)$", s) or s.endswith(" FAILED") or s.endswith(" ERROR"):
+        elif re.match(r"^\S.* \.\.\. (ok|skipped.*|expected failure)$", s) or re.match(r"^test_\w+ ok$", s):
+            passed += 1
+        elif re.match(r"^\S.* \.\.\. (FAIL|ERROR)$", s) or re.match(r"^test_\w+ [FEX]$", s):
             failed.append(s)
-    tail = [l for l in output.splitlines() if re.search(r"(passed|failed|error)", l, re.I) and "==" in l][-1:]
-    lines = [f"summary: {passed} passed, {len(failed)} failed/errored" + (f" | {tail[0].strip()}" if tail else "")]
+    totals = [l.strip() for l in output.splitlines()
+              if re.search(r"(tests finished:|^Ran \d+ tests|^FAILED \(|^OK( \(|$)|=+ .*(passed|failed|error).* =+)", l.strip())]
+    sympy = re.search(r"tests finished: (\d+) passed(?:, (\d+) failed)?(?:, \d+ skipped)?(?:, \d+ expected to fail)?"
+                      r"(?:, \d+ expected to fail but passed)?(?:, (\d+) exceptions)?", output)
+    if sympy:  # sympy's own totals are authoritative
+        passed = int(sympy.group(1))
+        n_failed = int(sympy.group(2) or 0) + int(sympy.group(3) or 0)
+    else:
+        n_failed = len(failed)
+    head = f"summary: {passed} passed, {n_failed} failed/errored"
+    if totals:
+        head += " | " + " | ".join(totals[-2:])
+    lines = [head]
     if failed:
         lines.append("failing tests:\n  " + "\n  ".join(failed[:30]))
     return "\n".join(lines)
