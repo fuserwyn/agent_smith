@@ -181,9 +181,9 @@ each assertion with got/expected values. Task context comes from `MBPP_TASK_FILE
 
 ## Evaluation guide
 
-A step-by-step defense manual (demo script, expected sandbox results, architecture walkthrough, likely questions,
-live-modification drills) is available in [docs/DEFENSE.en.md](docs/DEFENSE.en.md) and
-[docs/DEFENSE.ru.md](docs/DEFENSE.ru.md). On macOS the moulinette's Docker SDK needs
+Run commands are in [Instructions](#instructions). A full local rehearsal of the three exam scripts:
+`./scripts/mock_exam.sh all --student-path . --moulinette-path ./moulinette --env-file .env`
+(results in `evaluations/`). On macOS the moulinette's Docker SDK needs
 `export DOCKER_HOST=unix://$HOME/.docker/run/docker.sock`.
 
 ## Benchmark results and analysis
