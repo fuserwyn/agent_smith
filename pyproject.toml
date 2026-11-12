@@ -26,3 +26,6 @@ packages = ["src/agent_smith", "src/agent_mbpp", "src/agent_swebench"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# MBPP reference solutions from the moulinette dataset (e.g. task 593: re.sub('\\.[0]*', ...)) use non-raw
+# regex strings; Python warns when they are parsed. Dataset code, not ours.
+filterwarnings = ["ignore:invalid escape sequence:DeprecationWarning"]
