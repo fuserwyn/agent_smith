@@ -252,6 +252,16 @@ details.sys summary { cursor: pointer; padding: 10px 14px; font-size: 13px; colo
 details.sys pre { border-top: 1px solid var(--line); }
 
 /* ---------- plain-language layer ---------- */
+.ic { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.14em; }
+.story .ico { color: var(--c-orch); display: grid; place-items: center; } .story.good .ico { color: var(--c-final); } .story.bad .ico { color: var(--c-error); } .story.warn .ico { color: var(--c-warn); }
+.story .ico .ic { width: 26px; height: 26px; }
+.bigplay { display: inline-flex; align-items: center; gap: 7px; } .bigplay .ic { width: 15px; height: 15px; }
+.sbox .big { display: grid; place-items: center; color: var(--sc); } .sbox .big .ic { width: 32px; height: 32px; stroke-width: 1.8; }
+.sarrow .ic { width: 20px; height: 20px; }
+.res-big { display: flex; align-items: center; gap: 8px; } .res-big .ic { width: 24px; height: 24px; }
+.res-tests .ic { margin: 0 2px; }
+.sloop span .ic { width: 13px; height: 13px; vertical-align: -.18em; }
+.step .icons span { display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px; } .step .icons .ic { width: 12px; height: 12px; }
 body[data-mode="simple"] .det { display: none !important; }
 body[data-mode="detailed"] .smp { display: none !important; }
 .wrap { grid-template-columns: minmax(0, 1fr); }
@@ -277,7 +287,7 @@ body[data-mode="detailed"] .smp { display: none !important; }
 .res-note { font-size: 12px; color: var(--muted); }
 .story { display: flex; align-items: center; gap: 14px; padding: 12px 16px; box-shadow: inset 4px 0 0 var(--c-orch); }
 .story.good { box-shadow: inset 4px 0 0 var(--c-final); } .story.bad { box-shadow: inset 4px 0 0 var(--c-error); } .story.warn { box-shadow: inset 4px 0 0 var(--c-warn); }
-.story .ico { font-size: 26px; line-height: 1; width: 34px; text-align: center; flex: none; }
+.story .ico { width: 34px; flex: none; }
 .story .say { flex: 1; min-width: 0; font-size: 16.5px; line-height: 1.4; font-weight: 500; text-wrap: pretty; }
 .story .say q { color: var(--muted); font-style: italic; font-weight: 400; }
 .story .where { font-size: 12px; color: var(--muted); white-space: nowrap; font-family: var(--f-mono); }
@@ -285,7 +295,7 @@ body[data-mode="detailed"] .smp { display: none !important; }
 .simple { padding: 18px 16px 26px; display: grid; grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr) 26px minmax(0, 1fr) 26px minmax(0, 1fr); align-items: stretch; }
 .sbox { border: 2px solid var(--line); border-radius: 12px; padding: 12px 10px; background: var(--panel-2); display: grid; gap: 4px; align-content: start;
   text-align: center; min-width: 0; transition: border-color .2s, box-shadow .2s, transform .2s; }
-.sbox .big { font-size: 30px; line-height: 1.15; }
+.sbox .big { min-height: 36px; }
 .sbox h3 { font-size: 15px; }
 .sbox .ex { font-size: 12.5px; color: var(--muted); }
 .sbox .now { font-size: 12px; font-family: var(--f-mono); color: var(--sc); min-height: 2.8em; word-break: break-word; }
@@ -304,7 +314,9 @@ body[data-mode="detailed"] .smp { display: none !important; }
 .budget-note { font-size: 11.5px; color: var(--muted); padding: 0 14px 12px; }
 .sec { display: grid; gap: 8px; font-size: 12.5px; }
 .sec ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
-.sec li::before { content: "✓ "; color: var(--c-final); font-weight: 700; }
+.sec li { display: flex; gap: 7px; align-items: baseline; }
+.sec li::before { content: ""; flex: none; width: 12px; height: 12px; transform: translateY(1px); background: var(--c-final);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat; }
 .sec .cnt { font-weight: 600; }
 .sec .none { color: var(--muted); }
 .sec .blk { border: 1px solid var(--line); border-left: 3px solid var(--c-error); border-radius: 6px; padding: 5px 8px; font-family: var(--f-mono); font-size: 11.5px; word-break: break-word; }
@@ -317,7 +329,8 @@ body[data-mode="detailed"] .smp { display: none !important; }
 .pl.hunk { color: var(--c-mcp); background: var(--panel-2); } .pl.file { font-weight: 600; } .pl.meta { color: var(--muted); }
 #ans-sub { font-size: 12.5px; }
 [data-term] { cursor: help; text-decoration: underline dotted color-mix(in srgb, currentColor 50%, transparent); text-underline-offset: 3px; }
-[data-term]::after { content: " ⓘ"; color: var(--c-orch); font-size: .85em; text-decoration: none; display: inline-block; margin-left: 2px; }
+[data-term]::after { content: ""; display: inline-block; width: .9em; height: .9em; margin-left: 4px; vertical-align: -.1em; background: var(--c-orch);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E") center / contain no-repeat; }
 .tip { position: fixed; z-index: 60; max-width: 320px; background: var(--ink); color: var(--panel); border-radius: 8px; padding: 8px 11px;
   font-size: 12.5px; line-height: 1.45; box-shadow: 0 10px 30px rgba(10, 16, 30, .3); pointer-events: none; }
 .tip b { display: block; margin-bottom: 2px; }
@@ -391,8 +404,8 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
   </section>
 
   <section class="panel story info" id="story" aria-label="What is happening now">
-    <button class="bigplay" id="s-play">▶ Play</button>
-    <span class="ico" id="story-ico" aria-hidden="true">▶</span>
+    <button class="bigplay" id="s-play">Play</button>
+    <span class="ico" id="story-ico" aria-hidden="true"></span>
     <div class="say" id="story-say"></div>
     <span class="where" id="story-where"></span>
   </section>
@@ -521,7 +534,7 @@ en: {
   task_h: "Task", result_h: "Result",
   simple_h: "How the agent works", simple_hint: "the highlighted block is working now",
   ans_h: "Answer",
-  play: "▶ Play", pause: "⏸ Pause", replay: "↺ Replay",
+  play: "Play", pause: "Pause", replay: "Replay",
   gloss_title: "Glossary", close: "Close",
   badge_demo: "scripted demo", badge_live: "live", badge_file: "file",
   demo_mbpp: "Real framework run on MBPP task 282: sandbox, MCP server, run_tests in an isolated test sandbox. Only the AI's answers are pre-recorded; the first attempt is wrong on purpose so you can watch the agent correct itself.",
@@ -533,7 +546,7 @@ en: {
   kind_swe: "Fix a real bug in a real open-source project. The fix must pass the project's tests.",
   kind_none: "Load a run: a demo, a trace file or live mode.",
   model_lbl: "AI model", via: "via",
-  res_idle: "Not started", res_running: "⏳ In progress… step {n}", res_ok: "✅ Answer submitted", res_fail: "❌ No answer",
+  res_idle: "Not started", res_running: "In progress… step {n}", res_ok: "Answer submitted", res_fail: "No answer",
   res_stats: "{n} steps · {s} s · {pct}% of the input-token limit",
   res_tests: "Last test run: {txt}", res_tests_none: "No test run yet.",
   tests_x: "{p} of {n} passed",
@@ -584,7 +597,7 @@ en: {
   n_interrupted: "The run was interrupted.",
   n_end_ok: "Done: answer submitted (steps: {n}, {s} s). Next, the moulinette checks it with its own tests.",
   n_end_bad: "Finished without an answer (steps: {n}).",
-  n_idle: "Press ▶ Play to watch the agent solve the task.",
+  n_idle: "Press Play to watch the agent solve the task.",
   where_step: "step {n} / max {max}",
   tool_run_tests: "run the tests", tool_read_file: "read the file {file}", tool_edit_file: "edit the file {file}",
   tool_list_files: "list the files in {dir}", tool_search_code: "search the code for “{pattern}”",
@@ -596,9 +609,9 @@ en: {
   sb_ai: "AI model", sb_ai_x: "thinks and writes Python code",
   sb_sandbox: "Sandbox", sb_sandbox_x: "runs the code safely and uses tools",
   sb_answer: "Answer", sb_answer_x: "code or patch, then checked by tests",
-  s_loop: "↺ repeat until solved",
+  s_loop: "repeat until solved",
   sbn_thinking: "thinking…", sbn_answered: "step {n}: answered", sbn_line: "running line {l}", sbn_tool: "tool: {name}",
-  sbn_status: "finished: {status}", sbn_waiting: "waiting…", sbn_ok: "✅ submitted", sbn_bad: "❌ no answer",
+  sbn_status: "finished: {status}", sbn_waiting: "waiting…", sbn_ok: "submitted", sbn_bad: "no answer",
   status_ok: "ok", status_error: "error", status_timeout: "time limit", status_memory: "memory limit",
   status_security_error: "blocked", status_syntax_error: "syntax error", status_final_answer: "answer", status_crash: "crash",
 
@@ -646,13 +659,13 @@ en: {
   tour: [
     ["Welcome", "This page replays how our AI agent solves a programming task. Choose the language and the view here: Simple for the big picture, Detailed for the internals."],
     ["The task", "What the agent must solve (left) and the result at the end (right)."],
-    ["Press ▶ Play", "This line explains in plain words what is happening at each moment."],
+    ["Press Play", "This line explains in plain words what is happening at each moment."],
     ["The cycle", "The AI thinks and writes code, the sandbox runs it safely, the result goes back to the AI. This repeats until the task is solved."],
-    ["Steps", "One card per round. 🧠 the AI answered · ▶ the code ran · 🔧 tools used · ✅/❌ tests · 🏁 answer handed in."],
+    ["Steps", "One card per round. Its icons show what happened: the AI answered, the code ran, tools were used, the test result, the answer handed in."],
     ["Limits", "Limits from the subject: steps, text read and written by the AI, time. The agent checks them before every AI call."],
     ["Security", "What the code is not allowed to do, and anything the sandbox blocked during this run."],
     ["The answer", "The submitted code or, for a real project, the patch: red lines removed, green lines added."],
-    ["Unknown word?", "Words marked ⓘ show a short explanation on hover. The Glossary lists them all. You can restart this tour at any time."],
+    ["Unknown word?", "Words with a small (i) icon show a short explanation on hover. The Glossary lists them all. You can restart this tour at any time."],
   ],
   tour_next: "Next", tour_back: "Back", tour_skip: "Skip", tour_done: "Start", tour_n: "{i} of {n}",
 
@@ -712,7 +725,7 @@ ru: {
   opt_lines: "строки кода в таймлайне",
   arch_h: "Архитектура · активность компонентов",
   arch_hint: "нажмите на компонент: его вход и выход на выбранном шаге",
-  caption_ready: "Нажмите ▶, чтобы воспроизвести прогон.",
+  caption_ready: "Нажмите «Запустить», чтобы воспроизвести прогон.",
   legend_delta: "данные изменились между блоком-отправителем и блоком-получателем (дифф во вкладке «Поток и диффы»)",
   budget_h: "Бюджет (лимиты на задачу)",
   budget_note: "Лимиты заданы сабджектом. Превышение любого означает провал задачи, поэтому агент проверяет их перед каждым обращением к ИИ.",
@@ -724,7 +737,7 @@ ru: {
   task_h: "Задача", result_h: "Результат",
   simple_h: "Как работает агент", simple_hint: "подсвечен блок, который работает сейчас",
   ans_h: "Ответ",
-  play: "▶ Запустить", pause: "⏸ Пауза", replay: "↺ Сначала",
+  play: "Запустить", pause: "Пауза", replay: "Сначала",
   gloss_title: "Словарь", close: "Закрыть",
   badge_demo: "демо", badge_live: "вживую", badge_file: "файл",
   demo_mbpp: "Настоящий прогон фреймворка на задаче MBPP 282: песочница, MCP-сервер, run_tests в изолированной песочнице для тестов. Заранее записаны только ответы ИИ; первая попытка специально неверная, чтобы было видно, как агент исправляется.",
@@ -736,7 +749,7 @@ ru: {
   kind_swe: "Исправить настоящий баг в настоящем open-source проекте. Исправление должно пройти тесты проекта.",
   kind_none: "Загрузите прогон: демо, файл трассы или режим «Вживую».",
   model_lbl: "Модель ИИ", via: "через",
-  res_idle: "Не запущено", res_running: "⏳ В процессе… шаг {n}", res_ok: "✅ Ответ сдан", res_fail: "❌ Ответа нет",
+  res_idle: "Не запущено", res_running: "В процессе… шаг {n}", res_ok: "Ответ сдан", res_fail: "Ответа нет",
   res_stats: "Шагов: {n} · {s} с · {pct}% лимита входных токенов",
   res_tests: "Последний запуск тестов: {txt}", res_tests_none: "Тесты ещё не запускались.",
   tests_x: "прошло {p} из {n}",
@@ -787,7 +800,7 @@ ru: {
   n_interrupted: "Прогон прерван.",
   n_end_ok: "Готово: ответ сдан (шагов: {n}, {s} с). Дальше moulinette проверит его своими тестами.",
   n_end_bad: "Завершено без ответа (шагов: {n}).",
-  n_idle: "Нажмите ▶ Запустить, чтобы посмотреть, как агент решает задачу.",
+  n_idle: "Нажмите «Запустить», чтобы посмотреть, как агент решает задачу.",
   where_step: "шаг {n} / макс. {max}",
   tool_run_tests: "запустить тесты", tool_read_file: "прочитать файл {file}", tool_edit_file: "изменить файл {file}",
   tool_list_files: "показать файлы в {dir}", tool_search_code: "найти в коде «{pattern}»",
@@ -799,9 +812,9 @@ ru: {
   sb_ai: "Модель ИИ", sb_ai_x: "думает и пишет код на Python",
   sb_sandbox: "Песочница", sb_sandbox_x: "безопасно выполняет код и пользуется инструментами",
   sb_answer: "Ответ", sb_answer_x: "код или патч, затем проверка тестами",
-  s_loop: "↺ повторять, пока не решено",
+  s_loop: "повторять, пока не решено",
   sbn_thinking: "думает…", sbn_answered: "шаг {n}: ответил", sbn_line: "выполняется строка {l}", sbn_tool: "инструмент: {name}",
-  sbn_status: "завершено: {status}", sbn_waiting: "ждём…", sbn_ok: "✅ сдан", sbn_bad: "❌ нет ответа",
+  sbn_status: "завершено: {status}", sbn_waiting: "ждём…", sbn_ok: "сдан", sbn_bad: "нет ответа",
   status_ok: "ok", status_error: "ошибка", status_timeout: "лимит времени", status_memory: "лимит памяти",
   status_security_error: "заблокировано", status_syntax_error: "синтаксическая ошибка", status_final_answer: "ответ", status_crash: "сбой",
 
@@ -849,13 +862,13 @@ ru: {
   tour: [
     ["Добро пожаловать", "Эта страница воспроизводит, как наш ИИ-агент решает задачу по программированию. Здесь выбираются язык и вид: «Просто» для общей картины, «Подробно» для внутреннего устройства."],
     ["Задача", "Что агент должен решить (слева) и результат в конце (справа)."],
-    ["Нажмите ▶ Запустить", "Эта строка простыми словами объясняет, что происходит в каждый момент."],
+    ["Нажмите «Запустить»", "Эта строка простыми словами объясняет, что происходит в каждый момент."],
     ["Цикл", "ИИ думает и пишет код, песочница безопасно его выполняет, результат возвращается к ИИ. Так повторяется, пока задача не решена."],
-    ["Шаги", "Одна карточка на каждый круг. 🧠 ИИ ответил · ▶ код выполнен · 🔧 использованы инструменты · ✅/❌ тесты · 🏁 ответ сдан."],
+    ["Шаги", "Одна карточка на каждый круг. Значки показывают, что произошло: ИИ ответил, код выполнен, использованы инструменты, результат тестов, ответ сдан."],
     ["Лимиты", "Лимиты из сабджекта: шаги, объём текста, прочитанного и написанного ИИ, время. Агент проверяет их перед каждым обращением к ИИ."],
     ["Безопасность", "Что коду запрещено делать и что песочница заблокировала в этом прогоне."],
     ["Ответ", "Сданный код, а для настоящего проекта патч: красные строки удалены, зелёные добавлены."],
-    ["Незнакомое слово?", "Слова со значком ⓘ показывают короткое объяснение при наведении. В «Словаре» собраны все. Тур можно перезапустить в любой момент."],
+    ["Незнакомое слово?", "Слова со значком (i) показывают короткое объяснение при наведении. В «Словаре» собраны все. Тур можно перезапустить в любой момент."],
   ],
   tour_next: "Далее", tour_back: "Назад", tour_skip: "Пропустить", tour_done: "Начать", tour_n: "{i} из {n}",
 
@@ -924,7 +937,7 @@ fr: {
   opt_lines: "lignes de code dans la chronologie",
   arch_h: "Architecture · activité des composants",
   arch_hint: "cliquez sur un composant : son entrée et sa sortie pour l'étape choisie",
-  caption_ready: "Appuyez sur ▶ pour rejouer l'exécution.",
+  caption_ready: "Appuyez sur « Lancer » pour rejouer l'exécution.",
   legend_delta: "les données ont changé entre le bloc qui les a envoyées et celui qui les a reçues (diff dans l'onglet « Flux et diffs »)",
   budget_h: "Budget (limites par tâche)",
   budget_note: "Limites fixées par le sujet. En dépasser une fait échouer la tâche : l'agent les vérifie donc avant chaque appel à l'IA.",
@@ -936,7 +949,7 @@ fr: {
   task_h: "Tâche", result_h: "Résultat",
   simple_h: "Comment fonctionne l'agent", simple_hint: "le bloc en surbrillance travaille en ce moment",
   ans_h: "Réponse",
-  play: "▶ Lancer", pause: "⏸ Pause", replay: "↺ Rejouer",
+  play: "Lancer", pause: "Pause", replay: "Rejouer",
   gloss_title: "Glossaire", close: "Fermer",
   badge_demo: "démo", badge_live: "en direct", badge_file: "fichier",
   demo_mbpp: "Exécution réelle du framework sur la tâche MBPP 282 : bac à sable, serveur MCP, run_tests dans un bac à sable de test isolé. Seules les réponses de l'IA sont pré-enregistrées ; la première tentative est fausse exprès pour montrer comment l'agent se corrige.",
@@ -948,7 +961,7 @@ fr: {
   kind_swe: "Corriger un vrai bug dans un vrai projet open source. La correction doit passer les tests du projet.",
   kind_none: "Chargez une exécution : une démo, un fichier de trace ou le mode direct.",
   model_lbl: "Modèle d'IA", via: "via",
-  res_idle: "Pas démarré", res_running: "⏳ En cours… étape {n}", res_ok: "✅ Réponse rendue", res_fail: "❌ Pas de réponse",
+  res_idle: "Pas démarré", res_running: "En cours… étape {n}", res_ok: "Réponse rendue", res_fail: "Pas de réponse",
   res_stats: "{n} étapes · {s} s · {pct} % de la limite de jetons en entrée",
   res_tests: "Dernier passage des tests : {txt}", res_tests_none: "Aucun test lancé pour l'instant.",
   tests_x: "{p} sur {n} réussis",
@@ -999,7 +1012,7 @@ fr: {
   n_interrupted: "L'exécution a été interrompue.",
   n_end_ok: "Terminé : réponse rendue (étapes : {n}, {s} s). Ensuite, la moulinette la vérifie avec ses propres tests.",
   n_end_bad: "Terminé sans réponse (étapes : {n}).",
-  n_idle: "Appuyez sur ▶ Lancer pour voir l'agent résoudre la tâche.",
+  n_idle: "Appuyez sur « Lancer » pour voir l'agent résoudre la tâche.",
   where_step: "étape {n} / max {max}",
   tool_run_tests: "lancer les tests", tool_read_file: "lire le fichier {file}", tool_edit_file: "modifier le fichier {file}",
   tool_list_files: "lister les fichiers de {dir}", tool_search_code: "chercher « {pattern} » dans le code",
@@ -1011,9 +1024,9 @@ fr: {
   sb_ai: "Modèle d'IA", sb_ai_x: "réfléchit et écrit du code Python",
   sb_sandbox: "Bac à sable", sb_sandbox_x: "exécute le code en sécurité et utilise les outils",
   sb_answer: "Réponse", sb_answer_x: "code ou patch, puis vérifié par les tests",
-  s_loop: "↺ recommencer jusqu'à la solution",
+  s_loop: "recommencer jusqu'à la solution",
   sbn_thinking: "réfléchit…", sbn_answered: "étape {n} : a répondu", sbn_line: "exécute la ligne {l}", sbn_tool: "outil : {name}",
-  sbn_status: "terminé : {status}", sbn_waiting: "en attente…", sbn_ok: "✅ rendue", sbn_bad: "❌ pas de réponse",
+  sbn_status: "terminé : {status}", sbn_waiting: "en attente…", sbn_ok: "rendue", sbn_bad: "pas de réponse",
   status_ok: "ok", status_error: "erreur", status_timeout: "limite de temps", status_memory: "limite de mémoire",
   status_security_error: "bloqué", status_syntax_error: "erreur de syntaxe", status_final_answer: "réponse", status_crash: "plantage",
 
@@ -1061,13 +1074,13 @@ fr: {
   tour: [
     ["Bienvenue", "Cette page rejoue la façon dont notre agent d'IA résout une tâche de programmation. Choisissez ici la langue et la vue : « Simple » pour la vue d'ensemble, « Détaillé » pour les rouages internes."],
     ["La tâche", "Ce que l'agent doit résoudre (à gauche) et le résultat à la fin (à droite)."],
-    ["Appuyez sur ▶ Lancer", "Cette ligne explique simplement ce qui se passe à chaque instant."],
+    ["Appuyez sur « Lancer »", "Cette ligne explique simplement ce qui se passe à chaque instant."],
     ["Le cycle", "L'IA réfléchit et écrit du code, le bac à sable l'exécute en sécurité, le résultat revient à l'IA. Cela se répète jusqu'à la solution."],
-    ["Les étapes", "Une carte par tour. 🧠 l'IA a répondu · ▶ le code a tourné · 🔧 outils utilisés · ✅/❌ tests · 🏁 réponse rendue."],
+    ["Les étapes", "Une carte par tour. Ses icônes montrent ce qui s'est passé : l'IA a répondu, le code a tourné, des outils ont été utilisés, le résultat des tests, la réponse rendue."],
     ["Les limites", "Les limites du sujet : étapes, texte lu et écrit par l'IA, temps. L'agent les vérifie avant chaque appel à l'IA."],
     ["La sécurité", "Ce que le code n'a pas le droit de faire, et ce que le bac à sable a bloqué pendant cette exécution."],
     ["La réponse", "Le code rendu ou, pour un vrai projet, le patch : lignes rouges supprimées, lignes vertes ajoutées."],
-    ["Un mot inconnu ?", "Les mots marqués ⓘ affichent une courte explication au survol. Le Glossaire les rassemble tous. Vous pouvez relancer cette visite à tout moment."],
+    ["Un mot inconnu ?", "Les mots marqués d'une icône (i) affichent une courte explication au survol. Le Glossaire les rassemble tous. Vous pouvez relancer cette visite à tout moment."],
   ],
   tour_next: "Suivant", tour_back: "Retour", tour_skip: "Passer", tour_done: "Commencer", tour_n: "{i} sur {n}",
 
@@ -1996,6 +2009,47 @@ function startLive() {
   };
 }
 
+/* Line icons (24×24, stroke = currentColor), inline so the page works offline. */
+const ICONS = {
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/>',
+  bot: '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 4h6M2 13v3M22 13v3"/><path d="M9 13v1.5M15 13v1.5"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  flag: '<path d="M4 22V3"/><path d="M4 4h13l-2.5 4.5L17 13H4"/>',
+  plug: '<path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v5"/>',
+  box: '<path d="M21 7.5 12 3 3 7.5v9L12 21l9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/>',
+  message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/>',
+  scissors: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>',
+  code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  ret: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  send: '<path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  terminal: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 4 3-4 3M12 15h6"/>',
+  checkcircle: '<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>',
+  xcircle: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>',
+  alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  chip: '<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-3"/>',
+  repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
+  stop: '<path d="M7.9 2h8.2L22 7.9v8.2L16.1 22H7.9L2 16.1V7.9z"/><path d="m15 9-6 6M9 9l6 6"/>',
+  loader: '<path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/>',
+  play: '<path d="M7 4v16l13-8z" fill="currentColor"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  replay: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  dot: '<circle cx="12" cy="12" r="3" fill="currentColor"/>',
+};
+function icon(name, cls = "ic") {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("class", cls); svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = ICONS[name] || ICONS.dot;
+  return svg;
+}
+
 /* ======================= plain-language layer =======================
    Everything below is derived from the same trace events as the technical view: nothing is invented. */
 const SIMPLE_OF = {
@@ -2041,60 +2095,60 @@ function blockedInfo(e) {
 /* One plain sentence for the current event. */
 function narrate(e) {
   const R = (ico, key, p, tone = "info", quote) => ({ico, text: tr(key, p), tone, quote});
-  if (!e) return R("▶️", "n_idle");
+  if (!e) return R("play", "n_idle");
   switch (e.type) {
-    case "run_start": return R("📋", "n_run_start", {model: e.model || "?"});
-    case "mcp_connected": return R("🔌", "n_mcp", {n: (e.tools || []).length, names: (e.tools || []).join(", ")});
-    case "docker_pull": return R("📦", "n_docker_pull");
-    case "docker_started": return R("📦", "n_docker_started");
-    case "docker_removed": return R("🧹", "n_docker_removed", null, "good");
-    case "llm_request": return R("🧠", e.step === 1 ? "n_req_first" : "n_req_next", {n: e.step});
-    case "llm_retry": return R("⏳", "n_retry", null, "warn");
-    case "llm_fallback": return R("🔁", "n_fallback", {to: e.to}, "warn");
-    case "llm_error": return R("⚠️", "n_llm_error", null, "bad");
-    case "llm_response": return R("💬", "n_resp", null, "info", thought(e.text));
-    case "extraction": return e.code ? R("✂️", "n_extract") : R("✂️", "n_extract_none", null, "warn");
-    case "sandbox_start": return R("🛡️", "n_sb_start");
+    case "run_start": return R("clipboard", "n_run_start", {model: e.model || "?"});
+    case "mcp_connected": return R("plug", "n_mcp", {n: (e.tools || []).length, names: (e.tools || []).join(", ")});
+    case "docker_pull": return R("box", "n_docker_pull");
+    case "docker_started": return R("box", "n_docker_started");
+    case "docker_removed": return R("trash", "n_docker_removed", null, "good");
+    case "llm_request": return R("bot", e.step === 1 ? "n_req_first" : "n_req_next", {n: e.step});
+    case "llm_retry": return R("clock", "n_retry", null, "warn");
+    case "llm_fallback": return R("repeat", "n_fallback", {to: e.to}, "warn");
+    case "llm_error": return R("alert", "n_llm_error", null, "bad");
+    case "llm_response": return R("message", "n_resp", null, "info", thought(e.text));
+    case "extraction": return e.code ? R("scissors", "n_extract") : R("scissors", "n_extract_none", null, "warn");
+    case "sandbox_start": return R("shield", "n_sb_start");
     case "exec_line": {
       const x = e.entry;
-      if (x.e === "exception") return R("❌", "n_exc", {l: x.l, x: x.x}, "bad");
-      if (x.e === "final") return R("🏁", "n_final_line", null, "good");
-      if (x.e === "call") return R("▶️", "n_call", {f: x.f});
-      if (x.e === "return") return R("↩️", "n_return", {f: x.f, r: short(x.r, 40)});
-      return R("▶️", "n_line", {l: x.l});
+      if (x.e === "exception") return R("xcircle", "n_exc", {l: x.l, x: x.x}, "bad");
+      if (x.e === "final") return R("flag", "n_final_line", null, "good");
+      if (x.e === "call") return R("code", "n_call", {f: x.f});
+      if (x.e === "return") return R("ret", "n_return", {f: x.f, r: short(x.r, 40)});
+      return R("code", "n_line", {l: x.l});
     }
-    case "exec_more": return R("▶️", "n_more", {n: e.count});
-    case "tool_call": return R("🔧", "n_tool_call", {what: toolWhat(e.name, e.args)});
-    case "mcp_request": return R("📨", "n_mcp_req");
-    case "server_dispatch": return R("⚙️", "n_dispatch", {name: e.handler || e.name});
-    case "repo_op": return e.op.exit_code === 0 ? R("💻", "n_repo_ok") : R("💻", "n_repo_err", {c: e.op.exit_code}, "warn");
-    case "mcp_response": return R("📨", "n_mcp_resp");
+    case "exec_more": return R("code", "n_more", {n: e.count});
+    case "tool_call": return R("wrench", "n_tool_call", {what: toolWhat(e.name, e.args)});
+    case "mcp_request": return R("send", "n_mcp_req");
+    case "server_dispatch": return R("gear", "n_dispatch", {name: e.handler || e.name});
+    case "repo_op": return e.op.exit_code === 0 ? R("terminal", "n_repo_ok") : R("terminal", "n_repo_err", {c: e.op.exit_code}, "warn");
+    case "mcp_response": return R("send", "n_mcp_resp");
     case "tool_result": {
       const r = e.name === "run_tests" ? testResult(e.result) : null;
-      if (r) return R(r.ok ? "✅" : "❌", r.ok ? "n_tests_ok" : "n_tests_bad", {txt: testsText(r)}, r.ok ? "good" : "bad");
-      if (e.is_error) return R("⚠️", "n_tool_err", null, "warn");
-      return R("📥", "n_tool_res", {first: short(firstLine(e.result), 90)});
+      if (r) return R(r.ok ? "checkcircle" : "xcircle", r.ok ? "n_tests_ok" : "n_tests_bad", {txt: testsText(r)}, r.ok ? "good" : "bad");
+      if (e.is_error) return R("alert", "n_tool_err", null, "warn");
+      return R("download", "n_tool_res", {first: short(firstLine(e.result), 90)});
     }
     case "sandbox_end": {
       const b = blockedInfo(e);
-      if (b && b.kind === "blocked") return R("🛡️", "n_sb_blocked", {err: b.msg}, "bad");
-      if (e.status === "timeout") return R("⏱️", "n_sb_timeout", null, "bad");
-      if (e.status === "memory") return R("🧱", "n_sb_memory", null, "bad");
-      if (e.is_final || e.status === "final_answer") return R("🏁", "n_sb_final", null, "good");
-      if (e.status === "ok") return R("✔️", "n_sb_ok");
-      return R("❌", "n_sb_err", {err: short(errLine(e.error) || e.status, 90)}, "bad");
+      if (b && b.kind === "blocked") return R("shield", "n_sb_blocked", {err: b.msg}, "bad");
+      if (e.status === "timeout") return R("clock", "n_sb_timeout", null, "bad");
+      if (e.status === "memory") return R("chip", "n_sb_memory", null, "bad");
+      if (e.is_final || e.status === "final_answer") return R("flag", "n_sb_final", null, "good");
+      if (e.status === "ok") return R("checkcircle", "n_sb_ok");
+      return R("xcircle", "n_sb_err", {err: short(errLine(e.error) || e.status, 90)}, "bad");
     }
-    case "observation": return R("👀", "n_obs");
-    case "budget": return R("📊", "n_budget", {inp: num(e.input_tokens), max: num(e.max_input_tokens)});
-    case "final_answer": return R("🏁", "n_final", null, "good");
-    case "fallback_answer": return R("🏁", "n_fallback_answer", null, "warn");
-    case "budget_stop": return R("⛔", "n_budget_stop", {reason: e.reason}, "bad");
-    case "loop_detected": return R("🔁", "n_loop", null, "warn");
-    case "interrupted": return R("⛔", "n_interrupted", null, "bad");
+    case "observation": return R("eye", "n_obs");
+    case "budget": return R("chart", "n_budget", {inp: num(e.input_tokens), max: num(e.max_input_tokens)});
+    case "final_answer": return R("flag", "n_final", null, "good");
+    case "fallback_answer": return R("flag", "n_fallback_answer", null, "warn");
+    case "budget_stop": return R("stop", "n_budget_stop", {reason: e.reason}, "bad");
+    case "loop_detected": return R("repeat", "n_loop", null, "warn");
+    case "interrupted": return R("stop", "n_interrupted", null, "bad");
     case "run_end": return e.success
-      ? R("✅", "n_end_ok", {n: e.iterations, s: Number(e.total_time_seconds || 0).toFixed(1)}, "good")
-      : R("❌", "n_end_bad", {n: e.iterations}, "bad");
-    default: return R("•", "n_idle");
+      ? R("checkcircle", "n_end_ok", {n: e.iterations, s: Number(e.total_time_seconds || 0).toFixed(1)}, "good")
+      : R("xcircle", "n_end_bad", {n: e.iterations}, "bad");
+    default: return R("dot", "n_idle");
   }
 }
 
@@ -2124,16 +2178,16 @@ function stepSummary(s) {
 }
 function stepIcons(s) {
   const box = h("div", "icons");
-  const add = (txt, tip, cls = "") => { const sp = h("span", cls, txt); sp.title = tip; box.appendChild(sp); };
-  if (s.llm != null) add("🧠", tr("ic_llm"));
-  if (s.code) add("▶", tr("ic_code"));
-  if (s.tools.length) add(`🔧${s.tools.length > 1 ? "×" + s.tools.length : ""}`, `${tr("ic_tools")}: ${[...new Set(s.tools.map((x) => x.name))].join(", ")}`);
+  const add = (ic, txt, tip, cls = "") => { const sp = h("span", cls); sp.appendChild(icon(ic)); if (txt) sp.append(txt); sp.title = tip; box.appendChild(sp); };
+  if (s.llm != null) add("bot", "", tr("ic_llm"));
+  if (s.code) add("code", "", tr("ic_code"));
+  if (s.tools.length) add("wrench", s.tools.length > 1 ? `×${s.tools.length}` : "", `${tr("ic_tools")}: ${[...new Set(s.tools.map((x) => x.name))].join(", ")}`);
   const tests = s.tools.map((x) => (x.name === "run_tests" && x.res ? testResult(x.res.result) : null)).filter(Boolean);
-  if (tests.length) { const r = tests[tests.length - 1]; add(`${r.ok ? "✅" : "❌"} ${r.pass}/${r.total}`, tr("ic_tests"), r.ok ? "good" : "bad"); }
+  if (tests.length) { const r = tests[tests.length - 1]; add(r.ok ? "checkcircle" : "xcircle", `${r.pass}/${r.total}`, tr("ic_tests"), r.ok ? "good" : "bad"); }
   const b = stepBlock(s);
-  if (b) add(b.kind === "blocked" ? "🛡" : "⏱", tr("ic_block"), "bad");
-  else if (s.status === "err") add("⚠", tr("ic_err"), "bad");
-  if (s.status === "final") add("🏁", tr("ic_final"), "good");
+  if (b) add(b.kind === "blocked" ? "shield" : "clock", "", tr("ic_block"), "bad");
+  else if (s.status === "err") add("alert", "", tr("ic_err"), "bad");
+  if (s.status === "final") add("flag", "", tr("ic_final"), "good");
   return box;
 }
 
@@ -2142,7 +2196,7 @@ function stepsSoFar(st) { return Math.max(0, ...[...st.steps.keys()].filter((k) 
 function renderStory(e, st) {
   const n = narrate(e);
   $("story").className = `panel story ${n.tone}`;
-  $("story-ico").textContent = n.ico;
+  $("story-ico").replaceChildren(icon(n.ico));
   const say = $("story-say"); say.replaceChildren(n.text);
   if (n.quote) { say.append(" "); say.appendChild(h("q", "", n.quote)); }
   const lim = (st.run && st.run.limits) || {}, k = stepsSoFar(st);
@@ -2152,19 +2206,21 @@ function renderStory(e, st) {
 function syncBigPlay() {
   const b = $("s-play"); if (!b) return;
   b.hidden = sourceKind === "live";
-  b.textContent = playing ? tr("pause") : events.length > 1 && cursor >= events.length - 1 ? tr("replay") : tr("play");
+  const k = playing ? "pause" : events.length > 1 && cursor >= events.length - 1 ? "replay" : "play";
+  b.replaceChildren(icon(k), tr(k));
 }
 
 /* ---------- simple diagram ---------- */
-const SBOX = [["task", "📋", "--c-task", null], ["ai", "🧠", "--c-llm", "llm"], ["sandbox", "🛡️", "--c-sandbox", "sandbox"], ["answer", "🏁", "--c-final", "final_answer"]];
+const SBOX = [["task", "clipboard", "--c-task", null], ["ai", "bot", "--c-llm", "llm"], ["sandbox", "shield", "--c-sandbox", "sandbox"], ["answer", "flag", "--c-final", "final_answer"]];
 let simpleEls = null;
 function initSimple() {
   const root = $("simple"); root.replaceChildren(); simpleEls = {};
   SBOX.forEach(([id, ico, c, term], i) => {
-    if (i) root.appendChild(h("div", "sarrow", "→"));
+    if (i) { const a = h("div", "sarrow"); a.appendChild(icon("arrow")); root.appendChild(a); }
     const b = h("div", "sbox"); b.style.setProperty("--sc", `var(${c})`);
     const title = h("h3", "", tr("sb_" + id)); if (term) markTerm(title, term);
-    b.append(h("div", "big", ico), title, h("div", "ex", tr("sb_" + id + "_x")), h("div", "now", ""));
+    const big = h("div", "big"); big.appendChild(icon(ico));
+    b.append(big, title, h("div", "ex", tr("sb_" + id + "_x")), h("div", "now", ""));
     root.appendChild(b); simpleEls[id] = b;
   });
   const loop = h("div", "sloop"), lbl = h("span", "", ""); loop.appendChild(lbl); root.appendChild(loop);
@@ -2185,9 +2241,11 @@ function renderSimple(e, st) {
   else if (s && s.running) sb = tr("ss_running");
   else if (s && s.sbStatus) sb = tr("sbn_status", {status: statusName(s.sbStatus)});
   now("sandbox", sb);
-  now("answer", st.end ? tr(st.end.success ? "sbn_ok" : "sbn_bad") : st.run ? tr("sbn_waiting") : "");
+  const ans = simpleEls.answer.querySelector(".now");
+  if (st.end) ans.replaceChildren(icon(st.end.success ? "checkcircle" : "xcircle"), " " + tr(st.end.success ? "sbn_ok" : "sbn_bad"));
+  else ans.textContent = st.run ? tr("sbn_waiting") : "";
   const lim = (st.run && st.run.limits) || {}, k = stepsSoFar(st);
-  simpleEls.loopLbl.textContent = tr("s_loop") + (k ? " · " + tr("where_step", {n: k, max: lim.max_iterations || "?"}) : "");
+  simpleEls.loopLbl.replaceChildren(icon("repeat"), " " + tr("s_loop") + (k ? " · " + tr("where_step", {n: k, max: lim.max_iterations || "?"}) : ""));
 }
 
 /* ---------- task and result ---------- */
@@ -2203,14 +2261,16 @@ function renderTaskCard(st) {
   const steps = [...st.steps.values()].filter((s) => s.n > 0), big = $("res-big");
   const inTok = steps.reduce((a, s) => a + (s.inTok || 0), 0);
   if (st.end) {
-    big.textContent = tr(st.end.success ? "res_ok" : "res_fail"); big.className = `res-big ${st.end.success ? "ok" : "bad"}`;
+    big.replaceChildren(icon(st.end.success ? "checkcircle" : "xcircle"), tr(st.end.success ? "res_ok" : "res_fail")); big.className = `res-big ${st.end.success ? "ok" : "bad"}`;
     $("res-stats").textContent = tr("res_stats", {n: st.end.iterations ?? steps.length, s: Number(st.end.total_time_seconds || 0).toFixed(1),
       pct: lim.max_input_tokens ? Math.round((100 * inTok) / lim.max_input_tokens) : "?"});
-  } else if (st.run) { big.textContent = tr("res_running", {n: Math.max(1, stepsSoFar(st))}); big.className = "res-big run"; $("res-stats").textContent = ""; }
+  } else if (st.run) { big.replaceChildren(icon("loader"), tr("res_running", {n: Math.max(1, stepsSoFar(st))})); big.className = "res-big run"; $("res-stats").textContent = ""; }
   else { big.textContent = tr("res_idle"); big.className = "res-big"; $("res-stats").textContent = ""; }
   let last = null;
   for (const s of steps.sort((a, b) => a.n - b.n)) for (const x of s.tools) if (x.name === "run_tests" && x.res) { const r = testResult(x.res.result); if (r) last = r; }
-  $("res-tests").textContent = run ? (last ? tr("res_tests", {txt: `${last.ok ? "✅" : "❌"} ${testsText(last)}`}) : tr("res_tests_none")) : "";
+  const rt = $("res-tests"); rt.replaceChildren();
+  if (run && last) { const [a, b] = tr("res_tests", {txt: "\u0000"}).split("\u0000"); const ic = icon(last.ok ? "checkcircle" : "xcircle"); ic.style.color = `var(${last.ok ? "--c-final" : "--c-error"})`; rt.append(a, ic, " " + testsText(last), b || ""); }
+  else if (run) rt.textContent = tr("res_tests_none");
   $("res-note").textContent = tr("how_know");
 }
 
@@ -2255,7 +2315,7 @@ function renderPatch(text) {
 }
 function renderPlain(e, st) { renderStory(e, st); renderSimple(e, st); renderTaskCard(st); renderSecurity(); renderAnswer(st); }
 
-/* ---------- glossary: ⓘ terms, tooltip, dialog ---------- */
+/* ---------- glossary: (i) terms, tooltip, dialog ---------- */
 function markTerm(node, key) { node.dataset.term = key; node.tabIndex = 0; return node; }
 const tip = $("tip");
 function showTip(target) {
