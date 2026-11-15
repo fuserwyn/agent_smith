@@ -251,6 +251,50 @@ dialog.modal[open] { display: grid; grid-template-rows: auto auto minmax(0, 1fr)
 details.sys summary { cursor: pointer; padding: 10px 14px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
 details.sys pre { border-top: 1px solid var(--line); }
 
+/* ---------- launcher ---------- */
+.choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; padding: 12px 14px; }
+.choice { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; text-align: left;
+  border: 1px solid var(--line); background: var(--panel-2); border-radius: 10px; padding: 9px 11px; min-width: 0; }
+.choice .ic { grid-row: 1 / 3; width: 20px; height: 20px; color: var(--c-orch); }
+.choice b { font-size: 13px; font-weight: 600; } .choice span { font-size: 11.5px; color: var(--muted); }
+.choice[aria-pressed="true"] { border-color: var(--c-orch); background: var(--panel); box-shadow: 0 0 0 3px var(--glow); }
+.ln-state { font-size: 12.5px; display: inline-flex; gap: 6px; align-items: center; } .ln-state.busy { color: var(--c-llm); font-weight: 600; }
+.choice-info { border-top: 1px solid var(--line); padding: 12px 14px 14px; }
+.ci { display: grid; gap: 10px; }
+.ci h3 { font-size: 15px; } .ci p { margin: 0; font-size: 13.5px; max-width: 110ch; }
+.ci .warn, .ci-form .warn { color: var(--c-warn); font-size: 12.5px; }
+.ci .where { font-size: 12px; color: var(--muted); font-family: var(--f-mono); }
+.ci-form { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; }
+.ci-form label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.ci-form select, .ci-form input { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 8px;
+  font-size: 13px; width: min(340px, 100%); max-width: 100%; }
+.ci-form .note-m { flex-basis: 100%; font-size: 12px; color: var(--muted); }
+.cmds { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.cmds-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; background: var(--panel-2);
+  border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.cmd { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: start; padding: 8px 10px; border-top: 1px solid var(--line); }
+.cmds-h + .cmd { border-top: 0; }
+.cmd .lbl { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.cmd pre { margin: 0; font-family: var(--f-mono); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+.lbl.js-running { color: var(--c-llm); } .lbl.js-ok { color: var(--c-final); } .lbl.js-failed { color: var(--c-error); }
+.copy { border: 1px solid var(--line); background: var(--panel); border-radius: 7px; padding: 3px 8px; font-size: 12px;
+  display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
+.ci-actions { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.btn-run { border: 0; background: var(--c-orch); color: var(--panel); border-radius: 999px; padding: 8px 18px; font-weight: 600;
+  display: inline-flex; gap: 7px; align-items: center; justify-self: start; }
+.btn-run .ic { width: 15px; height: 15px; } .btn-run:disabled { opacity: .5; cursor: not-allowed; }
+.btn-stop { border: 1px solid var(--c-error); color: var(--c-error); background: none; border-radius: 999px; padding: 7px 14px; display: inline-flex; gap: 6px; align-items: center; }
+.jstat { font-size: 13px; display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.vbadge { font-family: var(--f-mono); font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; color: var(--muted); white-space: nowrap; }
+.vbadge.PASSED { color: var(--c-final); } .vbadge.FAILED { color: var(--c-error); }
+.joblog { margin: 0; max-height: 240px; overflow: auto; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 10px; font-family: var(--f-mono); font-size: 11.5px; white-space: pre-wrap; word-break: break-word; }
+.rec { display: grid; gap: 5px; max-height: 300px; overflow: auto; padding-right: 4px; }
+.rec h4 { font-size: 11.5px; font-family: var(--f-mono); color: var(--muted); font-weight: 500; margin-top: 6px; word-break: break-all; }
+.rec-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; text-align: left; border: 1px solid var(--line);
+  background: var(--panel-2); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; }
+.rec-row[aria-current="true"] { border-color: var(--c-orch); box-shadow: 0 0 0 3px var(--glow); }
+.rec-row span.muted { font-family: var(--f-mono); font-size: 11.5px; }
 /* ---------- plain-language layer ---------- */
 .ic { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.14em; }
 .story .ico { color: var(--c-orch); display: grid; place-items: center; } .story.good .ico { color: var(--c-final); } .story.bad .ico { color: var(--c-error); } .story.warn .ico { color: var(--c-warn); }
@@ -366,13 +410,6 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
       <button class="chip-btn" id="b-tour" data-i18n="tour_btn">Guided tour</button>
       <button class="chip-btn" id="b-gloss" data-i18n="gloss_btn">Glossary</button>
     </div>
-    <div class="sources" role="group" aria-label="Trace source">
-      <button class="chip-btn" id="src-mbpp" aria-pressed="true" data-i18n="src_mbpp">Demo · MBPP</button>
-      <button class="chip-btn" id="src-swe" aria-pressed="false" data-i18n="src_swe">Demo · SWE-bench</button>
-      <button class="chip-btn" id="src-file" aria-pressed="false" data-i18n="src_file">Open trace or solution…</button>
-      <button class="chip-btn" id="src-live" aria-pressed="false" disabled title="Available when served by: uv run agent-ui" data-i18n="src_live">Live</button>
-      <input type="file" id="file" accept=".json,.jsonl,.txt" hidden>
-    </div>
     <div class="controls">
       <button class="ctl" id="b-first" aria-label="Go to start"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
       <button class="ctl" id="b-prev" aria-label="Previous event"><svg viewBox="0 0 16 16"><path d="M12 2v12L4 8z"/></svg></button>
@@ -384,6 +421,23 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
       </select>
     </div>
   </header>
+
+  <section class="panel launcher" id="launcher" aria-label="What to show">
+    <div class="panel-h"><h2 data-i18n="ln_h">What to show</h2><span class="muted ln-state" id="ln-state"></span></div>
+    <div class="choices sources" role="group" aria-label="Trace source">
+      <button class="choice" id="src-mbpp" data-ic="play" aria-pressed="true"><b data-i18n="c_demo_mbpp_t">Demo · MBPP</b><span data-i18n="c_demo_mbpp_s">recorded, AI answers scripted</span></button>
+      <button class="choice" id="src-swe" data-ic="play" aria-pressed="false"><b data-i18n="c_demo_swe_t">Demo · SWE-bench</b><span data-i18n="c_demo_swe_s">recorded, AI answers scripted</span></button>
+      <button class="choice" id="src-rec" data-ic="chart" aria-pressed="false"><b data-i18n="c_rec_t">Real recorded runs</b><span data-i18n="c_rec_s">benchmark runs on free models</span></button>
+      <button class="choice" id="run-mbpp" data-ic="code" aria-pressed="false"><b data-i18n="c_run_mbpp_t">Run an MBPP task</b><span data-i18n="c_run_mbpp_s">a real model solves it now</span></button>
+      <button class="choice" id="run-swe" data-ic="box" aria-pressed="false"><b data-i18n="c_run_swe_t">Run a SWE-bench task</b><span data-i18n="c_run_swe_s">fix a real bug in Docker</span></button>
+      <button class="choice" id="run-sandbox" data-ic="shield" aria-pressed="false"><b data-i18n="c_sandbox_t">Sandbox security tests</b><span data-i18n="c_sandbox_s">attacks the sandbox must stop</span></button>
+      <button class="choice" id="run-exam" data-ic="checkcircle" aria-pressed="false"><b data-i18n="c_exam_t">Full mock exam</b><span data-i18n="c_exam_s">5 MBPP + 3 SWE-bench + sandbox</span></button>
+      <button class="choice" id="src-file" data-ic="folder" aria-pressed="false"><b data-i18n="c_file_t">Open a file</b><span data-i18n="c_file_s">events.jsonl or solution.json</span></button>
+      <button class="choice" id="src-live" data-ic="terminal" aria-pressed="false"><b data-i18n="c_live_t">Follow a terminal run</b><span data-i18n="c_live_s">live trace of runs/live.jsonl</span></button>
+      <input type="file" id="file" accept=".json,.jsonl,.txt" hidden>
+    </div>
+    <div class="choice-info" id="choice-info"></div>
+  </section>
 
   <div class="banner" id="banner"></div>
 
@@ -658,6 +712,7 @@ en: {
 
   tour: [
     ["Welcome", "This page replays how our AI agent solves a programming task. Choose the language and the view here: Simple for the big picture, Detailed for the internals."],
+    ["What to show", "Pick a demo, a real recorded run, or launch a real run. Each choice explains what happens and shows the exact commands, ready to copy into a terminal."],
     ["The task", "What the agent must solve (left) and the result at the end (right)."],
     ["Press Play", "This line explains in plain words what is happening at each moment."],
     ["The cycle", "The AI thinks and writes code, the sandbox runs it safely, the result goes back to the AI. This repeats until the task is solved."],
@@ -669,6 +724,82 @@ en: {
   ],
   tour_next: "Next", tour_back: "Back", tour_skip: "Skip", tour_done: "Start", tour_n: "{i} of {n}",
 
+  docker_off: "Docker Desktop is not running. The moulinette checks answers in Docker, so the last step will fail: start Docker Desktop first.",
+  ln_h: "What to show",
+  ln_srv_on: "local server connected: runs can be launched from this page",
+  ln_srv_off: "file mode: demos and files only; start uv run agent-ui to launch runs",
+  ln_busy: "running: {a} · {s} s",
+  c_demo_mbpp_t: "Demo · MBPP",
+  c_demo_mbpp_s: "recorded, AI answers scripted",
+  c_demo_swe_t: "Demo · SWE-bench",
+  c_demo_swe_s: "recorded, AI answers scripted",
+  c_rec_t: "Real recorded runs",
+  c_rec_s: "benchmark runs on free models",
+  c_run_mbpp_t: "Run an MBPP task",
+  c_run_mbpp_s: "a real model solves it now",
+  c_run_swe_t: "Run a SWE-bench task",
+  c_run_swe_s: "fix a real bug in Docker",
+  c_sandbox_t: "Sandbox security tests",
+  c_sandbox_s: "attacks the sandbox must stop",
+  c_exam_t: "Full mock exam",
+  c_exam_s: "5 MBPP + 3 SWE-bench + sandbox",
+  c_file_t: "Open a file",
+  c_file_s: "events.jsonl or solution.json",
+  c_live_t: "Follow a terminal run",
+  c_live_s: "live trace of runs/live.jsonl",
+  c_demo_mbpp_x: "Replays a run recorded with our real framework on MBPP task 282: the sandbox, the MCP server and the tests really ran; only the AI's answers were scripted, so the demo works offline and always looks the same. The first attempt is wrong on purpose.",
+  c_demo_swe_x: "Replays a run recorded with our real framework on a small local repository with the SWE-bench tools (search, read, edit, run_tests, get_patch). Only the AI's answers were scripted.",
+  c_rec_x: "Runs made for the benchmark report with free models (NVIDIA, Gemini, Cohere, Mistral…), with the moulinette verdict. Pick one to replay it. Below it appear the commands that repeat the same run (a new run can give a different result).",
+  c_run_mbpp_x: "Takes an MBPP task from the moulinette (random, or the number you enter), lets the chosen model solve it in the sandbox, then the moulinette checks the answer with all tests, including the hidden one (in Docker: Docker Desktop must be running). The run appears on this page as it happens.",
+  c_run_swe_x: "Takes a task from the exam pool, starts the project in a Docker container without network, lets the model fix the bug, checks that the container was removed, then the moulinette applies the patch in a fresh container and runs the project's tests. Takes several minutes; the first run of a task downloads its image (a few GB). Docker Desktop must be running.",
+  c_sandbox_x: "Runs the security checks of exam_sandbox.sh against our sandbox: forbidden imports and builtins, network, file paths, time and memory limits, MCP protocol. Every line must end with OK.",
+  c_exam_x: "Rehearses the whole evaluation: 5 random MBPP tasks (4 needed), 3 SWE-bench tasks (2 needed, no container left behind) and the sandbox tests. Takes 10–20 minutes. Results go to evaluations/.",
+  c_file_x: "Open a trace (events.jsonl written with --trace-file) or a solution.json. You can also drag a file onto the page.",
+  c_live_x: "Shows a run started in a terminal while it runs. Start the UI with the first command, then the agent with --trace-file runs/live.jsonl.",
+  cmds_h: "Commands (run from the repository root)",
+  cmd_demo: "Re-record both demos",
+  cmd_ui: "Start the UI server",
+  cmd_dump: "Get a task",
+  cmd_agent: "Run the agent with a live trace",
+  copy: "Copy",
+  copy_all: "Copy all",
+  copied: "Copied",
+  copy_fail: "Copy failed",
+  btn_run: "Run",
+  btn_cancel: "Stop",
+  btn_open: "Choose a file",
+  btn_follow: "Follow now",
+  lbl_model: "AI model",
+  lbl_task: "Task",
+  lbl_random: "empty = random task",
+  no_key: "no key in .env",
+  key_missing: "No key for this provider in .env ({env}): the run will fail.",
+  needs_server: "Launching from the page needs the local server. Start it, then open http://127.0.0.1:8765:",
+  needs_server_rec: "The list of recorded runs comes from the local server. Start it, or open a file with “Open a file”:",
+  busy: "Another run is in progress.",
+  ci_where: "Results: {dir}",
+  job_running: "Running… {s} s",
+  job_done: "Finished in {s} s",
+  job_failed: "Stopped on an error",
+  job_cancelled: "Stopped",
+  job_verdict: "moulinette: {v}",
+  js_pending: "waiting",
+  js_running: "running",
+  js_ok: "done",
+  js_failed: "failed",
+  js_skipped: "skipped",
+  js_cancelled: "stopped",
+  step_dump: "Get the task from the moulinette",
+  step_agent: "The agent solves it",
+  step_containers: "Check that no container is left",
+  step_validate: "The moulinette checks the answer",
+  step_sandbox: "Sandbox security tests",
+  step_exam: "Mock exam",
+  rec_empty: "No recorded runs found in benchmarks/, evaluations/ or runs/.",
+  rec_repro: "Commands that repeat this run:",
+  rec_nocfg: "This model is not in config/models.json, so no command can be generated for it.",
+  rec_loaded: "Recorded run {name}",
+  live_job: "Run launched from this page: {dir}",
   sub_interp: "click: watch the code run", sub_mcps: "click: list of tools",
   p_step: "step {n}", p_calls: "{n} call(s)", p_tools: "{n} tools", p_ok: "success", p_bad: "no success", p_running: "running…", p_status: "status: {s}",
   empty_trace: "No events in this trace.", empty_steps: "Steps appear here as the agent runs.",
@@ -861,6 +992,7 @@ ru: {
 
   tour: [
     ["Добро пожаловать", "Эта страница воспроизводит, как наш ИИ-агент решает задачу по программированию. Здесь выбираются язык и вид: «Просто» для общей картины, «Подробно» для внутреннего устройства."],
+    ["Что показать", "Выберите демо, реальный записанный прогон или запустите настоящий прогон. Каждый вариант объясняет, что произойдёт, и показывает точные команды, готовые для копирования в терминал."],
     ["Задача", "Что агент должен решить (слева) и результат в конце (справа)."],
     ["Нажмите «Запустить»", "Эта строка простыми словами объясняет, что происходит в каждый момент."],
     ["Цикл", "ИИ думает и пишет код, песочница безопасно его выполняет, результат возвращается к ИИ. Так повторяется, пока задача не решена."],
@@ -881,6 +1013,82 @@ ru: {
   ni_mcps: ["FastMCP проверяет аргументы и вызывает Python-обработчик.", "Результат несёт отчёт о выполнении (_meta): команды, коды выхода, время, размеры."],
   ni_repo: ["SWE-bench: команды выполняются через docker exec в контейнере задачи (--network none).", "Локально (тесты, демо): те же команды в TESTBED_PATH. MBPP: изолированная песочница для тестов."],
   ni_final: ["success, solution (код или патч), итерации, запросы, токены, время.", "Каждый шаг хранит llm_output, sandbox_input, sandbox_output, retries."],
+  docker_off: "Docker Desktop не запущен. Moulinette проверяет ответы в Docker, поэтому последний шаг упадёт: сначала запустите Docker Desktop.",
+  ln_h: "Что показать",
+  ln_srv_on: "локальный сервер подключён: прогоны можно запускать с этой страницы",
+  ln_srv_off: "режим файла: только демо и файлы; для запуска прогонов выполните uv run agent-ui",
+  ln_busy: "идёт: {a} · {s} с",
+  c_demo_mbpp_t: "Демо · MBPP",
+  c_demo_mbpp_s: "запись, ответы ИИ заготовлены",
+  c_demo_swe_t: "Демо · SWE-bench",
+  c_demo_swe_s: "запись, ответы ИИ заготовлены",
+  c_rec_t: "Реальные прогоны",
+  c_rec_s: "бенчмарк на бесплатных моделях",
+  c_run_mbpp_t: "Запустить задачу MBPP",
+  c_run_mbpp_s: "настоящая модель решает сейчас",
+  c_run_swe_t: "Запустить задачу SWE-bench",
+  c_run_swe_s: "исправить настоящий баг в Docker",
+  c_sandbox_t: "Тесты безопасности песочницы",
+  c_sandbox_s: "атаки, которые песочница должна остановить",
+  c_exam_t: "Полная репетиция экзамена",
+  c_exam_s: "5 MBPP + 3 SWE-bench + песочница",
+  c_file_t: "Открыть файл",
+  c_file_s: "events.jsonl или solution.json",
+  c_live_t: "Следить за прогоном из терминала",
+  c_live_s: "живая трасса runs/live.jsonl",
+  c_demo_mbpp_x: "Воспроизводит прогон, записанный нашим настоящим фреймворком на задаче MBPP 282: песочница, MCP-сервер и тесты действительно выполнялись, заранее заготовлены только ответы ИИ. Поэтому демо работает без интернета и всегда выглядит одинаково. Первая попытка специально неверная.",
+  c_demo_swe_x: "Воспроизводит прогон, записанный нашим настоящим фреймворком на небольшом локальном репозитории с тулами SWE-bench (поиск, чтение, правка, run_tests, get_patch). Заранее заготовлены только ответы ИИ.",
+  c_rec_x: "Прогоны для отчёта бенчмарка на бесплатных моделях (NVIDIA, Gemini, Cohere, Mistral…) с вердиктом moulinette. Выберите прогон, чтобы воспроизвести его. Ниже появятся команды, которые повторяют этот прогон (новый прогон может дать другой результат).",
+  c_run_mbpp_x: "Берёт задачу MBPP у moulinette (случайную или с введённым номером), выбранная модель решает её в песочнице, затем moulinette проверяет ответ всеми тестами, включая скрытый (в Docker: Docker Desktop должен быть запущен). Прогон отображается на этой странице по ходу работы.",
+  c_run_swe_x: "Берёт задачу из пула экзамена, запускает проект в Docker-контейнере без сети, модель исправляет баг, затем проверяется, что контейнер удалён, и moulinette применяет патч в новом контейнере и запускает тесты проекта. Занимает несколько минут; первый запуск задачи скачивает её образ (несколько ГБ). Docker Desktop должен быть запущен.",
+  c_sandbox_x: "Запускает проверки безопасности из exam_sandbox.sh против нашей песочницы: запрещённые импорты и builtins, сеть, пути к файлам, лимиты времени и памяти, протокол MCP. Каждая строка должна заканчиваться на OK.",
+  c_exam_x: "Репетиция всей проверки: 5 случайных задач MBPP (нужно 4), 3 задачи SWE-bench (нужно 2, без оставшихся контейнеров) и тесты песочницы. Занимает 10–20 минут. Результаты в evaluations/.",
+  c_file_x: "Откройте трассу (events.jsonl, записанный с --trace-file) или solution.json. Файл можно и просто перетащить на страницу.",
+  c_live_x: "Показывает прогон, запущенный в терминале, прямо во время работы. Запустите UI первой командой, затем агента с --trace-file runs/live.jsonl.",
+  cmds_h: "Команды (выполнять из корня репозитория)",
+  cmd_demo: "Перезаписать оба демо",
+  cmd_ui: "Запустить сервер UI",
+  cmd_dump: "Получить задачу",
+  cmd_agent: "Запустить агента с живой трассой",
+  copy: "Копировать",
+  copy_all: "Копировать всё",
+  copied: "Скопировано",
+  copy_fail: "Не удалось скопировать",
+  btn_run: "Запустить",
+  btn_cancel: "Остановить",
+  btn_open: "Выбрать файл",
+  btn_follow: "Следить сейчас",
+  lbl_model: "Модель ИИ",
+  lbl_task: "Задача",
+  lbl_random: "пусто = случайная задача",
+  no_key: "нет ключа в .env",
+  key_missing: "В .env нет ключа этого провайдера ({env}): прогон завершится ошибкой.",
+  needs_server: "Для запуска со страницы нужен локальный сервер. Запустите его и откройте http://127.0.0.1:8765:",
+  needs_server_rec: "Список реальных прогонов отдаёт локальный сервер. Запустите его или откройте файл через «Открыть файл»:",
+  busy: "Уже идёт другой прогон.",
+  ci_where: "Результаты: {dir}",
+  job_running: "Выполняется… {s} с",
+  job_done: "Завершено за {s} с",
+  job_failed: "Остановлено из-за ошибки",
+  job_cancelled: "Остановлено",
+  job_verdict: "moulinette: {v}",
+  js_pending: "ждёт",
+  js_running: "выполняется",
+  js_ok: "готово",
+  js_failed: "ошибка",
+  js_skipped: "пропущено",
+  js_cancelled: "остановлено",
+  step_dump: "Получить задачу у moulinette",
+  step_agent: "Агент решает задачу",
+  step_containers: "Проверить, что контейнеров не осталось",
+  step_validate: "Moulinette проверяет ответ",
+  step_sandbox: "Тесты безопасности песочницы",
+  step_exam: "Репетиция экзамена",
+  rec_empty: "В benchmarks/, evaluations/ и runs/ не найдено записанных прогонов.",
+  rec_repro: "Команды, которые повторяют этот прогон:",
+  rec_nocfg: "Этой модели нет в config/models.json, поэтому команду для неё собрать нельзя.",
+  rec_loaded: "Записанный прогон {name}",
+  live_job: "Прогон запущен с этой страницы: {dir}",
   sub_interp: "нажмите: ход выполнения", sub_mcps: "нажмите: список тулов",
   p_step: "шаг {n}", p_calls: "вызовов: {n}", p_tools: "тулов: {n}", p_ok: "успех", p_bad: "без успеха", p_running: "выполняется…", p_status: "статус: {s}",
   empty_trace: "В этой трассе нет событий.", empty_steps: "Шаги появятся здесь по мере работы агента.",
@@ -1073,6 +1281,7 @@ fr: {
 
   tour: [
     ["Bienvenue", "Cette page rejoue la façon dont notre agent d'IA résout une tâche de programmation. Choisissez ici la langue et la vue : « Simple » pour la vue d'ensemble, « Détaillé » pour les rouages internes."],
+    ["Que montrer", "Choisissez une démo, une exécution réelle enregistrée, ou lancez une vraie exécution. Chaque choix explique ce qui va se passer et montre les commandes exactes, prêtes à copier dans un terminal."],
     ["La tâche", "Ce que l'agent doit résoudre (à gauche) et le résultat à la fin (à droite)."],
     ["Appuyez sur « Lancer »", "Cette ligne explique simplement ce qui se passe à chaque instant."],
     ["Le cycle", "L'IA réfléchit et écrit du code, le bac à sable l'exécute en sécurité, le résultat revient à l'IA. Cela se répète jusqu'à la solution."],
@@ -1093,6 +1302,82 @@ fr: {
   ni_mcps: ["FastMCP valide les arguments et appelle le gestionnaire Python.", "Le résultat contient un rapport d'exécution (_meta) : commandes, codes de sortie, durées, tailles."],
   ni_repo: ["SWE-bench : commandes exécutées via docker exec dans le conteneur de la tâche (--network none).", "En local (tests, démo) : mêmes commandes dans TESTBED_PATH. MBPP : bac à sable de test isolé."],
   ni_final: ["success, solution (code ou patch), itérations, requêtes, jetons, temps.", "Chaque étape garde llm_output, sandbox_input, sandbox_output, retries."],
+  docker_off: "Docker Desktop n'est pas lancé. La moulinette vérifie les réponses dans Docker, donc la dernière étape échouera : lancez d'abord Docker Desktop.",
+  ln_h: "Que montrer",
+  ln_srv_on: "serveur local connecté : les exécutions peuvent être lancées depuis cette page",
+  ln_srv_off: "mode fichier : démos et fichiers seulement ; lancez uv run agent-ui pour exécuter",
+  ln_busy: "en cours : {a} · {s} s",
+  c_demo_mbpp_t: "Démo · MBPP",
+  c_demo_mbpp_s: "enregistrée, réponses de l'IA scriptées",
+  c_demo_swe_t: "Démo · SWE-bench",
+  c_demo_swe_s: "enregistrée, réponses de l'IA scriptées",
+  c_rec_t: "Exécutions réelles",
+  c_rec_s: "benchmark sur des modèles gratuits",
+  c_run_mbpp_t: "Lancer une tâche MBPP",
+  c_run_mbpp_s: "un vrai modèle la résout maintenant",
+  c_run_swe_t: "Lancer une tâche SWE-bench",
+  c_run_swe_s: "corriger un vrai bug dans Docker",
+  c_sandbox_t: "Tests de sécurité du bac à sable",
+  c_sandbox_s: "attaques que le bac à sable doit bloquer",
+  c_exam_t: "Examen blanc complet",
+  c_exam_s: "5 MBPP + 3 SWE-bench + bac à sable",
+  c_file_t: "Ouvrir un fichier",
+  c_file_s: "events.jsonl ou solution.json",
+  c_live_t: "Suivre une exécution du terminal",
+  c_live_s: "trace en direct de runs/live.jsonl",
+  c_demo_mbpp_x: "Rejoue une exécution enregistrée avec notre vrai framework sur la tâche MBPP 282 : le bac à sable, le serveur MCP et les tests ont vraiment tourné ; seules les réponses de l'IA sont scriptées, donc la démo fonctionne hors ligne et reste identique. La première tentative est fausse exprès.",
+  c_demo_swe_x: "Rejoue une exécution enregistrée avec notre vrai framework sur un petit dépôt local avec les outils SWE-bench (recherche, lecture, modification, run_tests, get_patch). Seules les réponses de l'IA sont scriptées.",
+  c_rec_x: "Exécutions faites pour le rapport de benchmark avec des modèles gratuits (NVIDIA, Gemini, Cohere, Mistral…), avec le verdict de la moulinette. Choisissez-en une pour la rejouer. En dessous apparaissent les commandes qui refont la même exécution (une nouvelle exécution peut donner un autre résultat).",
+  c_run_mbpp_x: "Prend une tâche MBPP auprès de la moulinette (au hasard, ou le numéro saisi), le modèle choisi la résout dans le bac à sable, puis la moulinette vérifie la réponse avec tous les tests, y compris le test caché (dans Docker : Docker Desktop doit être lancé). L'exécution s'affiche sur cette page en direct.",
+  c_run_swe_x: "Prend une tâche du pool d'examen, démarre le projet dans un conteneur Docker sans réseau, le modèle corrige le bug, on vérifie que le conteneur est supprimé, puis la moulinette applique le patch dans un nouveau conteneur et lance les tests du projet. Prend plusieurs minutes ; la première exécution d'une tâche télécharge son image (quelques Go). Docker Desktop doit être lancé.",
+  c_sandbox_x: "Lance les contrôles de sécurité d'exam_sandbox.sh contre notre bac à sable : imports et builtins interdits, réseau, chemins de fichiers, limites de temps et de mémoire, protocole MCP. Chaque ligne doit finir par OK.",
+  c_exam_x: "Répète toute l'évaluation : 5 tâches MBPP au hasard (4 requises), 3 tâches SWE-bench (2 requises, aucun conteneur restant) et les tests du bac à sable. Prend 10 à 20 minutes. Résultats dans evaluations/.",
+  c_file_x: "Ouvrez une trace (events.jsonl écrit avec --trace-file) ou un solution.json. Vous pouvez aussi glisser un fichier sur la page.",
+  c_live_x: "Affiche en direct une exécution lancée dans un terminal. Démarrez l'interface avec la première commande, puis l'agent avec --trace-file runs/live.jsonl.",
+  cmds_h: "Commandes (à lancer depuis la racine du dépôt)",
+  cmd_demo: "Réenregistrer les deux démos",
+  cmd_ui: "Démarrer le serveur de l'interface",
+  cmd_dump: "Obtenir une tâche",
+  cmd_agent: "Lancer l'agent avec une trace en direct",
+  copy: "Copier",
+  copy_all: "Tout copier",
+  copied: "Copié",
+  copy_fail: "Échec de la copie",
+  btn_run: "Lancer",
+  btn_cancel: "Arrêter",
+  btn_open: "Choisir un fichier",
+  btn_follow: "Suivre maintenant",
+  lbl_model: "Modèle d'IA",
+  lbl_task: "Tâche",
+  lbl_random: "vide = tâche au hasard",
+  no_key: "pas de clé dans .env",
+  key_missing: "Aucune clé pour ce fournisseur dans .env ({env}) : l'exécution échouera.",
+  needs_server: "Lancer depuis la page nécessite le serveur local. Démarrez-le, puis ouvrez http://127.0.0.1:8765 :",
+  needs_server_rec: "La liste des exécutions vient du serveur local. Démarrez-le, ou ouvrez un fichier avec « Ouvrir un fichier » :",
+  busy: "Une autre exécution est en cours.",
+  ci_where: "Résultats : {dir}",
+  job_running: "En cours… {s} s",
+  job_done: "Terminé en {s} s",
+  job_failed: "Arrêté sur une erreur",
+  job_cancelled: "Arrêté",
+  job_verdict: "moulinette : {v}",
+  js_pending: "en attente",
+  js_running: "en cours",
+  js_ok: "terminé",
+  js_failed: "échec",
+  js_skipped: "ignoré",
+  js_cancelled: "arrêté",
+  step_dump: "Obtenir la tâche auprès de la moulinette",
+  step_agent: "L'agent la résout",
+  step_containers: "Vérifier qu'aucun conteneur ne reste",
+  step_validate: "La moulinette vérifie la réponse",
+  step_sandbox: "Tests de sécurité du bac à sable",
+  step_exam: "Examen blanc",
+  rec_empty: "Aucune exécution enregistrée dans benchmarks/, evaluations/ ou runs/.",
+  rec_repro: "Commandes qui refont cette exécution :",
+  rec_nocfg: "Ce modèle n'est pas dans config/models.json : impossible de générer la commande.",
+  rec_loaded: "Exécution enregistrée {name}",
+  live_job: "Exécution lancée depuis cette page : {dir}",
   sub_interp: "cliquez : voir le code", sub_mcps: "cliquez : les outils",
   p_step: "étape {n}", p_calls: "{n} appel(s)", p_tools: "{n} outils", p_ok: "succès", p_bad: "échec", p_running: "en cours…", p_status: "statut : {s}",
   empty_trace: "Aucun événement dans cette trace.", empty_steps: "Les étapes apparaissent ici pendant que l'agent travaille.",
@@ -1403,6 +1688,7 @@ const speed = () => parseFloat($("speed").value);
 const withLines = () => $("opt-lines").checked;
 
 function setRaw(list, kind) {
+  if (kind !== "live" && es) { es.close(); es = null; }
   stop(); raw = list; sourceKind = kind; selectedStep = null; tabPinned = false;
   events = expandAll(raw, withLines()); $("scrub").max = Math.max(0, events.length - 1);
   renderLog(); cursor = -1; go(kind === "live" ? events.length - 1 : 0);
@@ -1924,7 +2210,7 @@ document.addEventListener("keydown", (ev) => {
 });
 
 /* ======================= sources ======================= */
-function pressed(id) { for (const b of document.querySelectorAll(".sources .chip-btn")) b.setAttribute("aria-pressed", String(b.id === id)); }
+function pressed(id) { for (const b of document.querySelectorAll(".sources .choice")) b.setAttribute("aria-pressed", String(b.id === id)); }
 let lastBanner = null;
 function banner(kind, key, params) {
   lastBanner = [kind, key, params];
@@ -1987,26 +2273,242 @@ window.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth -
 window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => { e.preventDefault(); dragDepth = 0; $("drop").hidden = true; const f = e.dataTransfer.files[0]; if (f) readFile(f); });
 
-/* live mode: only when served by `uv run agent-ui` */
-let es = null;
+/* live mode and server features: only when served by `uv run agent-ui` */
+let es = null, SERVER = null;
 async function probeLive() {
-  if (!/^https?:$/.test(location.protocol)) return;
+  if (!/^https?:$/.test(location.protocol)) { renderLaunchState(); return; }
   try {
     const r = await fetch("api/info", {cache: "no-store"}); if (!r.ok) return;
     const info = await r.json(); if (!info || info.app !== "agent-smith-ui") return;
-    $("src-live").disabled = false; $("src-live").title = `Follow ${info.trace}`;
-    $("src-live").addEventListener("click", startLive); startLive();
-  } catch (_) { /* static hosting: demo and file modes only */ }
+    SERVER = info; $("src-live").title = info.trace;
+    renderLaunchState(); renderChoice();
+    const j = await api("job");  // page reloaded while a run is going: pick it up again
+    if (j.status === "running") { JOB = j; if (j.trace) startLive(null, "live_job", {dir: j.dir}); pollJob(); }
+  } catch (_) { renderLaunchState(); /* static hosting: demo and file modes only */ }
 }
-function startLive() {
-  pressed("src-live"); banner("live", "live_follow");
+/* Follow a trace over SSE. followDefault = the --trace file (runs started in a terminal). */
+function startLive(choiceId = "src-live", bannerKey = "live_follow", params = null, followDefault = false) {
+  if (choiceId) pressed(choiceId);
+  banner("live", bannerKey, params);
   setRaw([], "live"); if (es) es.close();
-  es = new EventSource("events");
+  es = new EventSource(followDefault ? "events?default=1" : "events");
   es.onmessage = (m) => {
     const e = JSON.parse(m.data);
+    if (e.type === "__reset") { raw = []; events = []; renderLog(); renderEmpty(); return; }
     if (e.type === "run_start" && raw.some((x) => x.type === "run_start")) raw = [];
     raw.push(e); events = expandAll(raw, withLines()); $("scrub").max = events.length - 1; renderLog(); go(events.length - 1);
   };
+}
+
+/* ======================= launcher: what to show, with the exact commands ======================= */
+const RUN_ACTION = {"run-mbpp": "mbpp", "run-swe": "swebench", "run-sandbox": "sandbox", "run-exam": "exam"};
+const CHOICE_KEY = {"src-mbpp": "c_demo_mbpp", "src-swe": "c_demo_swe", "src-rec": "c_rec", "run-mbpp": "c_run_mbpp", "run-swe": "c_run_swe",
+  "run-sandbox": "c_sandbox", "run-exam": "c_exam", "src-file": "c_file", "src-live": "c_live"};
+const LIVE_CMDS = [
+  {key: "cmd_ui", command: "uv run agent-ui --trace runs/live.jsonl"},
+  {key: "cmd_dump", command: "(cd moulinette && PYTHONPATH=. uv run moulinette_eval dump mbpp --output ../cache/mbpp_task.json)"},
+  {key: "cmd_agent", command: "uv run python -m agent_mbpp --task-file cache/mbpp_task.json --output cache/mbpp_solution.json --model-name qwen/qwen3.8-27b --provider-url https://api.groq.com/openai/v1 --env-file .env --trace-file runs/live.jsonl"},
+];
+let ACTIONS = null, RUNS = null, JOB = null, jobTimer = null, choice = "src-mbpp", recSel = null;
+const form = {mbpp: {key: "", task: ""}, swebench: {key: "", task: ""}};
+
+async function api(path, body) {
+  const opts = body === undefined ? {cache: "no-store"} : {method: "POST", headers: {"Content-Type": "application/json", "X-Agent-Smith": "1"}, body: JSON.stringify(body)};
+  const r = await fetch("api/" + path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+}
+function selectChoice(id) {
+  choice = id;
+  if (RUN_ACTION[id]) ACTIONS = null;  // re-read keys and Docker state each time a run is chosen
+  if (RUN_ACTION[id] || id === "src-rec" || (id === "src-live" && !SERVER)) pressed(id);
+  renderChoice();
+}
+function renderLaunchState() {
+  const el = $("ln-state"); if (!el) return; el.replaceChildren();
+  if (JOB && JOB.status === "running") { el.append(icon("loader"), " " + tr("ln_busy", {a: tr(CHOICE_KEY[Object.keys(RUN_ACTION).find((k) => RUN_ACTION[k] === JOB.action)] + "_t"), s: JOB.elapsed})); el.className = "ln-state busy"; return; }
+  el.className = "muted ln-state"; el.textContent = tr(SERVER && SERVER.runs ? "ln_srv_on" : "ln_srv_off");
+}
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (_) { ok = false; }
+  ta.remove(); return ok;
+}
+function copyBtn(get, labelKey = "copy") {
+  const b = h("button", "copy"), reset = () => b.replaceChildren(icon("copy"), tr(labelKey)); reset();
+  b.addEventListener("click", async () => {
+    const text = get(); let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (_) { ok = fallbackCopy(text); }
+    b.replaceChildren(icon(ok ? "checkcircle" : "xcircle"), tr(ok ? "copied" : "copy_fail")); setTimeout(reset, 1600);
+  });
+  return b;
+}
+const JS_ICON = {pending: "dot", running: "loader", ok: "checkcircle", failed: "xcircle", skipped: "dot", cancelled: "stop"};
+function cmdBlock(steps, job) {
+  const wrap = h("div", "cmds"), head = h("div", "cmds-h");
+  head.append(h("span", "", tr("cmds_h")), copyBtn(() => steps.map((x) => x.command).join("\n"), "copy_all"));
+  wrap.appendChild(head);
+  steps.forEach((st, i) => {
+    const row = h("div", "cmd"), js = job && job.steps[i], lbl = h("div", `lbl${js ? " js-" + js.status : ""}`);
+    if (js) lbl.appendChild(icon(JS_ICON[js.status] || "dot"));
+    lbl.append(`${i + 1}. ${tr(st.key)}`);
+    if (js) lbl.append(` · ${tr("js_" + js.status)}${js.exit_code != null ? ` (exit ${js.exit_code})` : ""}`);
+    row.append(lbl, pre(st.command, ""), copyBtn(() => st.command));
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+function renderChoice() {
+  const box = $("choice-info"); if (!box) return; box.replaceChildren();
+  const k = CHOICE_KEY[choice], ci = h("div", "ci");
+  ci.append(h("h3", "", tr(k + "_t")), h("p", "", tr(k + "_x")));
+  box.appendChild(ci);
+  if (choice === "src-mbpp" || choice === "src-swe") ci.appendChild(cmdBlock([{key: "cmd_demo", command: "uv run python scripts/make_demo_traces.py"}]));
+  else if (choice === "src-file") { const b = h("button", "btn-run"); b.append(icon("folder"), tr("btn_open")); b.addEventListener("click", () => $("file").click()); ci.appendChild(b); }
+  else if (choice === "src-live") {
+    if (SERVER) { const b = h("button", "btn-run"); b.append(icon("terminal"), tr("btn_follow")); b.addEventListener("click", () => startLive("src-live", "live_follow", null, true)); ci.appendChild(b); }
+    else ci.appendChild(h("p", "warn", tr("needs_server")));
+    ci.appendChild(cmdBlock(LIVE_CMDS));
+  } else if (choice === "src-rec") renderRec(ci);
+  else renderRunChoice(ci, RUN_ACTION[choice]);
+}
+
+/* ---------- launchable runs ---------- */
+function currentParams(action) {
+  if (action !== "mbpp" && action !== "swebench") return {};
+  const f = form[action], [provider, model] = (f.key || "").split("|"), p = {provider, model};
+  if (f.task) p.task_id = f.task;
+  return p;
+}
+async function loadActions() { if (!ACTIONS) ACTIONS = await api("actions"); return ACTIONS; }
+function renderRunChoice(ci, action) {
+  if (!SERVER || !SERVER.runs) {
+    ci.appendChild(h("p", "warn", tr("needs_server")));
+    ci.appendChild(cmdBlock([{key: "cmd_ui", command: "uv run agent-ui"}]));
+    return;
+  }
+  if (!ACTIONS) { loadActions().then(() => { if (RUN_ACTION[choice] === action) renderChoice(); }).catch((e) => ci.appendChild(h("p", "warn", e.message))); return; }
+  if (!ACTIONS.docker_running && action !== "sandbox") ci.appendChild(h("p", "warn", tr("docker_off")));
+  if (action === "mbpp" || action === "swebench") ci.appendChild(runForm(action));
+  const cmds = h("div", ""), where = h("div", "where"), act = h("div", "ci-actions"), log = h("pre", "joblog");
+  cmds.id = "job-cmds"; where.id = "job-where"; act.id = "job-act"; log.id = "job-log"; log.hidden = true;
+  ci.append(cmds, where, act, log);
+  fillJobArea(action);
+}
+function runForm(action) {
+  const f = form[action], wrap = h("div", "ci-form");
+  if (!f.key) { const d = ACTIONS.defaults[action]; f.key = `${d.provider}|${d.model}`; }
+  if (action === "swebench" && !f.task) f.task = ACTIONS.pool.includes("sympy__sympy-13480") ? "sympy__sympy-13480" : ACTIONS.pool[0] || "";
+  const ml = h("label", "", tr("lbl_model")), sel = document.createElement("select"), groups = {};
+  for (const m of ACTIONS.models) (groups[m.provider] = groups[m.provider] || []).push(m);
+  for (const [prov, list] of Object.entries(groups)) {
+    const og = document.createElement("optgroup"); og.label = prov;
+    for (const m of list) { const o = document.createElement("option"); o.value = `${m.provider}|${m.model}`; o.textContent = m.model + (m.key_ok ? "" : ` (${tr("no_key")})`); og.appendChild(o); }
+    sel.appendChild(og);
+  }
+  sel.value = f.key; sel.addEventListener("change", () => { f.key = sel.value; renderChoice(); });
+  ml.appendChild(sel); wrap.appendChild(ml);
+  const tl = h("label", "", tr("lbl_task"));
+  if (action === "mbpp") {
+    const inp = document.createElement("input"); inp.type = "text"; inp.inputMode = "numeric"; inp.placeholder = tr("lbl_random"); inp.value = f.task;
+    let t = null; inp.addEventListener("input", () => { f.task = inp.value.trim(); clearTimeout(t); t = setTimeout(() => fillJobArea(action), 250); });
+    tl.appendChild(inp);
+  } else {
+    const ts = document.createElement("select");
+    for (const id of ACTIONS.pool) { const o = document.createElement("option"); o.value = o.textContent = id; ts.appendChild(o); }
+    ts.value = f.task; ts.addEventListener("change", () => { f.task = ts.value; fillJobArea(action); });
+    tl.appendChild(ts);
+  }
+  wrap.appendChild(tl);
+  const m = ACTIONS.models.find((x) => `${x.provider}|${x.model}` === f.key);
+  if (m && m.notes) wrap.appendChild(h("div", "note-m", m.notes));
+  if (m && !m.key_ok) wrap.appendChild(h("div", "warn", tr("key_missing", {env: m.key_env})));
+  return wrap;
+}
+function jobStatus(job) {
+  const s = h("span", "jstat"), key = {running: "job_running", done: "job_done", failed: "job_failed", cancelled: "job_cancelled"}[job.status];
+  if (key) s.append(icon(job.status === "running" ? "loader" : job.status === "done" ? "checkcircle" : "xcircle"), " " + tr(key, {s: job.elapsed}));
+  if (job.verdict) { s.append(" · "); s.appendChild(h("span", `vbadge ${job.verdict}`, tr("job_verdict", {v: job.verdict}))); }
+  return s;
+}
+async function fillJobArea(action) {
+  const cmds = $("job-cmds"), act = $("job-act"), log = $("job-log"), where = $("job-where");
+  if (!cmds) return;
+  const params = currentParams(action), running = !!JOB && JOB.status === "running";
+  const job = JOB && JOB.action === action && JOB.status !== "idle" ? JOB : null;
+  const showJob = job && (job.status === "running" || JSON.stringify(job.params) === JSON.stringify(params));
+  if (showJob) { cmds.replaceChildren(cmdBlock(job.steps, job)); where.textContent = tr("ci_where", {dir: job.dir}); }
+  else {
+    try { const pv = await api("preview", {action, params}); if (RUN_ACTION[choice] !== action) return; cmds.replaceChildren(cmdBlock(pv.steps)); where.textContent = tr("ci_where", {dir: pv.dir}); }
+    catch (e) { cmds.replaceChildren(h("div", "warn", e.message)); where.textContent = ""; }
+  }
+  act.replaceChildren();
+  const run = h("button", "btn-run"); run.append(icon("play"), tr("btn_run")); run.disabled = running;
+  run.addEventListener("click", () => startJob(action)); act.appendChild(run);
+  if (running && JOB.action === action) { const st = h("button", "btn-stop"); st.append(icon("stop"), tr("btn_cancel")); st.addEventListener("click", cancelJob); act.appendChild(st); }
+  else if (running) act.appendChild(h("span", "warn", tr("busy")));
+  if (showJob) act.appendChild(jobStatus(job));
+  if (showJob && job.log && job.log.length) {
+    const atBottom = log.hidden || log.scrollTop + log.clientHeight >= log.scrollHeight - 8;
+    log.hidden = false; log.textContent = job.log.join("\n"); if (atBottom) log.scrollTop = log.scrollHeight;
+  } else log.hidden = true;
+}
+async function startJob(action) {
+  try { JOB = await api("run", {action, params: currentParams(action)}); }
+  catch (e) { const act = $("job-act"); if (act) act.appendChild(h("span", "warn", e.message)); return; }
+  if (JOB.trace) startLive(choice, "live_job", {dir: JOB.dir});
+  renderLaunchState(); pollJob();
+}
+function pollJob() {
+  clearTimeout(jobTimer);
+  api("job").then((j) => {
+    JOB = j; renderLaunchState();
+    if (RUN_ACTION[choice]) fillJobArea(RUN_ACTION[choice]);
+    if (j.status === "running") jobTimer = setTimeout(pollJob, 1000); else RUNS = null;
+  }).catch(() => { jobTimer = setTimeout(pollJob, 3000); });
+}
+async function cancelJob() { try { JOB = await api("cancel", {}); } catch (_) { /* finished meanwhile */ } pollJob(); }
+
+/* ---------- recorded runs ---------- */
+function renderRec(ci) {
+  if (!SERVER) { ci.appendChild(h("p", "warn", tr("needs_server_rec"))); ci.appendChild(cmdBlock([{key: "cmd_ui", command: "uv run agent-ui"}])); return; }
+  const list = h("div", "rec"), repro = h("div", ""); repro.id = "rec-repro"; ci.append(list, repro);
+  Promise.all([RUNS ? RUNS : api("runs"), loadActions()]).then(([runs]) => {
+    RUNS = runs;
+    if (!runs.length) { list.appendChild(h("div", "muted", tr("rec_empty"))); return; }
+    let group = null;
+    for (const r of runs) {
+      if (r.group !== group) { group = r.group; list.appendChild(h("h4", "", group)); }
+      const b = h("button", "rec-row"); b.dataset.path = r.path; b.setAttribute("aria-current", String(recSel === r.path));
+      const left = h("span", ""); left.append(h("b", "", r.benchmark === "mbpp" ? `MBPP ${r.task_id}` : r.task_id), h("span", "muted", ` · ${r.model || "?"}`));
+      b.append(left, h("span", `vbadge ${r.verdict || ""}`, r.verdict || "—"));
+      b.addEventListener("click", () => openRecorded(r));
+      list.appendChild(b);
+    }
+    const cur = recSel && runs.find((x) => x.path === recSel); if (cur) showRepro(cur);
+  }).catch((e) => list.appendChild(h("div", "warn", e.message)));
+}
+async function openRecorded(r) {
+  recSel = r.path;
+  for (const b of document.querySelectorAll(".rec-row")) b.setAttribute("aria-current", String(b.dataset.path === r.path));
+  try {
+    const res = await fetch("api/trace?path=" + encodeURIComponent(r.path), {cache: "no-store"});
+    if (!res.ok) throw new Error(res.statusText);
+    const list = parseTrace(await res.text());
+    if (es) { es.close(); es = null; }
+    pressed("src-rec"); banner("file", "rec_loaded", {name: r.path}); setRaw(list, "file");
+  } catch (e) { banner("file", "file_error", {name: r.path, err: e.message}); }
+  showRepro(r);
+}
+async function showRepro(r) {
+  const box = $("rec-repro"); if (!box) return; box.replaceChildren();
+  const m = ACTIONS && ACTIONS.models.find((x) => x.model === r.model && r.api_url && r.api_url.startsWith(x.url));
+  if (!m || !["mbpp", "swebench"].includes(r.benchmark)) { box.appendChild(h("p", "muted", tr("rec_nocfg"))); return; }
+  try {
+    const pv = await api("preview", {action: r.benchmark, params: {provider: m.provider, model: m.model, task_id: r.task_id}});
+    box.replaceChildren(h("p", "", tr("rec_repro")), cmdBlock(pv.steps));
+  } catch (e) { box.replaceChildren(h("p", "warn", e.message)); }
 }
 
 /* Line icons (24×24, stroke = currentColor), inline so the page works offline. */
@@ -2042,6 +2544,8 @@ const ICONS = {
   replay: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   dot: '<circle cx="12" cy="12" r="3" fill="currentColor"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
 };
 function icon(name, cls = "ic") {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -2342,7 +2846,7 @@ $("gloss-close").addEventListener("click", () => gloss.close());
 gloss.addEventListener("click", (ev) => { if (ev.target === gloss) gloss.close(); });
 
 /* ---------- guided tour ---------- */
-const TOUR_TARGETS = [".viewctl", "#taskcard", "#story", "#simple-panel, #arch-panel", "#steps", "#meters", "#security", "#answer", "#b-gloss"];
+const TOUR_TARGETS = [".viewctl", "#launcher", "#taskcard", "#story", "#simple-panel, #arch-panel", "#steps", "#meters", "#security", "#answer", "#b-gloss"];
 let tourI = -1;
 function tourTarget(i) { return [...document.querySelectorAll(TOUR_TARGETS[i])].find((x) => x.getClientRects().length); }
 function tourStart() { stop(); tip.hidden = true; tourI = 0; $("tour").hidden = false; tourShow(); }
@@ -2387,7 +2891,6 @@ function store(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* storag
 function stored(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
 function applyStatic() {
   document.querySelectorAll("[data-i18n]").forEach((x) => { x.textContent = tr(x.dataset.i18n); });
-  if ($("src-live").disabled) $("src-live").title = tr("live_title");
   nodeEls.interp.sub.textContent = tr("sub_interp"); nodeEls.mcps.sub.textContent = tr("sub_mcps");
 }
 function setLang(l) {
@@ -2398,6 +2901,7 @@ function setLang(l) {
   if (events.length) go(cursor); else renderEmpty();
   if (gloss.open) renderGloss();
   if (tourI >= 0) tourShow();
+  renderChoice(); renderLaunchState();
 }
 function setMode(m) {
   MODE = m === "detailed" ? "detailed" : "simple"; document.body.dataset.mode = MODE; store("as-mode", MODE);
@@ -2416,8 +2920,12 @@ document.documentElement.lang = LANG;
 for (const b of $("lang-seg").children) b.setAttribute("aria-pressed", String(b.dataset.lang === LANG));
 applyStatic();
 initSimple();
+for (const b of document.querySelectorAll(".choice[data-ic]")) b.prepend(icon(b.dataset.ic));
+for (const b of document.querySelectorAll(".choice")) b.addEventListener("click", () => selectChoice(b.id));
 showNode("interp");
 loadDemo("mbpp");
+renderChoice();
+renderLaunchState();
 probeLive();
 if (!stored("as-tour-done")) setTimeout(tourStart, 700);
 </script>

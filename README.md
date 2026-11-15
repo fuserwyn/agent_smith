@@ -82,6 +82,13 @@ cycle, step cards with icons, budget gauges, a security panel and the submitted 
 agents, and **Detailed** (the architecture diagram, diffs, line-by-line interpreter trace, MCP hops). The interface and
 explanations switch between English, Russian and French; a guided tour and a glossary explain the terms. Code, tool
 names and component names stay in their original form.
+When served by `uv run agent-ui`, the **What to show** panel also lists the real recorded runs (`events.jsonl` under
+`benchmarks/`, `evaluations/`, `runs/`) and can launch an MBPP task, a SWE-bench task, the sandbox security tests or the
+full mock exam. Every choice shows the exact commands it runs, ready to copy into a terminal. The server only runs fixed
+recipes (`src/agent_smith/ui_jobs.py`) built from validated parameters (models from `config/models.json`, task ids by
+pattern or exam pool), refuses launches unless it listens on localhost, and requires an `X-Agent-Smith` header plus a
+local Host/Origin on every POST, so another web page cannot trigger a run. Runs launched from the page are saved in
+`runs/ui/<time>-<action>/` (task, solution, trace, `validation.txt`, `output.log`, `commands.sh`).
 
 API keys: `<PROVIDER>_API_KEY`, `<PROVIDER>_API_KEY_2…_9` or `<PROVIDER>_API_KEYS=k1,k2`
 (`OPENROUTER`, `GROQ`, `GEMINI`, `MISTRAL`, `TOGETHER`, `CEREBRAS`, `NVIDIA`; `LLM_API_KEY` for any other
