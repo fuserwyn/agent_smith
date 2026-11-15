@@ -77,6 +77,11 @@ Useful options: `--env-file PATH`, `--trace-file runs/live.jsonl` (event trace f
 budget, LLM output, sandbox input, tool calls, observations). Run `uv run agent-ui --trace runs/live.jsonl`, open
 http://127.0.0.1:8765 and start an agent with `--trace-file runs/live.jsonl` to watch it live. You can also drop any
 `events.jsonl` or `solution.json` on the page.
+The page has two views: **Simple** (plain-language narration of every event, a four-block Task → AI → Sandbox → Answer
+cycle, step cards with icons, budget gauges, a security panel and the submitted code or patch) for readers new to
+agents, and **Detailed** (the architecture diagram, diffs, line-by-line interpreter trace, MCP hops). The interface and
+explanations switch between English, Russian and French; a guided tour and a glossary explain the terms. Code, tool
+names and component names stay in their original form.
 
 API keys: `<PROVIDER>_API_KEY`, `<PROVIDER>_API_KEY_2…_9` or `<PROVIDER>_API_KEYS=k1,k2`
 (`OPENROUTER`, `GROQ`, `GEMINI`, `MISTRAL`, `TOGETHER`, `CEREBRAS`, `NVIDIA`; `LLM_API_KEY` for any other

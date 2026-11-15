@@ -249,6 +249,93 @@ dialog.modal[open] { display: grid; grid-template-rows: auto auto minmax(0, 1fr)
 details.sys summary { cursor: pointer; padding: 10px 14px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
 details.sys pre { border-top: 1px solid var(--line); }
 
+/* ---------- plain-language layer ---------- */
+body[data-mode="simple"] .det { display: none !important; }
+body[data-mode="detailed"] .smp { display: none !important; }
+.wrap { grid-template-columns: minmax(0, 1fr); }
+.leftcol { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.viewctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--panel); }
+.seg button { border: 0; background: none; padding: 6px 11px; font-size: 12.5px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); font-weight: 600; }
+.taskcard { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+.taskcard > div { padding: 12px 16px; min-width: 0; display: grid; gap: 7px; align-content: start; }
+.taskcard > div + div { border-left: 1px solid var(--line); }
+.tc-h { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.tc-h h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.kindb { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; color: var(--c-orch); background: color-mix(in srgb, var(--c-orch) 12%, transparent); }
+.kindb:empty { display: none; }
+.tc-kind { font-size: 14px; }
+.tc-text { margin: 0; font-family: var(--f-mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; max-height: 104px; overflow: auto;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.tc-model { font-size: 12.5px; color: var(--muted); } .tc-model b { color: var(--ink); font-family: var(--f-mono); font-weight: 500; }
+.res-big { font-size: 21px; font-weight: 700; }
+.res-big.ok { color: var(--c-final); } .res-big.bad { color: var(--c-error); } .res-big.run { color: var(--c-llm); }
+.res-stats, .res-tests { font-size: 13px; }
+.res-note { font-size: 12px; color: var(--muted); }
+.story { display: flex; align-items: center; gap: 14px; padding: 12px 16px; box-shadow: inset 4px 0 0 var(--c-orch); }
+.story.good { box-shadow: inset 4px 0 0 var(--c-final); } .story.bad { box-shadow: inset 4px 0 0 var(--c-error); } .story.warn { box-shadow: inset 4px 0 0 var(--c-warn); }
+.story .ico { font-size: 26px; line-height: 1; width: 34px; text-align: center; flex: none; }
+.story .say { flex: 1; min-width: 0; font-size: 16.5px; line-height: 1.4; font-weight: 500; text-wrap: pretty; }
+.story .say q { color: var(--muted); font-style: italic; font-weight: 400; }
+.story .where { font-size: 12px; color: var(--muted); white-space: nowrap; font-family: var(--f-mono); }
+.bigplay { border: 0; background: var(--c-orch); color: var(--panel); border-radius: 999px; padding: 9px 18px; font-weight: 600; font-size: 14px; white-space: nowrap; flex: none; }
+.simple { padding: 18px 16px 26px; display: grid; grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr) 26px minmax(0, 1fr) 26px minmax(0, 1fr); align-items: stretch; }
+.sbox { border: 2px solid var(--line); border-radius: 12px; padding: 12px 10px; background: var(--panel-2); display: grid; gap: 4px; align-content: start;
+  text-align: center; min-width: 0; transition: border-color .2s, box-shadow .2s, transform .2s; }
+.sbox .big { font-size: 30px; line-height: 1.15; }
+.sbox h3 { font-size: 15px; }
+.sbox .ex { font-size: 12.5px; color: var(--muted); }
+.sbox .now { font-size: 12px; font-family: var(--f-mono); color: var(--sc); min-height: 2.8em; word-break: break-word; }
+.sbox.on { border-color: var(--sc); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sc) 20%, transparent); transform: translateY(-2px); background: color-mix(in srgb, var(--sc) 8%, var(--panel-2)); }
+.sarrow { display: grid; place-items: center; color: var(--muted); font-size: 20px; }
+.sloop { grid-column: 3 / 6; margin: 0 14%; height: 26px; border: 2px dashed var(--line); border-top: 0; border-radius: 0 0 18px 18px; position: relative; transition: border-color .2s; }
+.sloop.on { border-color: var(--c-orch); }
+.sloop span { position: absolute; left: 50%; bottom: -11px; transform: translateX(-50%); background: var(--panel); padding: 0 8px; font-size: 12.5px;
+  color: var(--c-orch); white-space: nowrap; font-weight: 600; }
+.step .icons { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 3px; }
+.step .icons span { font-size: 11px; padding: 0 5px; border-radius: 5px; background: var(--panel); border: 1px solid var(--line); line-height: 1.6; font-family: var(--f-mono); }
+.step .icons .bad { border-color: var(--c-error); color: var(--c-error); } .step .icons .good { border-color: var(--c-final); color: var(--c-final); }
+.step .sum { font-size: 12.5px; word-break: break-word; }
+.step .th { font-size: 11.5px; color: var(--muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meter .ex { font-size: 11.5px; color: var(--muted); }
+.budget-note { font-size: 11.5px; color: var(--muted); padding: 0 14px 12px; }
+.sec { display: grid; gap: 8px; font-size: 12.5px; }
+.sec ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.sec li::before { content: "✓ "; color: var(--c-final); font-weight: 700; }
+.sec .cnt { font-weight: 600; }
+.sec .none { color: var(--muted); }
+.sec .blk { border: 1px solid var(--line); border-left: 3px solid var(--c-error); border-radius: 6px; padding: 5px 8px; font-family: var(--f-mono); font-size: 11.5px; word-break: break-word; }
+.sec .blk.limit { border-left-color: var(--c-warn); }
+.patch { padding: 6px 0; }
+.pl { display: grid; grid-template-columns: 24px minmax(0, 1fr); padding: 0 14px 0 4px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.55; }
+.pl .s { text-align: center; font-weight: 700; user-select: none; }
+.pl code { white-space: pre-wrap; word-break: break-word; font-family: inherit; }
+.pl.add { background: var(--add-bg); color: var(--add-fg); } .pl.del { background: var(--del-bg); color: var(--del-fg); }
+.pl.hunk { color: var(--c-mcp); background: var(--panel-2); } .pl.file { font-weight: 600; } .pl.meta { color: var(--muted); }
+#ans-sub { font-size: 12.5px; }
+[data-term] { cursor: help; text-decoration: underline dotted color-mix(in srgb, currentColor 50%, transparent); text-underline-offset: 3px; }
+[data-term]::after { content: " ⓘ"; color: var(--c-orch); font-size: .85em; text-decoration: none; display: inline-block; margin-left: 2px; }
+.tip { position: fixed; z-index: 60; max-width: 320px; background: var(--ink); color: var(--panel); border-radius: 8px; padding: 8px 11px;
+  font-size: 12.5px; line-height: 1.45; box-shadow: 0 10px 30px rgba(10, 16, 30, .3); pointer-events: none; }
+.tip b { display: block; margin-bottom: 2px; }
+dl.gl { margin: 0; padding: 14px 18px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 18px; }
+dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
+.tour { position: fixed; inset: 0; z-index: 50; }
+.tour-hole { position: fixed; border-radius: 12px; box-shadow: 0 0 0 200vmax rgba(10, 16, 30, .62); outline: 2px solid var(--c-warn); pointer-events: none; transition: all .25s; }
+.tour-card { position: fixed; width: min(380px, calc(100vw - 32px)); background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px; box-shadow: 0 24px 64px rgba(10, 16, 30, .4); display: grid; gap: 8px; }
+.tour-card h3 { font-size: 17px; } .tour-card p { margin: 0; font-size: 14px; line-height: 1.5; }
+.tour-btns { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.tour-btns span { margin-right: auto; font-size: 12px; color: var(--muted); }
+.tour-btns button { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 13px; }
+.tour-btns .pri { background: var(--c-orch); border-color: var(--c-orch); color: var(--panel); font-weight: 600; }
+@media (max-width: 860px) {
+  .taskcard { grid-template-columns: minmax(0, 1fr); } .taskcard > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .simple { grid-template-columns: minmax(0, 1fr); gap: 4px; } .sarrow { transform: rotate(90deg); height: 22px; }
+  .sloop { grid-column: 1; margin: 6px 6% 4px; } .sloop span { white-space: normal; text-align: center; width: max-content; max-width: 90%; }
+  .story { flex-wrap: wrap; } .story .say { flex-basis: calc(100% - 50px); } dl.gl { grid-template-columns: minmax(0, 1fr); gap: 2px 0; } dl.gl dd { margin-bottom: 8px; }
+}
 @media (max-width: 1100px) { .main, .lower { grid-template-columns: minmax(0, 1fr); } .steps { max-height: 300px; } }
 @media (max-width: 760px) { .interp { grid-template-columns: minmax(0, 1fr); } .interp-code { border-right: 0; border-bottom: 1px solid var(--line); } .io { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { .brand span { display: none; } .controls { margin-left: 0; width: 100%; } .ln { grid-template-columns: 18px 32px 32px minmax(0, 1fr); } }
@@ -257,12 +344,18 @@ details.sys pre { border-top: 1px solid var(--line); }
 
 <div class="wrap">
   <header class="top">
-    <div class="brand"><h1>Agent Smith Observatory</h1><span>Thought → Code → Observation, step by step</span></div>
+    <div class="brand"><h1>Agent Smith Observatory</h1><span data-i18n="subtitle">Thought → Code → Observation, step by step</span></div>
+    <div class="viewctl">
+      <div class="seg" role="group" aria-label="View" id="mode-seg"><button data-mode="simple" data-i18n="mode_simple">Simple</button><button data-mode="detailed" data-i18n="mode_detailed">Detailed</button></div>
+      <div class="seg" role="group" aria-label="Language" id="lang-seg"><button data-lang="en" lang="en">EN</button><button data-lang="ru" lang="ru">RU</button><button data-lang="fr" lang="fr">FR</button></div>
+      <button class="chip-btn" id="b-tour" data-i18n="tour_btn">Guided tour</button>
+      <button class="chip-btn" id="b-gloss" data-i18n="gloss_btn">Glossary</button>
+    </div>
     <div class="sources" role="group" aria-label="Trace source">
-      <button class="chip-btn" id="src-mbpp" aria-pressed="true">Demo · MBPP</button>
-      <button class="chip-btn" id="src-swe" aria-pressed="false">Demo · SWE-bench</button>
-      <button class="chip-btn" id="src-file" aria-pressed="false">Open trace or solution…</button>
-      <button class="chip-btn" id="src-live" aria-pressed="false" disabled title="Available when served by: uv run agent-ui">Live</button>
+      <button class="chip-btn" id="src-mbpp" aria-pressed="true" data-i18n="src_mbpp">Demo · MBPP</button>
+      <button class="chip-btn" id="src-swe" aria-pressed="false" data-i18n="src_swe">Demo · SWE-bench</button>
+      <button class="chip-btn" id="src-file" aria-pressed="false" data-i18n="src_file">Open trace or solution…</button>
+      <button class="chip-btn" id="src-live" aria-pressed="false" disabled title="Available when served by: uv run agent-ui" data-i18n="src_live">Live</button>
       <input type="file" id="file" accept=".json,.jsonl,.txt" hidden>
     </div>
     <div class="controls">
@@ -279,15 +372,44 @@ details.sys pre { border-top: 1px solid var(--line); }
 
   <div class="banner" id="banner"></div>
 
+  <section class="panel taskcard" id="taskcard" aria-label="Task and result">
+    <div>
+      <div class="tc-h"><h2 data-i18n="task_h">Task</h2><span class="kindb" id="tc-kind-b"></span></div>
+      <div class="tc-kind" id="tc-kind"></div>
+      <pre class="tc-text" id="tc-text"></pre>
+      <div class="tc-model" id="tc-model"></div>
+    </div>
+    <div>
+      <div class="tc-h"><h2 data-i18n="result_h">Result</h2></div>
+      <div class="res-big" id="res-big"></div>
+      <div class="res-stats" id="res-stats"></div>
+      <div class="res-tests" id="res-tests"></div>
+      <div class="res-note" id="res-note" data-term="moulinette"></div>
+    </div>
+  </section>
+
+  <section class="panel story info" id="story" aria-label="What is happening now">
+    <button class="bigplay" id="s-play">▶ Play</button>
+    <span class="ico" id="story-ico" aria-hidden="true">▶</span>
+    <div class="say" id="story-say"></div>
+    <span class="where" id="story-where"></span>
+  </section>
+
   <div class="scrubrow">
     <input type="range" class="scrub" id="scrub" min="0" max="0" value="0" aria-label="Event position">
     <span class="pos" id="pos">0 / 0</span>
-    <label class="toggle"><input type="checkbox" id="opt-lines" checked> code lines in timeline</label>
+    <label class="toggle det"><input type="checkbox" id="opt-lines" checked> <span data-i18n="opt_lines">code lines in timeline</span></label>
   </div>
 
   <div class="main">
-    <section class="panel" aria-label="Architecture">
-      <div class="panel-h"><h2>Architecture · live component activity</h2><span class="mono muted">click a component: its input and output for the selected step</span></div>
+    <div class="leftcol">
+    <section class="panel smp" id="simple-panel" aria-label="How the agent works">
+      <div class="panel-h"><h2 data-i18n="simple_h" data-term="agent">How the agent works</h2><span class="muted" data-i18n="simple_hint">the highlighted block is working now</span></div>
+      <div class="simple" id="simple"></div>
+    </section>
+
+    <section class="panel det" id="arch-panel" aria-label="Architecture">
+      <div class="panel-h"><h2 data-i18n="arch_h">Architecture · live component activity</h2><span class="mono muted" data-i18n="arch_hint">click a component: its input and output for the selected step</span></div>
       <div class="diagram-wrap">
         <svg id="diagram" viewBox="0 0 900 572" role="img" aria-label="Agent Smith architecture diagram">
           <defs>
@@ -301,36 +423,45 @@ details.sys pre { border-top: 1px solid var(--line); }
           <g id="pulses"></g>
         </svg>
       </div>
-      <div class="caption" id="caption"><span class="kind">ready</span><span class="txt">Press play to replay the run.</span></div>
-      <div class="legend" id="legend"><span><b>Δ</b> data changed between the box that sent it and the box that received it (open the Flow tab for the diff)</span></div>
+      <div class="caption" id="caption"><span class="kind">ready</span><span class="txt" data-i18n="caption_ready">Press play to replay the run.</span></div>
+      <div class="legend" id="legend"><span><b>Δ</b> <span data-i18n="legend_delta">data changed between the box that sent it and the box that received it (open the Flow tab for the diff)</span></span></div>
       <div class="node-info" id="node-info"></div>
     </section>
 
+    <section class="panel" id="answer" aria-label="Answer">
+      <div class="panel-h"><h2 data-i18n="ans_h" data-term="patch">Answer</h2><span class="muted" id="ans-sub"></span></div>
+      <div id="ans-body"></div>
+    </section>
+    </div>
+
     <aside class="panel" aria-label="Budget and steps">
-      <div class="panel-h"><h2>Budget (cumulative limits)</h2><span class="mono muted" id="model"></span></div>
+      <div class="panel-h"><h2 data-i18n="budget_h" data-term="budget">Budget (limits per task)</h2><span class="mono muted det" id="model"></span></div>
       <div class="panel-b meters" id="meters"></div>
-      <div class="panel-h" style="border-top:1px solid var(--line)"><h2>Steps</h2><span class="mono" id="result"></span></div>
+      <div class="budget-note" data-i18n="budget_note"></div>
+      <div class="panel-h" style="border-top:1px solid var(--line)"><h2 data-i18n="sec_h" data-term="sandbox">Security</h2><span class="mono" id="sec-count"></span></div>
+      <div class="panel-b sec" id="security"></div>
+      <div class="panel-h" style="border-top:1px solid var(--line)"><h2 data-i18n="steps_h" data-term="iteration">Steps</h2><span class="mono" id="result"></span></div>
       <div class="panel-b steps" id="steps"></div>
-      <div class="panel-h" style="border-top:1px solid var(--line)"><h2>Event log</h2><span class="mono muted">click to jump</span></div>
-      <div class="log" id="log"></div>
+      <div class="panel-h det" style="border-top:1px solid var(--line)"><h2 data-i18n="log_h">Event log</h2><span class="mono muted" data-i18n="log_hint">click to jump</span></div>
+      <div class="log det" id="log"></div>
     </aside>
   </div>
 
   <div class="lower">
-    <section class="panel" aria-label="Step detail">
-      <div class="panel-h"><h2 id="detail-title">Step detail</h2>
+    <section class="panel det" aria-label="Step detail">
+      <div class="panel-h"><h2 id="detail-title" data-i18n="detail_h">Step detail</h2>
         <div class="tabs" role="tablist" id="tabs">
-          <button class="tab" role="tab" data-tab="flow" aria-selected="true">Flow &amp; diffs</button>
-          <button class="tab" role="tab" data-tab="interp" aria-selected="false">Interpreter</button>
-          <button class="tab" role="tab" data-tab="tools" aria-selected="false">Tool calls</button>
-          <button class="tab" role="tab" data-tab="llm" aria-selected="false">LLM output</button>
-          <button class="tab" role="tab" data-tab="code" aria-selected="false">Sandbox input</button>
-          <button class="tab" role="tab" data-tab="obs" aria-selected="false">Observation</button>
+          <button class="tab" role="tab" data-i18n="tab_flow" data-tab="flow" aria-selected="true">Flow &amp; diffs</button>
+          <button class="tab" role="tab" data-i18n="tab_interp" data-tab="interp" aria-selected="false">Interpreter</button>
+          <button class="tab" role="tab" data-i18n="tab_tools" data-tab="tools" aria-selected="false">Tool calls</button>
+          <button class="tab" role="tab" data-i18n="tab_llm" data-tab="llm" aria-selected="false">LLM output</button>
+          <button class="tab" role="tab" data-i18n="tab_code" data-tab="code" aria-selected="false">Sandbox input</button>
+          <button class="tab" role="tab" data-i18n="tab_obs" data-tab="obs" aria-selected="false">Observation</button>
         </div>
       </div>
       <div class="metaline" id="detail-meta"></div>
       <div id="detail-body"></div>
-      <details class="sys"><summary>System prompt sent to the LLM</summary><pre class="code" id="sysprompt"></pre></details>
+      <details class="sys"><summary data-i18n="sysprompt">System prompt sent to the LLM</summary><pre class="code" id="sysprompt"></pre></details>
     </section>
   </div>
 </div>
@@ -346,10 +477,667 @@ details.sys pre { border-top: 1px solid var(--line); }
   <div class="modal-steps" id="modal-steps" role="group" aria-label="Step"></div>
   <div class="modal-body" id="modal-body"></div>
 </dialog>
-<div class="drop" id="drop" hidden>Drop events.jsonl or solution.json</div>
+<div class="drop" id="drop" hidden data-i18n="drop">Drop events.jsonl or solution.json</div>
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<dialog class="modal" id="gloss-modal" aria-labelledby="gloss-title">
+  <div class="modal-h"><h2 id="gloss-title">Glossary</h2><span class="now"></span>
+    <button class="ctl" id="gloss-close" aria-label="Close"><svg viewBox="0 0 16 16"><path d="M3.5 2.1 8 6.6l4.5-4.5 1.4 1.4L9.4 8l4.5 4.5-1.4 1.4L8 9.4l-4.5 4.5-1.4-1.4L6.6 8 2.1 3.5z"/></svg></button></div>
+  <div class="modal-body" id="gloss-body"></div>
+</dialog>
+<div class="tour" id="tour" hidden>
+  <div class="tour-hole" id="tour-hole"></div>
+  <div class="tour-card" id="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-t">
+    <h3 id="tour-t"></h3><p id="tour-p"></p>
+    <div class="tour-btns"><span id="tour-n"></span><button id="tour-skip"></button><button id="tour-back"></button><button class="pri" id="tour-next"></button></div>
+  </div>
+</div>
 
 <script>
 const DEMO = /*DEMO_START*/{"mbpp":[{"t":0.514,"ts":"2026-11-09T17:55:38.101892","type":"mcp_connected","server":"agent-smith-mbpp","tools":["run_tests"],"transport":"stdio (\"python\" \"<repo>/mcp_tools_mbpp.py\")","resources":true,"prompts":true,"tool_specs":[{"name":"run_tests","signature":"run_tests(code: str, tests: list | None = None) -> str","description":"Run the task's test assertions against a candidate solution.\n\n    `code` is the COMPLETE solution source (needed imports + the function), as a string.\n    `tests` is optional: by default the task's public tests are used.\n    Returns 'ALL TESTS PASSED (n/n)' or 'TESTS FAILED (k/n passed)' with got/expected values.","params":[{"name":"code","type":"str","required":true,"description":""},{"name":"tests","type":"list | None","required":false,"description":""}]}]},{"t":0.552,"ts":"2026-11-09T17:55:38.139086","type":"run_start","benchmark":"mbpp","task_id":"282","limits":{"max_iterations":10,"max_input_tokens":6000,"max_output_tokens":1500,"timeout_seconds":120.0},"system_prompt":"You are an expert Python programmer. You solve a programming task by writing code in a sandbox.\n\nEvery reply has exactly this shape:\nThought: <brief reasoning>\n```python\n<code>\n```<end_code>\nThen STOP and wait: the code runs in a Python sandbox and you receive \"Observation:\" with its printed output.\nNever write the Observation yourself. Variables persist between steps. Use print() to see results.\n\n## Tools (Python functions available in the sandbox; each returns a str)\n- run_tests(code: str, tests: list | None = None) -> str\n    Run the task's test assertions against a candidate solution. `code` is the COMPLETE solution source (needed imports + the function), as a string. `tests` is ...\n- final_answer(answer: str) -> None\n    Built-in. Submits your final answer and ends the task.\n- list_resources() / read_resource(uri) -> str   (MCP resources)\n- list_prompts() / get_prompt(name, arguments: dict) -> str   (MCP prompts)\nTool errors raise ToolError (catchable).\n\n## Sandbox rules\n- Allowed imports ONLY: math, math.*, collections, collections.*, itertools, re, json, typing, typing.*, functools, operator, heapq, bisect, copy, string, random, datetime, datetime.*, array, cmath\n- Files: only under /testbed, /tmp/agent (use tools for the repository)\n- No network, no subprocesses, no eval/exec/open of other paths, no dunder attributes.\n- Each code block: 30s timeout, 512 MB memory.\n- Variables persist between steps. Only print()ed output and the last expression are shown.\n\nSolve it in ONE step when possible: write the solution, test it, submit if green:\nThought: Count with a dict, return the most common.\n```python\ncode = r\"\"\"\nfrom collections import Counter\ndef most_common(xs):\n    return Counter(xs).most_common(1)[0][0]\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)\n```<end_code>\nIf tests fail, read got/expected, fix the code and repeat.\n\nRules:\n- `code` must be a complete standalone solution: needed imports + the function with the EXACT name and parameters\n  requested. No prints, no tests, no input() in it. Use only the allowed imports.\n- One extra hidden test exists: implement the general behaviour described, never hard-code test values.\n- final_answer receives the solution source code as a string.\n- Keep Thoughts to one or two sentences.","task_prompt":"Task: Write a function to substaract two lists using map and lambda function.\nRequired signature: def sub_list(nums1,nums2):\nPublic tests (run_tests checks these):\nassert sub_list([1,2],[3,4])==[-2,-2]\nassert sub_list([90,120],[50,70])==[40,50]","model":"scripted-demo","api_url":"scripted://fake-llm","tools":["run_tests"]},{"t":0.552,"ts":"2026-11-09T17:55:38.139185","type":"llm_request","step":1,"messages":2,"estimated_input_tokens":958,"max_tokens":800,"delivered":"Task: Write a function to substaract two lists using map and lambda function.\nRequired signature: def sub_list(nums1,nums2):\nPublic tests (run_tests checks these):\nassert sub_list([1,2],[3,4])==[-2,-2]\nassert sub_list([90,120],[50,70])==[40,50]","compacted_steps":[]},{"t":0.591,"ts":"2026-11-09T17:55:38.177927","type":"llm_response","step":1,"text":"Thought: Pair the two lists element-wise and combine each pair.\n```python\ncode = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)\n```","input_tokens":645,"output_tokens":71,"request_time_ms":38.679415942169726,"retries":0,"finish_reason":"stop"},{"t":0.591,"ts":"2026-11-09T17:55:38.178089","type":"extraction","step":1,"format":"python_block","code":"code = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)","notes":[]},{"t":0.591,"ts":"2026-11-09T17:55:38.178110","type":"sandbox_start","step":1,"code":"code = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)"},{"t":0.591,"ts":"2026-11-09T17:55:38.178841","type":"tool_call","name":"run_tests","args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n"},"line":5,"written":"run_tests('\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x + y, nums1, nums2))\\n')"},{"t":0.642,"ts":"2026-11-09T17:55:38.229575","type":"tool_result","name":"run_tests","result":"TESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]","is_error":false,"duration_ms":50.732542062178254,"line":5,"args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n"},"written":"run_tests('\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x + y, nums1, nums2))\\n')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_tests","arguments":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n"}}},"transport":"stdio (\"python\" \"<repo>/mcp_tools_mbpp.py\")","rtt_ms":50.7,"server":{"server":"agent-smith-mbpp","tool":"run_tests","handler":"mbpp_tools.run_tests","received_args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n","tests":null},"duration_ms":47.9,"ops":[{"op":"sandbox","command":"Sandbox.execute(solution + 2 test assertions, 28 lines)","exit_code":0,"duration_ms":47.4,"stdout_bytes":189,"stderr_bytes":0,"stdin_bytes":1188,"stdout_head":"FAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]\n","stderr_head":"","timed_out":false}],"raw_output_bytes":189,"result_chars":214,"result_lines":7,"truncated":false,"executor":"sandbox","target":"isolated sandbox worker (no MCP, no network)","details":{"source":"task.json of MBPP task 282 (dumped by the moulinette, read via MBPP_TASK_FILE): public test_list from the MBPP dataset. The moulinette hides the first test; it is only used at validation.","tests":["assert sub_list([1,2],[3,4])==[-2,-2]","assert sub_list([90,120],[50,70])==[40,50]"],"test_imports":[],"generated":"harness = candidate code + test imports + one try/except block per assert (prints PASS/FAIL with got/expected); executed in a fresh sandbox without MCP","harness":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n\n\ntry:\n    _got = sub_list([1, 2], [3, 4])\n    _exp = [-2, -2]\n    if _got == _exp:\n        print('PASS 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\")\n    else:\n        print('FAIL 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\" + '\\n    got:      ' + repr(_got)[:300] + '\\n    expected: ' + repr(_exp)[:300])\nexcept AssertionError:\n    print('FAIL 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\")\nexcept Exception as _e:\n    print('ERROR 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\" + '\\n    ' + type(_e).__name__ + ': ' + str(_e)[:300])\n\ntry:\n    _got = sub_list([90, 120], [50, 70])\n    _exp = [40, 50]\n    if _got == _exp:\n        print('PASS 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\")\n    else:\n        print('FAIL 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\" + '\\n    got:      ' + repr(_got)[:300] + '\\n    expected: ' + repr(_exp)[:300])\nexcept AssertionError:\n    print('FAIL 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\")\nexcept Exception as _e:\n    print('ERROR 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\" + '\\n    ' + type(_e).__name__ + ': ' + str(_e)[:300])\n"}}},{"t":0.643,"ts":"2026-11-09T17:55:38.230232","type":"sandbox_end","step":1,"status":"ok","output":"TESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]","duration_s":0.052,"is_final":false,"stdout":"TESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0,"v":{"code":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x + y, nums1, nums2))\\n'"}},{"e":"line","l":5,"f":"<module>","d":0,"v":{"result":"'TESTS FAILED (0/2 passed)\\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\\n    got:      [4, 6]\\n..."}},{"e":"tool","l":5,"n":"run_tests","a":{"code":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x + y, nums1..."}},{"e":"tool_result","l":5,"n":"run_tests","ok":true,"r":"'TESTS FAILED (0/2 passed)\\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\\n    got:      [4, 6]\\n    expected: [-2, -2]\\nFAIL 2: assert sub_list([90,120],[50..."},{"e":"line","l":6,"f":"<module>","d":0},{"e":"line","l":7,"f":"<module>","d":0}],"dropped":0}},{"t":0.643,"ts":"2026-11-09T17:55:38.230300","type":"budget","iterations":1,"max_iterations":10,"input_tokens":645,"max_input_tokens":6000,"output_tokens":71,"max_output_tokens":1500,"elapsed":0.64,"timeout":120.0},{"t":0.643,"ts":"2026-11-09T17:55:38.230319","type":"observation","step":1,"text":"TESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]"},{"t":0.643,"ts":"2026-11-09T17:55:38.230348","type":"llm_request","step":2,"messages":4,"estimated_input_tokens":1157,"max_tokens":800,"delivered":"Observation:\nTESTS FAILED (0/2 passed)\nFAIL 1: assert sub_list([1,2],[3,4])==[-2,-2]\n    got:      [4, 6]\n    expected: [-2, -2]\nFAIL 2: assert sub_list([90,120],[50,70])==[40,50]\n    got:      [140, 190]\n    expected: [40, 50]","compacted_steps":[]},{"t":0.645,"ts":"2026-11-09T17:55:38.232618","type":"llm_response","step":2,"text":"Thought: The tests show sums instead of differences: the lambda must subtract.\n```python\ncode = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)\n```","input_tokens":774,"output_tokens":74,"request_time_ms":2.2414580453187227,"retries":0,"finish_reason":"stop"},{"t":0.645,"ts":"2026-11-09T17:55:38.232712","type":"extraction","step":2,"format":"python_block","code":"code = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)","notes":[]},{"t":0.645,"ts":"2026-11-09T17:55:38.232730","type":"sandbox_start","step":2,"code":"code = r\"\"\"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n\"\"\"\nresult = run_tests(code)\nprint(result)\nif result.startswith(\"ALL TESTS PASSED\"):\n    final_answer(code)"},{"t":0.646,"ts":"2026-11-09T17:55:38.233138","type":"tool_call","name":"run_tests","args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"},"line":5,"written":"run_tests('\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1, nums2))\\n')"},{"t":0.689,"ts":"2026-11-09T17:55:38.276857","type":"tool_result","name":"run_tests","result":"ALL TESTS PASSED (2/2)\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]","is_error":false,"duration_ms":43.71450003236532,"line":5,"args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"},"written":"run_tests('\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1, nums2))\\n')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_tests","arguments":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"}}},"transport":"stdio (\"python\" \"<repo>/mcp_tools_mbpp.py\")","rtt_ms":43.7,"server":{"server":"agent-smith-mbpp","tool":"run_tests","handler":"mbpp_tools.run_tests","received_args":{"code":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n","tests":null},"duration_ms":41.6,"ops":[{"op":"sandbox","command":"Sandbox.execute(solution + 2 test assertions, 28 lines)","exit_code":0,"duration_ms":41.2,"stdout_bytes":97,"stderr_bytes":0,"stdin_bytes":1188,"stdout_head":"PASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]\n","stderr_head":"","timed_out":false}],"raw_output_bytes":97,"result_chars":119,"result_lines":3,"truncated":false,"executor":"sandbox","target":"isolated sandbox worker (no MCP, no network)","details":{"source":"task.json of MBPP task 282 (dumped by the moulinette, read via MBPP_TASK_FILE): public test_list from the MBPP dataset. The moulinette hides the first test; it is only used at validation.","tests":["assert sub_list([1,2],[3,4])==[-2,-2]","assert sub_list([90,120],[50,70])==[40,50]"],"test_imports":[],"generated":"harness = candidate code + test imports + one try/except block per assert (prints PASS/FAIL with got/expected); executed in a fresh sandbox without MCP","harness":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n\n\ntry:\n    _got = sub_list([1, 2], [3, 4])\n    _exp = [-2, -2]\n    if _got == _exp:\n        print('PASS 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\")\n    else:\n        print('FAIL 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\" + '\\n    got:      ' + repr(_got)[:300] + '\\n    expected: ' + repr(_exp)[:300])\nexcept AssertionError:\n    print('FAIL 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\")\nexcept Exception as _e:\n    print('ERROR 1: ' + \"assert sub_list([1,2],[3,4])==[-2,-2]\" + '\\n    ' + type(_e).__name__ + ': ' + str(_e)[:300])\n\ntry:\n    _got = sub_list([90, 120], [50, 70])\n    _exp = [40, 50]\n    if _got == _exp:\n        print('PASS 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\")\n    else:\n        print('FAIL 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\" + '\\n    got:      ' + repr(_got)[:300] + '\\n    expected: ' + repr(_exp)[:300])\nexcept AssertionError:\n    print('FAIL 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\")\nexcept Exception as _e:\n    print('ERROR 2: ' + \"assert sub_list([90,120],[50,70])==[40,50]\" + '\\n    ' + type(_e).__name__ + ': ' + str(_e)[:300])\n"}}},{"t":0.69,"ts":"2026-11-09T17:55:38.277446","type":"sandbox_end","step":2,"status":"final_answer","output":"ALL TESTS PASSED (2/2)\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]\n[final_answer received]","duration_s":0.045,"is_final":true,"stdout":"ALL TESTS PASSED (2/2)\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0,"v":{"code":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1, nums2))\\n'"}},{"e":"line","l":5,"f":"<module>","d":0,"v":{"result":"'ALL TESTS PASSED (2/2)\\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\\nPASS 2: assert sub_list([..."}},{"e":"tool","l":5,"n":"run_tests","a":{"code":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1..."}},{"e":"tool_result","l":5,"n":"run_tests","ok":true,"r":"'ALL TESTS PASSED (2/2)\\nPASS 1: assert sub_list([1,2],[3,4])==[-2,-2]\\nPASS 2: assert sub_list([90,120],[50,70])==[40,50]'"},{"e":"line","l":6,"f":"<module>","d":0},{"e":"line","l":7,"f":"<module>","d":0},{"e":"line","l":8,"f":"<module>","d":0},{"e":"final","l":8,"r":"'\\ndef sub_list(nums1, nums2):\\n    return list(map(lambda x, y: x - y, nums1, nums2))\\n'"}],"dropped":0}},{"t":0.69,"ts":"2026-11-09T17:55:38.277495","type":"budget","iterations":2,"max_iterations":10,"input_tokens":1419,"max_input_tokens":6000,"output_tokens":145,"max_output_tokens":1500,"elapsed":0.69,"timeout":120.0},{"t":0.69,"ts":"2026-11-09T17:55:38.277549","type":"final_answer","step":2,"answer":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"},{"t":0.69,"ts":"2026-11-09T17:55:38.277585","type":"run_end","success":true,"error":null,"solution":"\ndef sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n","total_time_seconds":0.691,"iterations":2,"max_iterations":10,"input_tokens":1419,"max_input_tokens":6000,"output_tokens":145,"max_output_tokens":1500,"elapsed":0.69,"timeout":120.0}],"swebench":[{"t":0.47,"ts":"2026-11-09T17:55:39.293049","type":"mcp_connected","server":"agent-smith-swebench","tools":["read_file","edit_file","list_files","search_code","search_function_or_class_definition_in_code","find_references","run_tests","get_patch","run_command"],"transport":"stdio (python <repo>/mcp_tools_swebench.py)","resources":true,"prompts":true,"tool_specs":[{"name":"read_file","signature":"read_file(filepath: str, start_line: int = 1, end_line: int | None = None) -> str","description":"Read a file with line numbers ('<n>: <line>'). Relative paths are from the repo root.\n    Reads at most 400 lines per call; use start_line/end_line to page.","params":[{"name":"filepath","type":"str","required":true,"description":""},{"name":"start_line","type":"int","required":false,"description":""},{"name":"end_line","type":"int | None","required":false,"description":""}]},{"name":"edit_file","signature":"edit_file(filepath: str, old_str: str, new_str: str) -> str","description":"Replace the exact string old_str (must occur exactly once, whitespace-sensitive) with new_str.\n    The edit is rejected if it would introduce a Python syntax error. Empty old_str on a missing file creates it.","params":[{"name":"filepath","type":"str","required":true,"description":""},{"name":"old_str","type":"str","required":true,"description":""},{"name":"new_str","type":"str","required":true,"description":""}]},{"name":"list_files","signature":"list_files(directory: str = '.', pattern: str = '*') -> str","description":"List files under a directory whose name matches a glob pattern (e.g. '*.py', 'test_*.py').","params":[{"name":"directory","type":"str","required":false,"description":""},{"name":"pattern","type":"str","required":false,"description":""}]},{"name":"search_code","signature":"search_code(pattern: str, file_pattern: str = '*.py') -> str","description":"grep -E like search over the repository. Output: '/abs/path.py:<line> <content>'.","params":[{"name":"pattern","type":"str","required":true,"description":""},{"name":"file_pattern","type":"str","required":false,"description":""}]},{"name":"search_function_or_class_definition_in_code","signature":"search_function_or_class_definition_in_code(name: str) -> str","description":"Find where a function or class is defined (def/class). Output like search_code.","params":[{"name":"name","type":"str","required":true,"description":""}]},{"name":"find_references","signature":"find_references(name: str, filepath: str | None = None, line: int | None = None) -> str","description":"Find all usages of a symbol (whole-word match). Matches in `filepath` near `line` are listed first.","params":[{"name":"name","type":"str","required":true,"description":""},{"name":"filepath","type":"str | None","required":false,"description":""},{"name":"line","type":"int | None","required":false,"description":""}]},{"name":"run_tests","signature":"run_tests() -> str","description":"Run the task's evaluation script; returns a pass/fail summary plus the tail of the test output.","params":[]},{"name":"get_patch","signature":"get_patch() -> str","description":"Return the unified diff of all changes (git -c core.fileMode=false diff).","params":[]},{"name":"run_command","signature":"run_command(command: str, workdir: str | None = None, timeout: int = 120) -> str","description":"Run a shell command (bash) in workdir (default: repo root). Returns exit code, stdout and stderr.","params":[{"name":"command","type":"str","required":true,"description":""},{"name":"workdir","type":"str | None","required":false,"description":""},{"name":"timeout","type":"int","required":false,"description":""}]}]},{"t":0.506,"ts":"2026-11-09T17:55:39.329207","type":"run_start","benchmark":"swebench","task_id":"demo__calculator-1","limits":{"max_iterations":30,"max_input_tokens":300000,"max_output_tokens":10000,"timeout_seconds":900.0},"system_prompt":"You are an autonomous software engineer fixing a real issue in the repository at /tmp/agent_smith_demo/testbed.\nYou act by writing Python code that calls tools (Python functions). The repository lives in a separate\nenvironment: you can only reach it through the tools, never with open() or imports.\n\nEvery reply has exactly this shape:\nThought: <brief reasoning>\n```python\n<code>\n```<end_code>\nThen STOP and wait: the code runs in a Python sandbox and you receive \"Observation:\" with its printed output.\nNever write the Observation yourself. Variables persist between steps. Use print() to see results.\n\n## Tools (Python functions available in the sandbox; each returns a str)\n- read_file(filepath: str, start_line: int = 1, end_line: int | None = None) -> str\n    Read a file with line numbers ('<n>: <line>'). Relative paths are from the repo root. Reads at most 400 lines per call; use start_line/end_line to page.\n- edit_file(filepath: str, old_str: str, new_str: str) -> str\n    Replace the exact string old_str (must occur exactly once, whitespace-sensitive) with new_str. The edit is rejected if it would introduce a Python syntax error. Empty old_str on a missing file creates it.\n- list_files(directory: str = '.', pattern: str = '*') -> str\n    List files under a directory whose name matches a glob pattern (e.g. '*.py', 'test_*.py').\n- search_code(pattern: str, file_pattern: str = '*.py') -> str\n    grep -E like search over the repository. Output: '/abs/path.py:<line> <content>'.\n- search_function_or_class_definition_in_code(name: str) -> str\n    Find where a function or class is defined (def/class). Output like search_code.\n- find_references(name: str, filepath: str | None = None, line: int | None = None) -> str\n    Find all usages of a symbol (whole-word match). Matches in `filepath` near `line` are listed first.\n- run_tests() -> str\n    Run the task's evaluation script; returns a pass/fail summary plus the tail of the test output.\n- get_patch() -> str\n    Return the unified diff of all changes (git -c core.fileMode=false diff).\n- run_command(command: str, workdir: str | None = None, timeout: int = 120) -> str\n    Run a shell command (bash) in workdir (default: repo root). Returns exit code, stdout and stderr.\n- final_answer(answer: str) -> None\n    Built-in. Submits your final answer and ends the task.\n- list_resources() / read_resource(uri) -> str   (MCP resources)\n- list_prompts() / get_prompt(name, arguments: dict) -> str   (MCP prompts)\nTool errors raise ToolError (catchable).\n\n## Sandbox rules\n- Allowed imports ONLY: math, math.*, collections, collections.*, itertools, re, json, typing, typing.*, functools, operator, heapq, bisect, copy, string, random, datetime, datetime.*, array, cmath\n- Files: only under /testbed, /tmp/agent (use tools for the repository)\n- No network, no subprocesses, no eval/exec/open of other paths, no dunder attributes.\n- Each code block: 30s timeout, 512 MB memory.\n- Variables persist between steps. Only print()ed output and the last expression are shown.\n\n## Method (follow it; it is how an experienced engineer fixes a bug)\n1. Understand: restate the bug in one sentence. Identify symbols, error messages and files mentioned in the issue.\n2. Locate: search_function_or_class_definition_in_code / search_code for those symbols. Read only the relevant\n   ranges with read_file(path, start, end) (not whole big files).\n3. Reproduce: write a tiny script that shows the bug, e.g.\n   run_command(\"cat > /tmp/repro.py << 'EOF'\\n<python>\\nEOF\\npython /tmp/repro.py\"). Confirm you see the failure.\n4. Fix: make the minimal, general change at the root cause with edit_file(path, old_str, new_str).\n   old_str must be copied EXACTLY (indentation included) from read_file output and be unique.\n5. Verify: re-run the reproduction, then run_tests(). Inspect failing test names; iterate if needed.\n6. Submit: as soon as the fix is verified call final_answer(get_patch()). Do not keep exploring after tests pass.\n\n## Efficiency\n- Batch several tool calls in ONE code block (search + read, edit + re-run). Print only what you need.\n- You have a limited number of steps and tokens: no long essays in Thoughts.\n- Never modify test files. Keep scratch files in /tmp, never inside the repository.\n\n## Integrity (mandatory)\n- Solve the issue by reading and running the code in this repository only.\n- Do not fetch anything from the internet, pull requests, issue trackers or package indexes, and do not\n  reproduce a memorised upstream patch without verifying it against this code base.\n\n## Example of a good first step\nThought: The issue says `Matrix.col_insert` misplaces columns. Find its definition and read it.\n```python\nprint(search_function_or_class_definition_in_code(\"col_insert\"))\nprint(search_code(\"def _eval_col_insert\", \"*.py\"))\n```<end_code>","task_prompt":"Repository: demo/calculator (checked out at /tmp/agent_smith_demo/testbed)\n<issue>\nCalculator.total() returns wrong results\n\n`Calculator().total([1, 2, 3])` returns -6 instead of 6. Expected the sum of the values.\n<\/issue>","model":"scripted-demo","api_url":"scripted://fake-llm","tools":["read_file","edit_file","list_files","search_code","search_function_or_class_definition_in_code","find_references","run_tests","get_patch","run_command"]},{"t":0.506,"ts":"2026-11-09T17:55:39.329343","type":"llm_request","step":1,"messages":2,"estimated_input_tokens":1860,"max_tokens":1024,"delivered":"Repository: demo/calculator (checked out at /tmp/agent_smith_demo/testbed)\n<issue>\nCalculator.total() returns wrong results\n\n`Calculator().total([1, 2, 3])` returns -6 instead of 6. Expected the sum of the values.\n<\/issue>","compacted_steps":[]},{"t":0.535,"ts":"2026-11-09T17:55:39.357483","type":"llm_response","step":1,"text":"Thought: The issue says Calculator.total returns wrong sums. Locate total() and add().\n```python\nprint(search_function_or_class_definition_in_code(\"Calculator\"))\nprint(search_function_or_class_definition_in_code(\"add\"))\n```","input_tokens":1259,"output_tokens":56,"request_time_ms":28.089208994060755,"retries":0,"finish_reason":"stop"},{"t":0.535,"ts":"2026-11-09T17:55:39.357621","type":"extraction","step":1,"format":"python_block","code":"print(search_function_or_class_definition_in_code(\"Calculator\"))\nprint(search_function_or_class_definition_in_code(\"add\"))","notes":[]},{"t":0.535,"ts":"2026-11-09T17:55:39.357639","type":"sandbox_start","step":1,"code":"print(search_function_or_class_definition_in_code(\"Calculator\"))\nprint(search_function_or_class_definition_in_code(\"add\"))"},{"t":0.535,"ts":"2026-11-09T17:55:39.358091","type":"tool_call","name":"search_function_or_class_definition_in_code","args":{"name":"Calculator"},"line":1,"written":"search_function_or_class_definition_in_code('Calculator')"},{"t":0.559,"ts":"2026-11-09T17:55:39.381974","type":"tool_result","name":"search_function_or_class_definition_in_code","result":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:","is_error":false,"duration_ms":23.877999978139997,"line":1,"args":{"name":"Calculator"},"written":"search_function_or_class_definition_in_code('Calculator')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"search_function_or_class_definition_in_code","arguments":{"name":"Calculator"}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":23.8,"server":{"server":"agent-smith-swebench","tool":"search_function_or_class_definition_in_code","handler":"SWEBenchTools.search_function_or_class_definition_in_code","received_args":{"name":"Calculator"},"duration_ms":21.0,"ops":[{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'grep -rnI --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=node_modules --exclude-dir=.tox --exclude-dir=.eggs --exclude-dir=build --exclude-dir=dist -E --include='\"'\"'*.py'\"'\"' -e '\"'\"'^[[:space:]]*(async[[:space:]]+)?(def|class)[[:space:]]+Calculator\\b'\"'\"' /tmp/agent_smith_demo/testbed 2>&1 | head -n 151')","exit_code":0,"duration_ms":20.8,"stdout_bytes":66,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8:class Calculator:\n","stderr_head":"","timed_out":false}],"raw_output_bytes":66,"result_chars":65,"result_lines":1,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.559,"ts":"2026-11-09T17:55:39.382428","type":"tool_call","name":"search_function_or_class_definition_in_code","args":{"name":"add"},"line":2,"written":"search_function_or_class_definition_in_code('add')"},{"t":0.573,"ts":"2026-11-09T17:55:39.396263","type":"tool_result","name":"search_function_or_class_definition_in_code","result":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):","is_error":false,"duration_ms":13.834959012456238,"line":2,"args":{"name":"add"},"written":"search_function_or_class_definition_in_code('add')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"search_function_or_class_definition_in_code","arguments":{"name":"add"}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":13.8,"server":{"server":"agent-smith-swebench","tool":"search_function_or_class_definition_in_code","handler":"SWEBenchTools.search_function_or_class_definition_in_code","received_args":{"name":"add"},"duration_ms":11.7,"ops":[{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'grep -rnI --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=node_modules --exclude-dir=.tox --exclude-dir=.eggs --exclude-dir=build --exclude-dir=dist -E --include='\"'\"'*.py'\"'\"' -e '\"'\"'^[[:space:]]*(async[[:space:]]+)?(def|class)[[:space:]]+add\\b'\"'\"' /tmp/agent_smith_demo/testbed 2>&1 | head -n 151')","exit_code":0,"duration_ms":11.7,"stdout_bytes":63,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4:def add(a, b):\n","stderr_head":"","timed_out":false}],"raw_output_bytes":63,"result_chars":62,"result_lines":1,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.574,"ts":"2026-11-09T17:55:39.396656","type":"sandbox_end","step":1,"status":"ok","output":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):\n[budget] step 1/30, output tokens left 9944, time left 892s","duration_s":0.039,"is_final":false,"stdout":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"search_function_or_class_definition_in_code","a":{"name":"'Calculator'"}},{"e":"tool_result","l":1,"n":"search_function_or_class_definition_in_code","ok":true,"r":"'/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:'"},{"e":"line","l":2,"f":"<module>","d":0},{"e":"tool","l":2,"n":"search_function_or_class_definition_in_code","a":{"name":"'add'"}},{"e":"tool_result","l":2,"n":"search_function_or_class_definition_in_code","ok":true,"r":"'/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):'"}],"dropped":0}},{"t":0.574,"ts":"2026-11-09T17:55:39.396710","type":"budget","iterations":1,"max_iterations":30,"input_tokens":1259,"max_input_tokens":300000,"output_tokens":56,"max_output_tokens":10000,"elapsed":0.07,"timeout":900.0},{"t":0.574,"ts":"2026-11-09T17:55:39.396729","type":"observation","step":1,"text":"/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):\n[budget] step 1/30, output tokens left 9944, time left 892s"},{"t":0.574,"ts":"2026-11-09T17:55:39.396771","type":"llm_request","step":2,"messages":4,"estimated_input_tokens":2029,"max_tokens":1024,"delivered":"Observation:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:8 class Calculator:\n/tmp/agent_smith_demo/testbed/pkg/mathutil.py:4 def add(a, b):\n[budget] step 1/30, output tokens left 9944, time left 892s","compacted_steps":[]},{"t":0.576,"ts":"2026-11-09T17:55:39.398539","type":"llm_response","step":2,"text":"Thought: Read the module around both definitions.\n```python\nprint(read_file(\"pkg/mathutil.py\", 1, 12))\n```","input_tokens":1368,"output_tokens":27,"request_time_ms":1.7369999550282955,"retries":0,"finish_reason":"stop"},{"t":0.576,"ts":"2026-11-09T17:55:39.398617","type":"extraction","step":2,"format":"python_block","code":"print(read_file(\"pkg/mathutil.py\", 1, 12))","notes":[]},{"t":0.576,"ts":"2026-11-09T17:55:39.398635","type":"sandbox_start","step":2,"code":"print(read_file(\"pkg/mathutil.py\", 1, 12))"},{"t":0.576,"ts":"2026-11-09T17:55:39.399036","type":"tool_call","name":"read_file","args":{"filepath":"pkg/mathutil.py","start_line":1,"end_line":12},"line":1,"written":"read_file('pkg/mathutil.py', 1, 12)"},{"t":0.578,"ts":"2026-11-09T17:55:39.400829","type":"tool_result","name":"read_file","result":"1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)","is_error":false,"duration_ms":1.7934159841388464,"line":1,"args":{"filepath":"pkg/mathutil.py","start_line":1,"end_line":12},"written":"read_file('pkg/mathutil.py', 1, 12)","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"read_file","arguments":{"filepath":"pkg/mathutil.py","start_line":1,"end_line":12}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":1.8,"server":{"server":"agent-smith-swebench","tool":"read_file","handler":"SWEBenchTools.read_file","received_args":{"filepath":"pkg/mathutil.py","start_line":1,"end_line":12},"duration_ms":0.1,"ops":[{"op":"read","command":"open('/tmp/agent_smith_demo/testbed/pkg/mathutil.py').read()","exit_code":0,"duration_ms":0.1,"stdout_bytes":209,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"\"\"\"Small arithmetic helpers.\"\"\"\n\n\ndef add(a, b):\n    return a - b\n\n\nclass Calculator:\n    def total(self, xs):\n        result = 0\n        for x in xs:\n            result = add(result, x)\n        return result\n","stderr_head":"","timed_out":false}],"raw_output_bytes":209,"result_chars":225,"result_lines":12,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.578,"ts":"2026-11-09T17:55:39.401168","type":"sandbox_end","step":2,"status":"ok","output":"1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)\n[budget] step 2/30, output tokens left 9917, time left 892s","duration_s":0.002,"is_final":false,"stdout":"1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"read_file","a":{"filepath":"'pkg/mathutil.py'","start_line":"1","end_line":"12"}},{"e":"tool_result","l":1,"n":"read_file","ok":true,"r":"'1: \"\"\"Small arithmetic helpers.\"\"\"\\n2: \\n3: \\n4: def add(a, b):\\n5:     return a - b\\n6: \\n7: \\n8: class Calculator:\\n9:     def total(self, xs):\\n10:      ..."}],"dropped":0}},{"t":0.578,"ts":"2026-11-09T17:55:39.401217","type":"budget","iterations":2,"max_iterations":30,"input_tokens":2627,"max_input_tokens":300000,"output_tokens":83,"max_output_tokens":10000,"elapsed":0.07,"timeout":900.0},{"t":0.578,"ts":"2026-11-09T17:55:39.401234","type":"observation","step":2,"text":"1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)\n[budget] step 2/30, output tokens left 9917, time left 892s"},{"t":0.578,"ts":"2026-11-09T17:55:39.401259","type":"llm_request","step":3,"messages":6,"estimated_input_tokens":2191,"max_tokens":1024,"delivered":"Observation:\n1: \"\"\"Small arithmetic helpers.\"\"\"\n2: \n3: \n4: def add(a, b):\n5:     return a - b\n6: \n7: \n8: class Calculator:\n9:     def total(self, xs):\n10:         result = 0\n11:         for x in xs:\n12:             result = add(result, x)\n[budget] step 2/30, output tokens left 9917, time left 892s","compacted_steps":[]},{"t":0.581,"ts":"2026-11-09T17:55:39.403625","type":"llm_response","step":3,"text":"Thought: Reproduce before fixing.\n```python\nprint(run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\"))\n```","input_tokens":1471,"output_tokens":39,"request_time_ms":2.340334001928568,"retries":0,"finish_reason":"stop"},{"t":0.581,"ts":"2026-11-09T17:55:39.403718","type":"extraction","step":3,"format":"python_block","code":"print(run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\"))","notes":[]},{"t":0.581,"ts":"2026-11-09T17:55:39.403735","type":"sandbox_start","step":3,"code":"print(run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\"))"},{"t":0.581,"ts":"2026-11-09T17:55:39.404097","type":"tool_call","name":"run_command","args":{"command":"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'"},"line":1,"written":"run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\")"},{"t":0.609,"ts":"2026-11-09T17:55:39.432431","type":"tool_result","name":"run_command","result":"exit_code: 0\nstdout:\n-6\n\nstderr:\n","is_error":false,"duration_ms":28.334083035588264,"line":1,"args":{"command":"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'"},"written":"run_command(\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\")","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_command","arguments":{"command":"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'"}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":28.3,"server":{"server":"agent-smith-swebench","tool":"run_command","handler":"SWEBenchTools.run_command","received_args":{"command":"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'","workdir":null,"timeout":120},"duration_ms":26.4,"ops":[{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'python -c '\"'\"'from pkg.mathutil import Calculator; print(Calculator().total([1, 2, 3]))'\"'\"'')","exit_code":0,"duration_ms":26.4,"stdout_bytes":3,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"-6\n","stderr_head":"","timed_out":false}],"raw_output_bytes":3,"result_chars":33,"result_lines":6,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.61,"ts":"2026-11-09T17:55:39.432883","type":"sandbox_end","step":3,"status":"ok","output":"exit_code: 0\nstdout:\n-6\n\nstderr:\n[budget] step 3/30, output tokens left 9878, time left 892s","duration_s":0.029,"is_final":false,"stdout":"exit_code: 0\nstdout:\n-6\n\nstderr:\n\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"run_command","a":{"command":"\"python -c 'from pkg.mathutil import Calculator; print(Calculator().total([1,..."}},{"e":"tool_result","l":1,"n":"run_command","ok":true,"r":"'exit_code: 0\\nstdout:\\n-6\\n\\nstderr:\\n'"}],"dropped":0}},{"t":0.61,"ts":"2026-11-09T17:55:39.432933","type":"budget","iterations":3,"max_iterations":30,"input_tokens":4098,"max_input_tokens":300000,"output_tokens":122,"max_output_tokens":10000,"elapsed":0.1,"timeout":900.0},{"t":0.61,"ts":"2026-11-09T17:55:39.432950","type":"observation","step":3,"text":"exit_code: 0\nstdout:\n-6\n\nstderr:\n[budget] step 3/30, output tokens left 9878, time left 892s"},{"t":0.61,"ts":"2026-11-09T17:55:39.432979","type":"llm_request","step":4,"messages":8,"estimated_input_tokens":2301,"max_tokens":1024,"delivered":"Observation:\nexit_code: 0\nstdout:\n-6\n\nstderr:\n[budget] step 3/30, output tokens left 9878, time left 892s","compacted_steps":[]},{"t":0.612,"ts":"2026-11-09T17:55:39.435168","type":"llm_response","step":4,"text":"Thought: total() is fine; add() subtracts. Fix the root cause and run the tests.\n```python\nprint(edit_file(\"pkg/mathutil.py\", \"    return a - b\", \"    return a + b\"))\nprint(run_tests())\n```","input_tokens":1539,"output_tokens":48,"request_time_ms":2.1587080555036664,"retries":0,"finish_reason":"stop"},{"t":0.612,"ts":"2026-11-09T17:55:39.435263","type":"extraction","step":4,"format":"python_block","code":"print(edit_file(\"pkg/mathutil.py\", \"    return a - b\", \"    return a + b\"))\nprint(run_tests())","notes":[]},{"t":0.612,"ts":"2026-11-09T17:55:39.435281","type":"sandbox_start","step":4,"code":"print(edit_file(\"pkg/mathutil.py\", \"    return a - b\", \"    return a + b\"))\nprint(run_tests())"},{"t":0.613,"ts":"2026-11-09T17:55:39.435613","type":"tool_call","name":"edit_file","args":{"filepath":"pkg/mathutil.py","old_str":"    return a - b","new_str":"    return a + b"},"line":1,"written":"edit_file('pkg/mathutil.py', '    return a - b', '    return a + b')"},{"t":0.628,"ts":"2026-11-09T17:55:39.450759","type":"tool_result","name":"edit_file","result":"Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:","is_error":false,"duration_ms":15.143207972869277,"line":1,"args":{"filepath":"pkg/mathutil.py","old_str":"    return a - b","new_str":"    return a + b"},"written":"edit_file('pkg/mathutil.py', '    return a - b', '    return a + b')","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"edit_file","arguments":{"filepath":"pkg/mathutil.py","old_str":"    return a - b","new_str":"    return a + b"}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":15.1,"server":{"server":"agent-smith-swebench","tool":"edit_file","handler":"SWEBenchTools.edit_file","received_args":{"filepath":"pkg/mathutil.py","old_str":"    return a - b","new_str":"    return a + b"},"duration_ms":12.9,"ops":[{"op":"read","command":"open('/tmp/agent_smith_demo/testbed/pkg/mathutil.py').read()","exit_code":0,"duration_ms":0.1,"stdout_bytes":209,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"\"\"\"Small arithmetic helpers.\"\"\"\n\n\ndef add(a, b):\n    return a - b\n\n\nclass Calculator:\n    def total(self, xs):\n        result = 0\n        for x in xs:\n            result = add(result, x)\n        return result\n","stderr_head":"","timed_out":false},{"op":"write","command":"open('/tmp/agent_smith_demo/testbed/pkg/mathutil.py', 'w').write(<209 bytes>)","exit_code":0,"duration_ms":0.2,"stdout_bytes":0,"stderr_bytes":0,"stdin_bytes":209,"stdout_head":"","stderr_head":"","timed_out":false},{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'rm -f /tmp/agent_smith_demo/testbed/pkg/__pycache__/mathutil.*.pyc')","exit_code":0,"duration_ms":12.4,"stdout_bytes":0,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"","stderr_head":"","timed_out":false}],"raw_output_bytes":209,"result_chars":176,"result_lines":8,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.628,"ts":"2026-11-09T17:55:39.451228","type":"tool_call","name":"run_tests","args":{},"line":2,"written":"run_tests()"},{"t":0.848,"ts":"2026-11-09T17:55:39.671145","type":"tool_result","name":"run_tests","result":"exit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s","is_error":false,"duration_ms":219.91770900785923,"line":2,"args":{},"written":"run_tests()","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_tests","arguments":{}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":219.9,"server":{"server":"agent-smith-swebench","tool":"run_tests","handler":"SWEBenchTools.run_tests","received_args":{},"duration_ms":217.8,"ops":[{"op":"write","command":"open('/tmp/agent_eval.sh', 'w').write(<179 bytes>)","exit_code":0,"duration_ms":0.2,"stdout_bytes":0,"stderr_bytes":0,"stdin_bytes":179,"stdout_head":"","stderr_head":"","timed_out":false},{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'bash /tmp/agent_eval.sh')","exit_code":0,"duration_ms":217.3,"stdout_bytes":388,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":">>>>> Start Test Output\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::tes","stderr_head":"","timed_out":false}],"raw_output_bytes":388,"result_chars":417,"result_lines":9,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed","details":{"source":"eval_script field of the SWE-bench task.json (dumped by the moulinette, passed to the server via SWEBENCH_EVAL_SCRIPT_FILE); copied to /tmp/agent_eval.sh","script":"cd /tmp/agent_smith_demo/testbed\necho '>>>>> Start Test Output'\npython -m pytest -rA -q tests 2>&1\necho '>>>>> End Test Output'\n"}}},{"t":0.849,"ts":"2026-11-09T17:55:39.671665","type":"sandbox_end","step":4,"status":"ok","output":"Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:\nexit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s\n[budget] step 4/30, output tokens left 9830, time left 892s","duration_s":0.236,"is_final":false,"stdout":"Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:\nexit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s\n","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"edit_file","a":{"filepath":"'pkg/mathutil.py'","old_str":"'    return a - b'","new_str":"'    return a + b'"}},{"e":"tool_result","l":1,"n":"edit_file","ok":true,"r":"'Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\\n2: \\n3: \\n4: def add(a, b):\\n5:     return a + b\\n6: ..."},{"e":"line","l":2,"f":"<module>","d":0},{"e":"tool","l":2,"n":"run_tests","a":{}},{"e":"tool_result","l":2,"n":"run_tests","ok":true,"r":"'exit_code: 0\\nsummary: 2 passed, 0 failed/errored\\n--- test output (tail) ---\\n..                                                                       [100..."}],"dropped":0}},{"t":0.849,"ts":"2026-11-09T17:55:39.671722","type":"budget","iterations":4,"max_iterations":30,"input_tokens":5637,"max_input_tokens":300000,"output_tokens":170,"max_output_tokens":10000,"elapsed":0.34,"timeout":900.0},{"t":0.849,"ts":"2026-11-09T17:55:39.671752","type":"observation","step":4,"text":"Edited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:\nexit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s\n[budget] step 4/30, output tokens left 9830, time left 892s"},{"t":0.849,"ts":"2026-11-09T17:55:39.671836","type":"llm_request","step":5,"messages":10,"estimated_input_tokens":2629,"max_tokens":1024,"delivered":"Observation:\nEdited /tmp/agent_smith_demo/testbed/pkg/mathutil.py (replaced 1 occurrence, now lines 5-5). Snippet:\n2: \n3: \n4: def add(a, b):\n5:     return a + b\n6: \n7: \n8: class Calculator:\nexit_code: 0\nsummary: 2 passed, 0 failed/errored\n--- test output (tail) ---\n..                                                                       [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_mathutil.py::test_add\nPASSED tests/test_mathutil.py::test_total\n2 passed in 0.01s\n[budget] step 4/30, output tokens left 9830, time left 892s","compacted_steps":[]},{"t":0.852,"ts":"2026-11-09T17:55:39.675052","type":"llm_response","step":5,"text":"Thought: Tests pass. Submit the patch.\n```python\nfinal_answer(get_patch())\n```","input_tokens":1755,"output_tokens":20,"request_time_ms":3.182083019055426,"retries":0,"finish_reason":"stop"},{"t":0.852,"ts":"2026-11-09T17:55:39.675144","type":"extraction","step":5,"format":"python_block","code":"final_answer(get_patch())","notes":[]},{"t":0.852,"ts":"2026-11-09T17:55:39.675163","type":"sandbox_start","step":5,"code":"final_answer(get_patch())"},{"t":0.853,"ts":"2026-11-09T17:55:39.675519","type":"tool_call","name":"get_patch","args":{},"line":1,"written":"get_patch()"},{"t":0.872,"ts":"2026-11-09T17:55:39.694556","type":"tool_result","name":"get_patch","result":"diff --git a/pkg/mathutil.py b/pkg/mathutil.py\nindex 4b45324..fcceb32 100644\n--- a/pkg/mathutil.py\n+++ b/pkg/mathutil.py\n@@ -2,7 +2,7 @@\n \n \n def add(a, b):\n-    return a - b\n+    return a + b\n \n \n class Calculator:\n","is_error":false,"duration_ms":19.03550000861287,"line":1,"args":{},"written":"get_patch()","request":{"jsonrpc":"2.0","method":"tools/call","params":{"name":"get_patch","arguments":{}}},"transport":"stdio (python <repo>/mcp_tools_swebench.py)","rtt_ms":19.0,"server":{"server":"agent-smith-swebench","tool":"get_patch","handler":"SWEBenchTools.get_patch","received_args":{},"duration_ms":16.5,"ops":[{"op":"run","command":"(cd /tmp/agent_smith_demo/testbed && bash -c 'git -c core.fileMode=false diff')","exit_code":0,"duration_ms":16.5,"stdout_bytes":216,"stderr_bytes":0,"stdin_bytes":0,"stdout_head":"diff --git a/pkg/mathutil.py b/pkg/mathutil.py\nindex 4b45324..fcceb32 100644\n--- a/pkg/mathutil.py\n+++ b/pkg/mathutil.py\n@@ -2,7 +2,7 @@\n \n \n def add(a, b):\n-    return a - b\n+    return a + b\n \n \n class Calculator:\n","stderr_head":"","timed_out":false}],"raw_output_bytes":216,"result_chars":216,"result_lines":14,"truncated":false,"executor":"local","target":"/tmp/agent_smith_demo/testbed","repo_root":"/tmp/agent_smith_demo/testbed"}},{"t":0.872,"ts":"2026-11-09T17:55:39.694947","type":"sandbox_end","step":5,"status":"final_answer","output":"[final_answer received]\n[budget] step 5/30, output tokens left 9810, time left 892s","duration_s":0.02,"is_final":true,"stdout":"","value":null,"error":null,"trace":{"entries":[{"e":"line","l":1,"f":"<module>","d":0},{"e":"line","l":1,"f":"<module>","d":0},{"e":"tool","l":1,"n":"get_patch","a":{}},{"e":"tool_result","l":1,"n":"get_patch","ok":true,"r":"'diff --git a/pkg/mathutil.py b/pkg/mathutil.py\\nindex 4b45324..fcceb32 100644\\n--- a/pkg/mathutil.py\\n+++ b/pkg/mathutil.py\\n@@ -2,7 +2,7 @@\\n \\n \\n def add..."},{"e":"final","l":1,"r":"'diff --git a/pkg/mathutil.py b/pkg/mathutil.py\\nindex 4b45324..fcceb32 100644\\n--- a/pkg/mathutil.py\\n+++ b/pkg/mathutil.py\\n@@ -2,7 +2,7 @@\\n \\n \\n def add..."}],"dropped":0}},{"t":0.872,"ts":"2026-11-09T17:55:39.694998","type":"budget","iterations":5,"max_iterations":30,"input_tokens":7392,"max_input_tokens":300000,"output_tokens":190,"max_output_tokens":10000,"elapsed":0.37,"timeout":900.0},{"t":0.872,"ts":"2026-11-09T17:55:39.695013","type":"final_answer","step":5,"answer":"diff --git a/pkg/mathutil.py b/pkg/mathutil.py\nindex 4b45324..fcceb32 100644\n--- a/pkg/mathutil.py\n+++ b/pkg/mathutil.py\n@@ -2,7 +2,7 @@\n \n \n def add(a, b):\n-    return a - b\n+    return a + b\n \n \n class Calculator:\n"},{"t":0.872,"ts":"2026-11-09T17:55:39.695042","type":"run_end","success":true,"error":null,"solution":"diff --git a/pkg/mathutil.py b/pkg/mathutil.py\nindex 4b45324..fcceb32 100644\n--- a/pkg/mathutil.py\n+++ b/pkg/mathutil.py\n@@ -2,7 +2,7 @@\n \n \n def add(a, b):\n-    return a - b\n+    return a + b\n \n \n class Calculator:\n","total_time_seconds":0.366,"iterations":5,"max_iterations":30,"input_tokens":7392,"max_input_tokens":300000,"output_tokens":190,"max_output_tokens":10000,"elapsed":0.37,"timeout":900.0}]}/*DEMO_END*/;
+
+/* ======================= i18n =======================
+   Interface and explanations only. Component names (Orchestrator, MCP server…), tool names, code,
+   event types and the technical event log stay in their original form. */
+const I18N = {
+en: {
+  subtitle: "Thought → Code → Observation, step by step",
+  mode_simple: "Simple", mode_detailed: "Detailed", tour_btn: "Guided tour", gloss_btn: "Glossary",
+  src_mbpp: "Demo · MBPP", src_swe: "Demo · SWE-bench", src_file: "Open trace or solution…", src_live: "Live",
+  live_title: "Available when served by: uv run agent-ui",
+  opt_lines: "code lines in timeline",
+  arch_h: "Architecture · live component activity",
+  arch_hint: "click a component: its input and output for the selected step",
+  caption_ready: "Press play to replay the run.",
+  legend_delta: "data changed between the box that sent it and the box that received it (open the Flow tab for the diff)",
+  budget_h: "Budget (limits per task)",
+  budget_note: "Limits set by the subject. Going over any of them fails the task, so the agent checks them before every AI call.",
+  sec_h: "Security", steps_h: "Steps", log_h: "Event log", log_hint: "click to jump",
+  detail_h: "Step detail", step_n: "Step {n}",
+  tab_flow: "Flow & diffs", tab_interp: "Interpreter", tab_tools: "Tool calls", tab_llm: "LLM output", tab_code: "Sandbox input", tab_obs: "Observation",
+  sysprompt: "System prompt sent to the LLM",
+  drop: "Drop events.jsonl or solution.json",
+  task_h: "Task", result_h: "Result",
+  simple_h: "How the agent works", simple_hint: "the highlighted block is working now",
+  ans_h: "Answer",
+  play: "▶ Play", pause: "⏸ Pause", replay: "↺ Replay",
+  gloss_title: "Glossary", close: "Close",
+  badge_demo: "scripted demo", badge_live: "live", badge_file: "file",
+  demo_mbpp: "Real framework run on MBPP task 282: sandbox, MCP server, run_tests in an isolated test sandbox. Only the AI's answers are pre-recorded; the first attempt is wrong on purpose so you can watch the agent correct itself.",
+  demo_swe: "Real framework run on a small local repository with the SWE-bench MCP tools (search, read, reproduce, edit, run_tests, get_patch). Only the AI's answers are pre-recorded.",
+  live_follow: "Following the agent's trace file in real time.",
+  file_loaded: "{name}: {n} events",
+  file_error: "Could not read {name}: {err}. Expected events.jsonl (from --trace-file) or solution.json.",
+  kind_mbpp: "Write a small Python function from a short description. It must pass the tests.",
+  kind_swe: "Fix a real bug in a real open-source project. The fix must pass the project's tests.",
+  kind_none: "Load a run: a demo, a trace file or live mode.",
+  model_lbl: "AI model", via: "via",
+  res_idle: "Not started", res_running: "⏳ In progress… step {n}", res_ok: "✅ Answer submitted", res_fail: "❌ No answer",
+  res_stats: "{n} steps · {s} s · {pct}% of the input-token limit",
+  res_tests: "Last test run: {txt}", res_tests_none: "No test run yet.",
+  tests_x: "{p} of {n} passed",
+  how_know: "Who checks it? While working, the agent runs the tests itself; then the moulinette (the school's checker) runs its own tests, including hidden ones, on a fresh copy.",
+
+  n_run_start: "The agent receives the task and starts working. The AI model {model} will help it.",
+  n_mcp: "The agent plugs in its toolbox (an MCP server): {n} tool(s) — {names}.",
+  n_docker_pull: "Preparing an isolated copy of the project (a Docker container)…",
+  n_docker_started: "The project copy is running in a container with no internet access.",
+  n_docker_removed: "The container is deleted: nothing is left behind.",
+  n_req_first: "Step {n}: the agent sends the task to the AI and asks what to do.",
+  n_req_next: "Step {n}: the agent sends the AI the result of the previous step and asks what to do next.",
+  n_retry: "The AI service did not answer (rate limit or network). The agent waits and retries, possibly with another key.",
+  n_fallback: "Switching to a backup AI model: {to}.",
+  n_llm_error: "The AI service failed. The agent stops cleanly and still writes its result file.",
+  n_resp: "The AI answered with an idea and a piece of Python code:",
+  n_extract: "The agent keeps only the code. The explanation text is never executed.",
+  n_extract_none: "No code in the answer. The agent tells the AI and asks again.",
+  n_sb_start: "The code goes into the sandbox: an isolated process with no internet and no access to the computer's files.",
+  n_line: "The sandbox runs the code line by line. Now: line {l}.",
+  n_call: "The code calls its function {f}().",
+  n_return: "{f}() returned {r}.",
+  n_exc: "Line {l} raised an error: {x}.",
+  n_final_line: "The code calls final_answer(): the answer is handed in.",
+  n_more: "The code keeps running ({n} more steps not shown).",
+  n_tool_call: "The code asks for a tool: {what}. The request leaves the sandbox through a single checked door.",
+  n_mcp_req: "The request travels to the tool server (MCP protocol).",
+  n_dispatch: "The tool server checks the arguments and starts {name}.",
+  n_repo_ok: "A command runs on the project: success.",
+  n_repo_err: "A command runs on the project: it reports a failure (exit code {c}).",
+  n_mcp_resp: "The tool server sends the result back.",
+  n_tests_ok: "Tests: {txt}. The solution works on these tests.",
+  n_tests_bad: "Tests: {txt}. The AI will see what failed and fix it.",
+  n_tool_res: "The tool result comes back to the code: {first}",
+  n_tool_err: "The tool reported a problem; the code receives it as an error.",
+  n_sb_ok: "The code finished. What it printed becomes the observation the AI reads next.",
+  n_sb_final: "The code finished and handed in the answer.",
+  n_sb_err: "The code crashed: {err}. The AI will see the error and fix it.",
+  n_sb_timeout: "The code took too long and was stopped (time limit).",
+  n_sb_memory: "The code used too much memory and was stopped (memory limit).",
+  n_sb_blocked: "The sandbox blocked forbidden code: {err}",
+  n_obs: "The result is kept as the observation for the next step.",
+  n_budget: "Budget check: {inp} of {max} input tokens used so far.",
+  n_final: "The agent hands in its answer.",
+  n_fallback_answer: "No final answer in time: the agent submits its best candidate.",
+  n_budget_stop: "A limit was reached ({reason}): the agent stops and writes what it has.",
+  n_loop: "The AI repeated exactly the same code. The agent does not run it again and asks for something different.",
+  n_interrupted: "The run was interrupted.",
+  n_end_ok: "Done: answer submitted (steps: {n}, {s} s). Next, the moulinette checks it with its own tests.",
+  n_end_bad: "Finished without an answer (steps: {n}).",
+  n_idle: "Press ▶ Play to watch the agent solve the task.",
+  where_step: "step {n} / max {max}",
+  tool_run_tests: "run the tests", tool_read_file: "read the file {file}", tool_edit_file: "edit the file {file}",
+  tool_list_files: "list the files in {dir}", tool_search_code: "search the code for “{pattern}”",
+  tool_find_references: "find where “{name}” is used", tool_get_patch: "collect all changes as a patch",
+  tool_search_function_or_class_definition_in_code: "find where “{name}” is defined",
+  tool_run_command: "run a shell command in the project", tool_generic: "use the tool {name}",
+
+  sb_task: "Task", sb_task_x: "what has to be solved",
+  sb_ai: "AI model", sb_ai_x: "thinks and writes Python code",
+  sb_sandbox: "Sandbox", sb_sandbox_x: "runs the code safely and uses tools",
+  sb_answer: "Answer", sb_answer_x: "code or patch, then checked by tests",
+  s_loop: "↺ repeat until solved",
+  sbn_thinking: "thinking…", sbn_answered: "step {n}: answered", sbn_line: "running line {l}", sbn_tool: "tool: {name}",
+  sbn_status: "finished: {status}", sbn_waiting: "waiting…", sbn_ok: "✅ submitted", sbn_bad: "❌ no answer",
+  status_ok: "ok", status_error: "error", status_timeout: "time limit", status_memory: "memory limit",
+  status_security_error: "blocked", status_syntax_error: "syntax error", status_final_answer: "answer", status_crash: "crash",
+
+  st_final: "answer", st_ok: "ok", st_err: "error", st_nocode: "no code", st_run: "…",
+  chip_ok: "answer submitted", chip_bad: "no answer", chip_run: "running",
+  steps_empty: "No step yet: the first AI call starts step 1.", no_tools: "no tool calls",
+  ss_waiting: "waiting for the AI", ss_nocode: "the AI answered without code", ss_ran: "ran the code",
+  ss_error: "the code failed ({err})", ss_blocked: "blocked by the sandbox", ss_limit: "stopped by a limit",
+  ss_final: "handed in the answer", ss_tests: "tests: {txt}", ss_running: "running…",
+  ss_t_run_tests: "ran the tests", ss_t_read_file: "read a file", ss_t_edit_file: "edited a file", ss_t_list_files: "listed files",
+  ss_t_search_code: "searched the code", ss_t_find_references: "looked up usages", ss_t_search_function_or_class_definition_in_code: "looked up a definition", ss_t_get_patch: "collected the patch",
+  ss_t_run_command: "ran a command", ss_t_generic: "{name}",
+  ic_llm: "the AI answered", ic_code: "code ran in the sandbox", ic_tools: "tools used", ic_tests: "test result",
+  ic_err: "error", ic_final: "answer handed in", ic_block: "blocked / stopped",
+
+  m_iter: "Steps (iterations)", m_in: "Text read by the AI (input tokens)", m_out: "Text written by the AI (output tokens)", m_time: "Time",
+  mx_iter: "one step = ask the AI once and run its code", mx_in: "≈ {w} words in total", mx_out: "≈ {w} words in total", mx_time: "seconds since the start",
+
+  sec_guards: ["No internet access from the code", "Files only inside its own scratch folder", "Only safe Python modules can be imported",
+               "No system commands (os, subprocess)", "Time and memory limits on every run", "Tools are the only way out, and every call is checked"],
+  sec_count: "{n} blocked",
+  sec_none: "Nothing was blocked: the code did not try anything forbidden in this run. To see the guards at work: uv run sandbox, then type import os.",
+  sec_list: "Blocked or stopped in this run:", sec_item: "step {n}: {msg}",
+  sec_limit_timeout: "stopped by the time limit", sec_limit_memory: "stopped by the memory limit",
+
+  ans_mbpp_x: "The Python function the agent handed in.",
+  ans_swe_x: "The change to the project's code (a patch): red lines removed, green lines added.",
+  ans_wait: "Appears when the agent hands in its answer.",
+  ans_partial: "Changes made so far (last get_patch call):",
+
+  g_llm: ["LLM (AI model)", "A program trained on huge amounts of text that continues the text it is given. Here it plans the next action and writes Python code."],
+  g_agent: ["Agent", "Our program around the AI: it gives the task, runs the code the AI writes, shows it the result and repeats until the task is solved."],
+  g_token: ["Token", "A small piece of text, about ¾ of an English word. AI services count and limit text in tokens."],
+  g_iteration: ["Step (iteration)", "One round of the cycle: ask the AI → run its code → read the result."],
+  g_sandbox: ["Sandbox", "A locked-down, isolated process where the AI's code runs: no internet, no access to the computer's files, time and memory limits."],
+  g_tool: ["Tool", "A function the code may call to act outside the sandbox: read a file, run the tests… Every call is checked."],
+  g_mcp: ["MCP", "Model Context Protocol: a standard way to plug tools into an AI agent. Our tools live in an MCP server."],
+  g_observation: ["Observation", "What the code printed or returned. It is sent back to the AI as input for the next step."],
+  g_final_answer: ["final_answer()", "A built-in function: the code calls it to hand in the solution, which ends the run."],
+  g_patch: ["Patch (diff)", "The list of changed lines in the code: removed lines in red, added lines in green."],
+  g_test: ["Tests", "Small programs that check that the code gives the expected results. Passing tests = the solution works."],
+  g_budget: ["Budget", "Limits set by the subject for each task: number of steps, tokens and time. Going over any of them fails the task."],
+  g_moulinette: ["Moulinette", "The school's automatic checker: it gives the tasks to the agent and verifies the answers with its own tests."],
+
+  tour: [
+    ["Welcome", "This page replays how our AI agent solves a programming task. Choose the language and the view here: Simple for the big picture, Detailed for the internals."],
+    ["The task", "What the agent must solve (left) and the result at the end (right)."],
+    ["Press ▶ Play", "This line explains in plain words what is happening at each moment."],
+    ["The cycle", "The AI thinks and writes code, the sandbox runs it safely, the result goes back to the AI. This repeats until the task is solved."],
+    ["Steps", "One card per round. 🧠 the AI answered · ▶ the code ran · 🔧 tools used · ✅/❌ tests · 🏁 answer handed in."],
+    ["Limits", "Limits from the subject: steps, text read and written by the AI, time. The agent checks them before every AI call."],
+    ["Security", "What the code is not allowed to do, and anything the sandbox blocked during this run."],
+    ["The answer", "The submitted code or, for a real project, the patch: red lines removed, green lines added."],
+    ["Unknown word?", "Words marked ⓘ show a short explanation on hover. The Glossary lists them all. You can restart this tour at any time."],
+  ],
+  tour_next: "Next", tour_back: "Back", tour_skip: "Skip", tour_done: "Start", tour_n: "{i} of {n}",
+
+  sub_interp: "click: watch the code run", sub_mcps: "click: list of tools",
+  p_step: "step {n}", p_calls: "{n} call(s)", p_tools: "{n} tools", p_ok: "success", p_bad: "no success", p_running: "running…", p_status: "status: {s}",
+  empty_trace: "No events in this trace.", empty_steps: "Steps appear here as the agent runs.",
+  io_input: "Input", io_output: "Output", io_step: "step {n}", unchanged: "unchanged", nothing: "(nothing recorded)",
+  tl_notconn: "Not connected yet: the tool list appears when the agent connects to the server.",
+  tl_sum: "Server “{server}” exposes {n} tool(s){via}; {used} used so far. The built-in final_answer is not an MCP tool.",
+  tl_via: " over {tr}", tl_res: " Resources: yes.", tl_prm: " Prompts: yes.",
+  tl_cnt: "{k} in step {s} · {n} in run", tl_last: "last call (step {s}): {call}",
+  d_select: "Select a step.", d_solution: "Solution:", d_wait: "(waiting for the response)",
+  d_red: "Lines in red did not reach the interpreter (removed by code extraction).",
+  d_green: "Lines in green were not in the LLM output verbatim (added or converted by code extraction).",
+  d_nocode: "(no code extracted for this step)", d_notexec: "(not executed yet)",
+  d_short: "The LLM received a shortened version at step {n} — see Flow & diffs.",
+  flow_empty: "Hand-offs appear as the step progresses.",
+  h_task: "Task prompt → LLM", h_obs: "Observation of step {n} → LLM", h_out: "LLM output → Interpreter",
+  h_call: "Call {name}: as written → as sent", h_repo: "{name}: repository output → tool result", h_prog: "Program output → Observation",
+  l_task_sent: "task prompt (Task + CLI)", l_task_recv: "user message received by the LLM",
+  l_obs_sent: "observation produced by the sandbox (step {n})", l_obs_recv: "message received by the LLM (step {n})",
+  l_raw: "raw LLM output", l_sbin: "sandbox input (code executed)",
+  l_written: "line {l} as written in the code", l_named: "arguments sent to the MCP server (named)",
+  l_rawout: "raw command output (first 300 chars of each op, {kb} total)", l_returned: "result returned ({n} chars)",
+  l_prog_sent: "stdout + last value + error", l_prog_recv: "observation text (with sandbox notes)",
+  note_short: "Older observations shortened in this request: steps {list}.", note_format: "format: {f}",
+  note_trunc: "The tool truncated its output and said so in the result.", note_reformat: "The tool reformatted the raw command output.",
+  chg: "changed −{d} +{a}", identical: "identical", v_diff: "Diff", v_sent: "Sent", v_recv: "Received",
+  fold: "⋯ {n} unchanged line(s)",
+  i_notrace: "No line trace in this source (solution.json files do not keep one; run the agent with --trace-file). Showing the executed code.",
+  i_done: "Path complete: {n} line executions{dropped}. Struck-through lines never ran in this step.", i_dropped: " (+{n} not recorded)",
+  i_running: "Executing… event {i} of {n}. The highlighted line is running now.",
+  i_vars: "Variables (module)", i_frame: "Frame {f}()", i_ret: "↩ {f}() returned {r}", i_never: "never executed in this step",
+  i_path: "path:", i_nocode: "(no code was executed in this step)",
+  tools_none: "(no MCP tool calls in this step)",
+  hop_call: "Python interpreter calls the tool",
+  hop_call_n: "The name resolves to a wrapper injected into the namespace from the server's tool schema. The sandbox timer is paused while the call is out.",
+  hop_wrap: "Wrapper → host", hop_wrap_n: "Δ positional arguments were mapped to parameter names using the tool schema.",
+  hop_host: "Host → MCP server", hop_norec: "(request not recorded in this source)",
+  hop_disp: "MCP server dispatches", hop_src: "Where the tool's inputs come from", hop_src_w1: "not generated by the LLM", hop_src_w2: "task data",
+  hop_repo: "Repository: {n} operation(s)", hop_fmt: "Tool formats the result", hop_back: "MCP server → host", hop_ret: "Host → interpreter",
+  hop_ret_err: "The wrapper raises ToolError on line {l}; the code can catch it.",
+  hop_ret_ok: "The wrapper returns this str to line {l}; the timer resumes.", hop_wait: "Waiting for the server…",
+  seg_repo: "repository commands", seg_srv: "server handler (validation, formatting)", seg_rpc: "MCP transport (JSON-RPC)", seg_proxy: "sandbox ↔ host proxy",
+  kv_handler: "handler", kv_time: "server time", kv_raw: "raw output", kv_ret: "returned", kv_trunc: "truncated",
+  kv_chars: "{c} chars, {l} lines", kv_yes: "yes (announced in the text)", kv_no: "no",
+  gen_prog: "Generated test program ({n} lines) — open", eval_script: "Eval script ({n} lines) — open",
+  m_title: "Python interpreter", m_step: "step {n}", m_none: "No code has run yet.",
+  m_pick: "Play the run or pick a step: the code appears here as soon as the interpreter receives it.",
+},
+
+ru: {
+  subtitle: "Мысль → Код → Наблюдение, шаг за шагом",
+  mode_simple: "Просто", mode_detailed: "Подробно", tour_btn: "Обзорный тур", gloss_btn: "Словарь",
+  src_mbpp: "Демо · MBPP", src_swe: "Демо · SWE-bench", src_file: "Открыть трассу или solution…", src_live: "Вживую",
+  live_title: "Доступно при запуске через uv run agent-ui",
+  opt_lines: "строки кода в таймлайне",
+  arch_h: "Архитектура · активность компонентов",
+  arch_hint: "нажмите на компонент: его вход и выход на выбранном шаге",
+  caption_ready: "Нажмите ▶, чтобы воспроизвести прогон.",
+  legend_delta: "данные изменились между блоком-отправителем и блоком-получателем (дифф во вкладке «Поток и диффы»)",
+  budget_h: "Бюджет (лимиты на задачу)",
+  budget_note: "Лимиты заданы сабджектом. Превышение любого означает провал задачи, поэтому агент проверяет их перед каждым обращением к ИИ.",
+  sec_h: "Безопасность", steps_h: "Шаги", log_h: "Журнал событий", log_hint: "нажмите, чтобы перейти",
+  detail_h: "Детали шага", step_n: "Шаг {n}",
+  tab_flow: "Поток и диффы", tab_interp: "Интерпретатор", tab_tools: "Вызовы тулов", tab_llm: "Ответ LLM", tab_code: "Вход песочницы", tab_obs: "Наблюдение",
+  sysprompt: "Системный промпт, отправленный LLM",
+  drop: "Перетащите events.jsonl или solution.json",
+  task_h: "Задача", result_h: "Результат",
+  simple_h: "Как работает агент", simple_hint: "подсвечен блок, который работает сейчас",
+  ans_h: "Ответ",
+  play: "▶ Запустить", pause: "⏸ Пауза", replay: "↺ Сначала",
+  gloss_title: "Словарь", close: "Закрыть",
+  badge_demo: "демо", badge_live: "вживую", badge_file: "файл",
+  demo_mbpp: "Настоящий прогон фреймворка на задаче MBPP 282: песочница, MCP-сервер, run_tests в изолированной песочнице для тестов. Заранее записаны только ответы ИИ; первая попытка специально неверная, чтобы было видно, как агент исправляется.",
+  demo_swe: "Настоящий прогон фреймворка на небольшом локальном репозитории с MCP-тулами SWE-bench (поиск, чтение, воспроизведение, правка, run_tests, get_patch). Заранее записаны только ответы ИИ.",
+  live_follow: "Показываю файл трассы агента в реальном времени.",
+  file_loaded: "{name}: событий — {n}",
+  file_error: "Не удалось прочитать {name}: {err}. Ожидается events.jsonl (из --trace-file) или solution.json.",
+  kind_mbpp: "Написать небольшую функцию на Python по короткому описанию. Она должна пройти тесты.",
+  kind_swe: "Исправить настоящий баг в настоящем open-source проекте. Исправление должно пройти тесты проекта.",
+  kind_none: "Загрузите прогон: демо, файл трассы или режим «Вживую».",
+  model_lbl: "Модель ИИ", via: "через",
+  res_idle: "Не запущено", res_running: "⏳ В процессе… шаг {n}", res_ok: "✅ Ответ сдан", res_fail: "❌ Ответа нет",
+  res_stats: "Шагов: {n} · {s} с · {pct}% лимита входных токенов",
+  res_tests: "Последний запуск тестов: {txt}", res_tests_none: "Тесты ещё не запускались.",
+  tests_x: "прошло {p} из {n}",
+  how_know: "Кто проверяет? Во время работы агент сам запускает тесты; затем moulinette (проверяющая программа школы) прогоняет свои тесты, включая скрытые, на чистой копии.",
+
+  n_run_start: "Агент получает задачу и начинает работу. Помогать ему будет модель ИИ {model}.",
+  n_mcp: "Агент подключает набор инструментов (MCP-сервер). Инструментов: {n} — {names}.",
+  n_docker_pull: "Готовим изолированную копию проекта (Docker-контейнер)…",
+  n_docker_started: "Копия проекта запущена в контейнере без доступа в интернет.",
+  n_docker_removed: "Контейнер удалён: после работы ничего не остаётся.",
+  n_req_first: "Шаг {n}: агент отправляет задачу ИИ и спрашивает, что делать.",
+  n_req_next: "Шаг {n}: агент отправляет ИИ результат прошлого шага и спрашивает, что делать дальше.",
+  n_retry: "Сервис ИИ не ответил (лимит запросов или сеть). Агент ждёт и повторяет, возможно с другим ключом.",
+  n_fallback: "Переключаемся на запасную модель ИИ: {to}.",
+  n_llm_error: "Сервис ИИ недоступен. Агент аккуратно останавливается и всё равно записывает файл с результатом.",
+  n_resp: "ИИ ответил: идея и фрагмент кода на Python:",
+  n_extract: "Агент оставляет только код. Текст с объяснением никогда не выполняется.",
+  n_extract_none: "В ответе нет кода. Агент сообщает об этом ИИ и просит ещё раз.",
+  n_sb_start: "Код отправляется в песочницу: изолированный процесс без интернета и без доступа к файлам компьютера.",
+  n_line: "Песочница выполняет код строка за строкой. Сейчас: строка {l}.",
+  n_call: "Код вызывает свою функцию {f}().",
+  n_return: "{f}() вернула {r}.",
+  n_exc: "Строка {l} вызвала ошибку: {x}.",
+  n_final_line: "Код вызывает final_answer(): ответ сдан.",
+  n_more: "Код продолжает выполняться (ещё {n} шагов не показаны).",
+  n_tool_call: "Код просит инструмент: {what}. Запрос выходит из песочницы через единственную проверяемую дверь.",
+  n_mcp_req: "Запрос идёт на сервер инструментов (протокол MCP).",
+  n_dispatch: "Сервер инструментов проверяет аргументы и запускает {name}.",
+  n_repo_ok: "На проекте выполнена команда: успешно.",
+  n_repo_err: "На проекте выполнена команда: она сообщила о неудаче (код выхода {c}).",
+  n_mcp_resp: "Сервер инструментов отправляет результат обратно.",
+  n_tests_ok: "Тесты: {txt}. На этих тестах решение работает.",
+  n_tests_bad: "Тесты: {txt}. ИИ увидит, что не прошло, и исправит.",
+  n_tool_res: "Результат инструмента возвращается в код: {first}",
+  n_tool_err: "Инструмент сообщил о проблеме; код получает её как ошибку.",
+  n_sb_ok: "Код завершился. То, что он вывел, станет наблюдением, которое ИИ прочитает дальше.",
+  n_sb_final: "Код завершился и сдал ответ.",
+  n_sb_err: "Код упал: {err}. ИИ увидит ошибку и исправит её.",
+  n_sb_timeout: "Код работал слишком долго и был остановлен (лимит времени).",
+  n_sb_memory: "Код занял слишком много памяти и был остановлен (лимит памяти).",
+  n_sb_blocked: "Песочница заблокировала запрещённый код: {err}",
+  n_obs: "Результат сохраняется как наблюдение для следующего шага.",
+  n_budget: "Проверка бюджета: использовано {inp} из {max} входных токенов.",
+  n_final: "Агент сдаёт ответ.",
+  n_fallback_answer: "Финальный ответ не дан вовремя: агент сдаёт лучший вариант, который у него есть.",
+  n_budget_stop: "Достигнут лимит ({reason}): агент останавливается и записывает то, что есть.",
+  n_loop: "ИИ повторил точно такой же код. Агент не запускает его снова и просит сделать что-то другое.",
+  n_interrupted: "Прогон прерван.",
+  n_end_ok: "Готово: ответ сдан (шагов: {n}, {s} с). Дальше moulinette проверит его своими тестами.",
+  n_end_bad: "Завершено без ответа (шагов: {n}).",
+  n_idle: "Нажмите ▶ Запустить, чтобы посмотреть, как агент решает задачу.",
+  where_step: "шаг {n} / макс. {max}",
+  tool_run_tests: "запустить тесты", tool_read_file: "прочитать файл {file}", tool_edit_file: "изменить файл {file}",
+  tool_list_files: "показать файлы в {dir}", tool_search_code: "найти в коде «{pattern}»",
+  tool_find_references: "найти, где используется «{name}»", tool_get_patch: "собрать все изменения в патч",
+  tool_search_function_or_class_definition_in_code: "найти, где определено «{name}»",
+  tool_run_command: "выполнить команду в проекте", tool_generic: "использовать инструмент {name}",
+
+  sb_task: "Задача", sb_task_x: "что нужно решить",
+  sb_ai: "Модель ИИ", sb_ai_x: "думает и пишет код на Python",
+  sb_sandbox: "Песочница", sb_sandbox_x: "безопасно выполняет код и пользуется инструментами",
+  sb_answer: "Ответ", sb_answer_x: "код или патч, затем проверка тестами",
+  s_loop: "↺ повторять, пока не решено",
+  sbn_thinking: "думает…", sbn_answered: "шаг {n}: ответил", sbn_line: "выполняется строка {l}", sbn_tool: "инструмент: {name}",
+  sbn_status: "завершено: {status}", sbn_waiting: "ждём…", sbn_ok: "✅ сдан", sbn_bad: "❌ нет ответа",
+  status_ok: "ok", status_error: "ошибка", status_timeout: "лимит времени", status_memory: "лимит памяти",
+  status_security_error: "заблокировано", status_syntax_error: "синтаксическая ошибка", status_final_answer: "ответ", status_crash: "сбой",
+
+  st_final: "ответ", st_ok: "ok", st_err: "ошибка", st_nocode: "нет кода", st_run: "…",
+  chip_ok: "ответ сдан", chip_bad: "нет ответа", chip_run: "идёт",
+  steps_empty: "Шагов пока нет: первое обращение к ИИ начинает шаг 1.", no_tools: "без вызовов тулов",
+  ss_waiting: "ждём ответа ИИ", ss_nocode: "ИИ ответил без кода", ss_ran: "выполнил код",
+  ss_error: "код упал ({err})", ss_blocked: "заблокировано песочницей", ss_limit: "остановлено лимитом",
+  ss_final: "сдал ответ", ss_tests: "тесты: {txt}", ss_running: "выполняется…",
+  ss_t_run_tests: "запустил тесты", ss_t_read_file: "прочитал файл", ss_t_edit_file: "изменил файл", ss_t_list_files: "посмотрел файлы",
+  ss_t_search_code: "искал в коде", ss_t_find_references: "искал использования", ss_t_search_function_or_class_definition_in_code: "искал определение", ss_t_get_patch: "собрал патч",
+  ss_t_run_command: "выполнил команду", ss_t_generic: "{name}",
+  ic_llm: "ИИ ответил", ic_code: "код выполнен в песочнице", ic_tools: "использованы инструменты", ic_tests: "результат тестов",
+  ic_err: "ошибка", ic_final: "ответ сдан", ic_block: "заблокировано / остановлено",
+
+  m_iter: "Шаги (итерации)", m_in: "Прочитано ИИ (входные токены)", m_out: "Написано ИИ (выходные токены)", m_time: "Время",
+  mx_iter: "один шаг = один вопрос к ИИ и запуск его кода", mx_in: "≈ {w} слов всего", mx_out: "≈ {w} слов всего", mx_time: "секунд с начала",
+
+  sec_guards: ["Нет доступа в интернет из кода", "Файлы только в собственной рабочей папке", "Импортировать можно только безопасные модули Python",
+               "Нельзя запускать системные команды (os, subprocess)", "Лимиты времени и памяти на каждый запуск", "Выход наружу только через инструменты, и каждый вызов проверяется"],
+  sec_count: "заблокировано: {n}",
+  sec_none: "Ничего не заблокировано: в этом прогоне код не пытался сделать ничего запрещённого. Проверить защиту вживую: uv run sandbox, затем ввести import os.",
+  sec_list: "Заблокировано или остановлено в этом прогоне:", sec_item: "шаг {n}: {msg}",
+  sec_limit_timeout: "остановлено лимитом времени", sec_limit_memory: "остановлено лимитом памяти",
+
+  ans_mbpp_x: "Функция на Python, которую сдал агент.",
+  ans_swe_x: "Изменение кода проекта (патч): красные строки удалены, зелёные добавлены.",
+  ans_wait: "Появится, когда агент сдаст ответ.",
+  ans_partial: "Изменения на данный момент (последний вызов get_patch):",
+
+  g_llm: ["LLM (модель ИИ)", "Программа, обученная на огромном количестве текстов: она продолжает данный ей текст. Здесь она планирует следующее действие и пишет код на Python."],
+  g_agent: ["Агент", "Наша программа вокруг ИИ: даёт задачу, запускает код, который написал ИИ, показывает ему результат и повторяет, пока задача не решена."],
+  g_token: ["Токен", "Небольшой кусочек текста, примерно ¾ английского слова. Сервисы ИИ считают и ограничивают текст в токенах."],
+  g_iteration: ["Шаг (итерация)", "Один круг цикла: спросить ИИ → выполнить его код → прочитать результат."],
+  g_sandbox: ["Песочница", "Изолированный закрытый процесс, в котором выполняется код ИИ: без интернета, без доступа к файлам компьютера, с лимитами времени и памяти."],
+  g_tool: ["Инструмент (тул)", "Функция, которую код может вызвать, чтобы сделать что-то за пределами песочницы: прочитать файл, запустить тесты… Каждый вызов проверяется."],
+  g_mcp: ["MCP", "Model Context Protocol: стандартный способ подключать инструменты к ИИ-агенту. Наши инструменты работают в MCP-сервере."],
+  g_observation: ["Наблюдение", "То, что код вывел или вернул. Оно отправляется ИИ как входные данные для следующего шага."],
+  g_final_answer: ["final_answer()", "Встроенная функция: код вызывает её, чтобы сдать решение, и на этом прогон заканчивается."],
+  g_patch: ["Патч (дифф)", "Список изменённых строк кода: удалённые строки красным, добавленные зелёным."],
+  g_test: ["Тесты", "Небольшие программы, которые проверяют, что код выдаёт ожидаемые результаты. Тесты прошли = решение работает."],
+  g_budget: ["Бюджет", "Лимиты из сабджекта на каждую задачу: число шагов, токенов и время. Превышение любого означает провал задачи."],
+  g_moulinette: ["Moulinette", "Автоматическая проверяющая программа школы: выдаёт агенту задачи и проверяет ответы своими тестами."],
+
+  tour: [
+    ["Добро пожаловать", "Эта страница воспроизводит, как наш ИИ-агент решает задачу по программированию. Здесь выбираются язык и вид: «Просто» для общей картины, «Подробно» для внутреннего устройства."],
+    ["Задача", "Что агент должен решить (слева) и результат в конце (справа)."],
+    ["Нажмите ▶ Запустить", "Эта строка простыми словами объясняет, что происходит в каждый момент."],
+    ["Цикл", "ИИ думает и пишет код, песочница безопасно его выполняет, результат возвращается к ИИ. Так повторяется, пока задача не решена."],
+    ["Шаги", "Одна карточка на каждый круг. 🧠 ИИ ответил · ▶ код выполнен · 🔧 использованы инструменты · ✅/❌ тесты · 🏁 ответ сдан."],
+    ["Лимиты", "Лимиты из сабджекта: шаги, объём текста, прочитанного и написанного ИИ, время. Агент проверяет их перед каждым обращением к ИИ."],
+    ["Безопасность", "Что коду запрещено делать и что песочница заблокировала в этом прогоне."],
+    ["Ответ", "Сданный код, а для настоящего проекта патч: красные строки удалены, зелёные добавлены."],
+    ["Незнакомое слово?", "Слова со значком ⓘ показывают короткое объяснение при наведении. В «Словаре» собраны все. Тур можно перезапустить в любой момент."],
+  ],
+  tour_next: "Далее", tour_back: "Назад", tour_skip: "Пропустить", tour_done: "Начать", tour_n: "{i} из {n}",
+
+  ni_task: ["Загружает задачу moulinette, API-ключи из .env и лимиты.", "Записывает solution.json, даже если что-то сломалось."],
+  ni_orch: ["Мысль → Код → Наблюдение, пока не вызван final_answer().", "Перед каждым вызовом LLM проверяет суммарные токены, итерации и время.", "Сокращает старые наблюдения перед повторной отправкой (показано как Δ)."],
+  ni_llm: ["Несколько ключей на провайдера, ротация при 429/401/402; повторы с паузой; опциональный запасной провайдер.", "Стоп-последовательности (<end_code>, Observation:) не дают модели выдумать результат выполнения."],
+  ni_extract: ["Оставляет только исполняемый Python: Thought и обрамление отбрасываются (Δ).", "XML invoke, Hermes <tool_call> и ReAct превращаются в вызовы Python; об исправлениях сообщается LLM."],
+  ni_interp: ["Отдельный процесс с пустым окружением; каждая выполненная строка трассируется (вкладка «Интерпретатор»).", "AST-политика, урезанные builtins, прокси модулей, allowlist импортов, audit hook.", "Таймаут SIGALRM (на паузе во время вызовов тулов), лимит памяти, потоковый вывод."],
+  ni_mcpc: ["Обёртка сопоставляет позиционные аргументы с именами параметров и отправляет JSON хосту.", "Хост пересылает JSON-RPC tools/call по stdio или HTTP и ждёт результат."],
+  ni_mcps: ["FastMCP проверяет аргументы и вызывает Python-обработчик.", "Результат несёт отчёт о выполнении (_meta): команды, коды выхода, время, размеры."],
+  ni_repo: ["SWE-bench: команды выполняются через docker exec в контейнере задачи (--network none).", "Локально (тесты, демо): те же команды в TESTBED_PATH. MBPP: изолированная песочница для тестов."],
+  ni_final: ["success, solution (код или патч), итерации, запросы, токены, время.", "Каждый шаг хранит llm_output, sandbox_input, sandbox_output, retries."],
+  sub_interp: "нажмите: ход выполнения", sub_mcps: "нажмите: список тулов",
+  p_step: "шаг {n}", p_calls: "вызовов: {n}", p_tools: "тулов: {n}", p_ok: "успех", p_bad: "без успеха", p_running: "выполняется…", p_status: "статус: {s}",
+  empty_trace: "В этой трассе нет событий.", empty_steps: "Шаги появятся здесь по мере работы агента.",
+  io_input: "Вход", io_output: "Выход", io_step: "шаг {n}", unchanged: "без изменений", nothing: "(ничего не записано)",
+  tl_notconn: "Ещё не подключено: список тулов появится, когда агент подключится к серверу.",
+  tl_sum: "Сервер «{server}» предоставляет тулов: {n}{via}; использовано: {used}. Встроенный final_answer не является MCP-тулом.",
+  tl_via: " по {tr}", tl_res: " Ресурсы: да.", tl_prm: " Промпты: да.",
+  tl_cnt: "{k} на шаге {s} · {n} за прогон", tl_last: "последний вызов (шаг {s}): {call}",
+  d_select: "Выберите шаг.", d_solution: "Решение:", d_wait: "(ждём ответа)",
+  d_red: "Красные строки не дошли до интерпретатора (их убрало извлечение кода).",
+  d_green: "Зелёных строк не было в ответе LLM дословно (их добавило или преобразовало извлечение кода).",
+  d_nocode: "(на этом шаге код не извлечён)", d_notexec: "(ещё не выполнено)",
+  d_short: "На шаге {n} LLM получила сокращённую версию — см. «Поток и диффы».",
+  flow_empty: "Передачи данных появятся по ходу шага.",
+  h_task: "Промпт задачи → LLM", h_obs: "Наблюдение шага {n} → LLM", h_out: "Ответ LLM → интерпретатор",
+  h_call: "Вызов {name}: как написан → как отправлен", h_repo: "{name}: вывод репозитория → результат тула", h_prog: "Вывод программы → наблюдение",
+  l_task_sent: "промпт задачи (Task + CLI)", l_task_recv: "сообщение пользователя, полученное LLM",
+  l_obs_sent: "наблюдение из песочницы (шаг {n})", l_obs_recv: "сообщение, полученное LLM (шаг {n})",
+  l_raw: "сырой ответ LLM", l_sbin: "вход песочницы (выполненный код)",
+  l_written: "строка {l}, как написано в коде", l_named: "аргументы, отправленные MCP-серверу (по именам)",
+  l_rawout: "сырой вывод команд (первые 300 символов каждой, всего {kb})", l_returned: "возвращённый результат ({n} симв.)",
+  l_prog_sent: "stdout + последнее значение + ошибка", l_prog_recv: "текст наблюдения (с пометками песочницы)",
+  note_short: "В этом запросе сокращены старые наблюдения: шаги {list}.", note_format: "формат: {f}",
+  note_trunc: "Тул обрезал вывод и сообщил об этом в результате.", note_reformat: "Тул переформатировал сырой вывод команды.",
+  chg: "изменено −{d} +{a}", identical: "идентично", v_diff: "Дифф", v_sent: "Отправлено", v_recv: "Получено",
+  fold: "⋯ строк без изменений: {n}",
+  i_notrace: "В этом источнике нет трассировки строк (solution.json её не хранит; запустите агента с --trace-file). Показан выполненный код.",
+  i_done: "Путь завершён: выполнений строк — {n}{dropped}. Зачёркнутые строки на этом шаге не выполнялись.", i_dropped: " (+{n} не записано)",
+  i_running: "Выполнение… событие {i} из {n}. Подсвечена строка, которая выполняется сейчас.",
+  i_vars: "Переменные (модуль)", i_frame: "Кадр {f}()", i_ret: "↩ {f}() вернула {r}", i_never: "на этом шаге не выполнялась",
+  i_path: "путь:", i_nocode: "(на этом шаге код не выполнялся)",
+  tools_none: "(на этом шаге нет вызовов MCP-тулов)",
+  hop_call: "Интерпретатор Python вызывает тул",
+  hop_call_n: "Имя указывает на обёртку, добавленную в пространство имён по схеме тула с сервера. Таймер песочницы на паузе, пока идёт вызов.",
+  hop_wrap: "Обёртка → хост", hop_wrap_n: "Δ позиционные аргументы сопоставлены с именами параметров по схеме тула.",
+  hop_host: "Хост → MCP-сервер", hop_norec: "(запрос не записан в этом источнике)",
+  hop_disp: "MCP-сервер обрабатывает вызов", hop_src: "Откуда берутся входные данные тула", hop_src_w1: "не сгенерированы LLM", hop_src_w2: "данные задачи",
+  hop_repo: "Репозиторий: операций — {n}", hop_fmt: "Тул форматирует результат", hop_back: "MCP-сервер → хост", hop_ret: "Хост → интерпретатор",
+  hop_ret_err: "Обёртка выбрасывает ToolError на строке {l}; код может его перехватить.",
+  hop_ret_ok: "Обёртка возвращает эту строку (str) в строку {l}; таймер снова идёт.", hop_wait: "Ждём сервер…",
+  seg_repo: "команды в репозитории", seg_srv: "обработчик сервера (проверка, форматирование)", seg_rpc: "MCP-транспорт (JSON-RPC)", seg_proxy: "прокси песочница ↔ хост",
+  kv_handler: "обработчик", kv_time: "время сервера", kv_raw: "сырой вывод", kv_ret: "возвращено", kv_trunc: "обрезано",
+  kv_chars: "{c} симв., строк: {l}", kv_yes: "да (сказано в тексте)", kv_no: "нет",
+  gen_prog: "Сгенерированная тестовая программа (строк: {n}) — открыть", eval_script: "Скрипт проверки (строк: {n}) — открыть",
+  m_title: "Python interpreter", m_step: "шаг {n}", m_none: "Код ещё не выполнялся.",
+  m_pick: "Запустите прогон или выберите шаг: код появится здесь, как только интерпретатор его получит.",
+},
+
+fr: {
+  subtitle: "Pensée → Code → Observation, pas à pas",
+  mode_simple: "Simple", mode_detailed: "Détaillé", tour_btn: "Visite guidée", gloss_btn: "Glossaire",
+  src_mbpp: "Démo · MBPP", src_swe: "Démo · SWE-bench", src_file: "Ouvrir une trace ou une solution…", src_live: "En direct",
+  live_title: "Disponible quand la page est servie par : uv run agent-ui",
+  opt_lines: "lignes de code dans la chronologie",
+  arch_h: "Architecture · activité des composants",
+  arch_hint: "cliquez sur un composant : son entrée et sa sortie pour l'étape choisie",
+  caption_ready: "Appuyez sur ▶ pour rejouer l'exécution.",
+  legend_delta: "les données ont changé entre le bloc qui les a envoyées et celui qui les a reçues (diff dans l'onglet « Flux et diffs »)",
+  budget_h: "Budget (limites par tâche)",
+  budget_note: "Limites fixées par le sujet. En dépasser une fait échouer la tâche : l'agent les vérifie donc avant chaque appel à l'IA.",
+  sec_h: "Sécurité", steps_h: "Étapes", log_h: "Journal des événements", log_hint: "cliquez pour y aller",
+  detail_h: "Détail de l'étape", step_n: "Étape {n}",
+  tab_flow: "Flux et diffs", tab_interp: "Interpréteur", tab_tools: "Appels d'outils", tab_llm: "Sortie du LLM", tab_code: "Entrée du bac à sable", tab_obs: "Observation",
+  sysprompt: "Prompt système envoyé au LLM",
+  drop: "Déposez events.jsonl ou solution.json",
+  task_h: "Tâche", result_h: "Résultat",
+  simple_h: "Comment fonctionne l'agent", simple_hint: "le bloc en surbrillance travaille en ce moment",
+  ans_h: "Réponse",
+  play: "▶ Lancer", pause: "⏸ Pause", replay: "↺ Rejouer",
+  gloss_title: "Glossaire", close: "Fermer",
+  badge_demo: "démo", badge_live: "en direct", badge_file: "fichier",
+  demo_mbpp: "Exécution réelle du framework sur la tâche MBPP 282 : bac à sable, serveur MCP, run_tests dans un bac à sable de test isolé. Seules les réponses de l'IA sont pré-enregistrées ; la première tentative est fausse exprès pour montrer comment l'agent se corrige.",
+  demo_swe: "Exécution réelle du framework sur un petit dépôt local avec les outils MCP de SWE-bench (recherche, lecture, reproduction, modification, run_tests, get_patch). Seules les réponses de l'IA sont pré-enregistrées.",
+  live_follow: "Suivi du fichier de trace de l'agent en temps réel.",
+  file_loaded: "{name} : {n} événements",
+  file_error: "Impossible de lire {name} : {err}. Attendu : events.jsonl (de --trace-file) ou solution.json.",
+  kind_mbpp: "Écrire une petite fonction Python à partir d'une courte description. Elle doit passer les tests.",
+  kind_swe: "Corriger un vrai bug dans un vrai projet open source. La correction doit passer les tests du projet.",
+  kind_none: "Chargez une exécution : une démo, un fichier de trace ou le mode direct.",
+  model_lbl: "Modèle d'IA", via: "via",
+  res_idle: "Pas démarré", res_running: "⏳ En cours… étape {n}", res_ok: "✅ Réponse rendue", res_fail: "❌ Pas de réponse",
+  res_stats: "{n} étapes · {s} s · {pct} % de la limite de jetons en entrée",
+  res_tests: "Dernier passage des tests : {txt}", res_tests_none: "Aucun test lancé pour l'instant.",
+  tests_x: "{p} sur {n} réussis",
+  how_know: "Qui vérifie ? Pendant son travail, l'agent lance lui-même les tests ; ensuite la moulinette (le correcteur automatique de l'école) lance ses propres tests, y compris des tests cachés, sur une copie propre.",
+
+  n_run_start: "L'agent reçoit la tâche et se met au travail. Le modèle d'IA {model} va l'aider.",
+  n_mcp: "L'agent branche sa boîte à outils (un serveur MCP) : {n} outil(s) — {names}.",
+  n_docker_pull: "Préparation d'une copie isolée du projet (un conteneur Docker)…",
+  n_docker_started: "La copie du projet tourne dans un conteneur sans accès à Internet.",
+  n_docker_removed: "Le conteneur est supprimé : rien ne reste derrière.",
+  n_req_first: "Étape {n} : l'agent envoie la tâche à l'IA et lui demande quoi faire.",
+  n_req_next: "Étape {n} : l'agent envoie à l'IA le résultat de l'étape précédente et lui demande la suite.",
+  n_retry: "Le service d'IA n'a pas répondu (limite de requêtes ou réseau). L'agent attend et réessaie, éventuellement avec une autre clé.",
+  n_fallback: "Passage à un modèle d'IA de secours : {to}.",
+  n_llm_error: "Le service d'IA a échoué. L'agent s'arrête proprement et écrit quand même son fichier de résultat.",
+  n_resp: "L'IA a répondu avec une idée et un morceau de code Python :",
+  n_extract: "L'agent ne garde que le code. Le texte d'explication n'est jamais exécuté.",
+  n_extract_none: "Pas de code dans la réponse. L'agent le signale à l'IA et redemande.",
+  n_sb_start: "Le code part dans le bac à sable : un processus isolé, sans Internet ni accès aux fichiers de l'ordinateur.",
+  n_line: "Le bac à sable exécute le code ligne par ligne. Maintenant : ligne {l}.",
+  n_call: "Le code appelle sa fonction {f}().",
+  n_return: "{f}() a renvoyé {r}.",
+  n_exc: "La ligne {l} a levé une erreur : {x}.",
+  n_final_line: "Le code appelle final_answer() : la réponse est rendue.",
+  n_more: "Le code continue ({n} étapes de plus non affichées).",
+  n_tool_call: "Le code demande un outil : {what}. La requête sort du bac à sable par une seule porte contrôlée.",
+  n_mcp_req: "La requête part vers le serveur d'outils (protocole MCP).",
+  n_dispatch: "Le serveur d'outils vérifie les arguments et lance {name}.",
+  n_repo_ok: "Une commande s'exécute sur le projet : succès.",
+  n_repo_err: "Une commande s'exécute sur le projet : elle signale un échec (code de sortie {c}).",
+  n_mcp_resp: "Le serveur d'outils renvoie le résultat.",
+  n_tests_ok: "Tests : {txt}. La solution fonctionne sur ces tests.",
+  n_tests_bad: "Tests : {txt}. L'IA verra ce qui a échoué et corrigera.",
+  n_tool_res: "Le résultat de l'outil revient au code : {first}",
+  n_tool_err: "L'outil a signalé un problème ; le code le reçoit comme une erreur.",
+  n_sb_ok: "Le code a terminé. Ce qu'il a affiché devient l'observation que l'IA lira ensuite.",
+  n_sb_final: "Le code a terminé et a rendu la réponse.",
+  n_sb_err: "Le code a planté : {err}. L'IA verra l'erreur et la corrigera.",
+  n_sb_timeout: "Le code a pris trop de temps et a été arrêté (limite de temps).",
+  n_sb_memory: "Le code a utilisé trop de mémoire et a été arrêté (limite de mémoire).",
+  n_sb_blocked: "Le bac à sable a bloqué du code interdit : {err}",
+  n_obs: "Le résultat est conservé comme observation pour l'étape suivante.",
+  n_budget: "Contrôle du budget : {inp} jetons en entrée utilisés sur {max}.",
+  n_final: "L'agent rend sa réponse.",
+  n_fallback_answer: "Pas de réponse finale à temps : l'agent rend son meilleur candidat.",
+  n_budget_stop: "Une limite est atteinte ({reason}) : l'agent s'arrête et écrit ce qu'il a.",
+  n_loop: "L'IA a répété exactement le même code. L'agent ne le relance pas et demande autre chose.",
+  n_interrupted: "L'exécution a été interrompue.",
+  n_end_ok: "Terminé : réponse rendue (étapes : {n}, {s} s). Ensuite, la moulinette la vérifie avec ses propres tests.",
+  n_end_bad: "Terminé sans réponse (étapes : {n}).",
+  n_idle: "Appuyez sur ▶ Lancer pour voir l'agent résoudre la tâche.",
+  where_step: "étape {n} / max {max}",
+  tool_run_tests: "lancer les tests", tool_read_file: "lire le fichier {file}", tool_edit_file: "modifier le fichier {file}",
+  tool_list_files: "lister les fichiers de {dir}", tool_search_code: "chercher « {pattern} » dans le code",
+  tool_find_references: "trouver où « {name} » est utilisé", tool_get_patch: "rassembler toutes les modifications en un patch",
+  tool_search_function_or_class_definition_in_code: "trouver où « {name} » est défini",
+  tool_run_command: "lancer une commande dans le projet", tool_generic: "utiliser l'outil {name}",
+
+  sb_task: "Tâche", sb_task_x: "ce qu'il faut résoudre",
+  sb_ai: "Modèle d'IA", sb_ai_x: "réfléchit et écrit du code Python",
+  sb_sandbox: "Bac à sable", sb_sandbox_x: "exécute le code en sécurité et utilise les outils",
+  sb_answer: "Réponse", sb_answer_x: "code ou patch, puis vérifié par les tests",
+  s_loop: "↺ recommencer jusqu'à la solution",
+  sbn_thinking: "réfléchit…", sbn_answered: "étape {n} : a répondu", sbn_line: "exécute la ligne {l}", sbn_tool: "outil : {name}",
+  sbn_status: "terminé : {status}", sbn_waiting: "en attente…", sbn_ok: "✅ rendue", sbn_bad: "❌ pas de réponse",
+  status_ok: "ok", status_error: "erreur", status_timeout: "limite de temps", status_memory: "limite de mémoire",
+  status_security_error: "bloqué", status_syntax_error: "erreur de syntaxe", status_final_answer: "réponse", status_crash: "plantage",
+
+  st_final: "réponse", st_ok: "ok", st_err: "erreur", st_nocode: "pas de code", st_run: "…",
+  chip_ok: "réponse rendue", chip_bad: "pas de réponse", chip_run: "en cours",
+  steps_empty: "Pas encore d'étape : le premier appel à l'IA commence l'étape 1.", no_tools: "aucun appel d'outil",
+  ss_waiting: "en attente de l'IA", ss_nocode: "l'IA a répondu sans code", ss_ran: "a exécuté le code",
+  ss_error: "le code a échoué ({err})", ss_blocked: "bloqué par le bac à sable", ss_limit: "arrêté par une limite",
+  ss_final: "a rendu la réponse", ss_tests: "tests : {txt}", ss_running: "en cours…",
+  ss_t_run_tests: "a lancé les tests", ss_t_read_file: "a lu un fichier", ss_t_edit_file: "a modifié un fichier", ss_t_list_files: "a listé des fichiers",
+  ss_t_search_code: "a cherché dans le code", ss_t_find_references: "a cherché les usages", ss_t_search_function_or_class_definition_in_code: "a cherché une définition", ss_t_get_patch: "a rassemblé le patch",
+  ss_t_run_command: "a lancé une commande", ss_t_generic: "{name}",
+  ic_llm: "l'IA a répondu", ic_code: "code exécuté dans le bac à sable", ic_tools: "outils utilisés", ic_tests: "résultat des tests",
+  ic_err: "erreur", ic_final: "réponse rendue", ic_block: "bloqué / arrêté",
+
+  m_iter: "Étapes (itérations)", m_in: "Texte lu par l'IA (jetons en entrée)", m_out: "Texte écrit par l'IA (jetons en sortie)", m_time: "Temps",
+  mx_iter: "une étape = une question à l'IA et l'exécution de son code", mx_in: "≈ {w} mots au total", mx_out: "≈ {w} mots au total", mx_time: "secondes depuis le début",
+
+  sec_guards: ["Pas d'accès à Internet depuis le code", "Fichiers uniquement dans son propre dossier de travail", "Seuls des modules Python sûrs peuvent être importés",
+               "Pas de commandes système (os, subprocess)", "Limites de temps et de mémoire à chaque exécution", "Les outils sont la seule sortie, et chaque appel est vérifié"],
+  sec_count: "{n} bloqué(s)",
+  sec_none: "Rien n'a été bloqué : le code n'a rien tenté d'interdit pendant cette exécution. Pour voir les protections en action : uv run sandbox, puis tapez import os.",
+  sec_list: "Bloqué ou arrêté pendant cette exécution :", sec_item: "étape {n} : {msg}",
+  sec_limit_timeout: "arrêté par la limite de temps", sec_limit_memory: "arrêté par la limite de mémoire",
+
+  ans_mbpp_x: "La fonction Python rendue par l'agent.",
+  ans_swe_x: "La modification du code du projet (un patch) : lignes rouges supprimées, lignes vertes ajoutées.",
+  ans_wait: "Apparaît quand l'agent rend sa réponse.",
+  ans_partial: "Modifications jusqu'ici (dernier appel à get_patch) :",
+
+  g_llm: ["LLM (modèle d'IA)", "Un programme entraîné sur d'énormes quantités de texte, qui continue le texte qu'on lui donne. Ici, il planifie l'action suivante et écrit du code Python."],
+  g_agent: ["Agent", "Notre programme autour de l'IA : il donne la tâche, exécute le code écrit par l'IA, lui montre le résultat et recommence jusqu'à ce que la tâche soit résolue."],
+  g_token: ["Jeton (token)", "Un petit morceau de texte, environ ¾ d'un mot anglais. Les services d'IA comptent et limitent le texte en jetons."],
+  g_iteration: ["Étape (itération)", "Un tour du cycle : demander à l'IA → exécuter son code → lire le résultat."],
+  g_sandbox: ["Bac à sable (sandbox)", "Un processus isolé et verrouillé où s'exécute le code de l'IA : pas d'Internet, pas d'accès aux fichiers de l'ordinateur, limites de temps et de mémoire."],
+  g_tool: ["Outil", "Une fonction que le code peut appeler pour agir hors du bac à sable : lire un fichier, lancer les tests… Chaque appel est vérifié."],
+  g_mcp: ["MCP", "Model Context Protocol : une façon standard de brancher des outils sur un agent d'IA. Nos outils tournent dans un serveur MCP."],
+  g_observation: ["Observation", "Ce que le code a affiché ou renvoyé. C'est renvoyé à l'IA comme entrée de l'étape suivante."],
+  g_final_answer: ["final_answer()", "Une fonction intégrée : le code l'appelle pour rendre la solution, ce qui termine l'exécution."],
+  g_patch: ["Patch (diff)", "La liste des lignes de code modifiées : lignes supprimées en rouge, lignes ajoutées en vert."],
+  g_test: ["Tests", "De petits programmes qui vérifient que le code donne les résultats attendus. Tests réussis = la solution fonctionne."],
+  g_budget: ["Budget", "Limites fixées par le sujet pour chaque tâche : nombre d'étapes, de jetons et temps. En dépasser une fait échouer la tâche."],
+  g_moulinette: ["Moulinette", "Le correcteur automatique de l'école : il donne les tâches à l'agent et vérifie les réponses avec ses propres tests."],
+
+  tour: [
+    ["Bienvenue", "Cette page rejoue la façon dont notre agent d'IA résout une tâche de programmation. Choisissez ici la langue et la vue : « Simple » pour la vue d'ensemble, « Détaillé » pour les rouages internes."],
+    ["La tâche", "Ce que l'agent doit résoudre (à gauche) et le résultat à la fin (à droite)."],
+    ["Appuyez sur ▶ Lancer", "Cette ligne explique simplement ce qui se passe à chaque instant."],
+    ["Le cycle", "L'IA réfléchit et écrit du code, le bac à sable l'exécute en sécurité, le résultat revient à l'IA. Cela se répète jusqu'à la solution."],
+    ["Les étapes", "Une carte par tour. 🧠 l'IA a répondu · ▶ le code a tourné · 🔧 outils utilisés · ✅/❌ tests · 🏁 réponse rendue."],
+    ["Les limites", "Les limites du sujet : étapes, texte lu et écrit par l'IA, temps. L'agent les vérifie avant chaque appel à l'IA."],
+    ["La sécurité", "Ce que le code n'a pas le droit de faire, et ce que le bac à sable a bloqué pendant cette exécution."],
+    ["La réponse", "Le code rendu ou, pour un vrai projet, le patch : lignes rouges supprimées, lignes vertes ajoutées."],
+    ["Un mot inconnu ?", "Les mots marqués ⓘ affichent une courte explication au survol. Le Glossaire les rassemble tous. Vous pouvez relancer cette visite à tout moment."],
+  ],
+  tour_next: "Suivant", tour_back: "Retour", tour_skip: "Passer", tour_done: "Commencer", tour_n: "{i} sur {n}",
+
+  ni_task: ["Charge la tâche de la moulinette, les clés API depuis .env et les limites.", "Écrit solution.json même en cas d'échec."],
+  ni_orch: ["Pensée → Code → Observation jusqu'à final_answer().", "Vérifie les jetons cumulés, les itérations et le temps avant chaque appel au LLM.", "Raccourcit les anciennes observations avant de les renvoyer (affiché comme Δ)."],
+  ni_llm: ["Plusieurs clés par fournisseur, rotation sur 429/401/402 ; nouvelles tentatives avec délai ; secours optionnel.", "Les séquences d'arrêt (<end_code>, Observation:) empêchent le modèle d'inventer des observations."],
+  ni_extract: ["Ne garde que le Python exécutable : la Pensée et les balises sont retirées (Δ).", "XML invoke, Hermes <tool_call> et ReAct sont convertis en appels Python ; les corrections sont signalées au LLM."],
+  ni_interp: ["Processus séparé, environnement vide ; chaque ligne exécutée est tracée (onglet « Interpréteur »).", "Politique AST, builtins restreints, proxys de modules, liste d'imports autorisés, audit hook.", "Délai SIGALRM (suspendu pendant les appels d'outils), limite de mémoire, sortie en continu."],
+  ni_mcpc: ["L'enveloppe associe les arguments positionnels aux noms de paramètres et envoie du JSON à l'hôte.", "L'hôte transmet un tools/call JSON-RPC via stdio ou HTTP et attend le résultat."],
+  ni_mcps: ["FastMCP valide les arguments et appelle le gestionnaire Python.", "Le résultat contient un rapport d'exécution (_meta) : commandes, codes de sortie, durées, tailles."],
+  ni_repo: ["SWE-bench : commandes exécutées via docker exec dans le conteneur de la tâche (--network none).", "En local (tests, démo) : mêmes commandes dans TESTBED_PATH. MBPP : bac à sable de test isolé."],
+  ni_final: ["success, solution (code ou patch), itérations, requêtes, jetons, temps.", "Chaque étape garde llm_output, sandbox_input, sandbox_output, retries."],
+  sub_interp: "cliquez : voir le code", sub_mcps: "cliquez : les outils",
+  p_step: "étape {n}", p_calls: "{n} appel(s)", p_tools: "{n} outils", p_ok: "succès", p_bad: "échec", p_running: "en cours…", p_status: "statut : {s}",
+  empty_trace: "Aucun événement dans cette trace.", empty_steps: "Les étapes apparaissent ici pendant que l'agent travaille.",
+  io_input: "Entrée", io_output: "Sortie", io_step: "étape {n}", unchanged: "inchangé", nothing: "(rien d'enregistré)",
+  tl_notconn: "Pas encore connecté : la liste des outils apparaît quand l'agent se connecte au serveur.",
+  tl_sum: "Le serveur « {server} » expose {n} outil(s){via} ; {used} utilisé(s) jusqu'ici. final_answer, intégré, n'est pas un outil MCP.",
+  tl_via: " via {tr}", tl_res: " Ressources : oui.", tl_prm: " Prompts : oui.",
+  tl_cnt: "{k} à l'étape {s} · {n} dans l'exécution", tl_last: "dernier appel (étape {s}) : {call}",
+  d_select: "Choisissez une étape.", d_solution: "Solution :", d_wait: "(en attente de la réponse)",
+  d_red: "Les lignes en rouge n'ont pas atteint l'interpréteur (retirées par l'extraction du code).",
+  d_green: "Les lignes en vert n'étaient pas telles quelles dans la sortie du LLM (ajoutées ou converties par l'extraction du code).",
+  d_nocode: "(aucun code extrait à cette étape)", d_notexec: "(pas encore exécuté)",
+  d_short: "Le LLM a reçu une version raccourcie à l'étape {n} — voir « Flux et diffs ».",
+  flow_empty: "Les transmissions apparaissent au fil de l'étape.",
+  h_task: "Prompt de la tâche → LLM", h_obs: "Observation de l'étape {n} → LLM", h_out: "Sortie du LLM → interpréteur",
+  h_call: "Appel {name} : tel qu'écrit → tel qu'envoyé", h_repo: "{name} : sortie du dépôt → résultat de l'outil", h_prog: "Sortie du programme → observation",
+  l_task_sent: "prompt de la tâche (Task + CLI)", l_task_recv: "message utilisateur reçu par le LLM",
+  l_obs_sent: "observation produite par le bac à sable (étape {n})", l_obs_recv: "message reçu par le LLM (étape {n})",
+  l_raw: "sortie brute du LLM", l_sbin: "entrée du bac à sable (code exécuté)",
+  l_written: "ligne {l} telle qu'écrite dans le code", l_named: "arguments envoyés au serveur MCP (nommés)",
+  l_rawout: "sortie brute des commandes (300 premiers caractères de chacune, {kb} au total)", l_returned: "résultat renvoyé ({n} caractères)",
+  l_prog_sent: "stdout + dernière valeur + erreur", l_prog_recv: "texte de l'observation (avec les notes du bac à sable)",
+  note_short: "Anciennes observations raccourcies dans cette requête : étapes {list}.", note_format: "format : {f}",
+  note_trunc: "L'outil a tronqué sa sortie et l'a signalé dans le résultat.", note_reformat: "L'outil a reformaté la sortie brute de la commande.",
+  chg: "modifié −{d} +{a}", identical: "identique", v_diff: "Diff", v_sent: "Envoyé", v_recv: "Reçu",
+  fold: "⋯ {n} ligne(s) inchangée(s)",
+  i_notrace: "Pas de trace ligne par ligne dans cette source (solution.json n'en garde pas ; lancez l'agent avec --trace-file). Affichage du code exécuté.",
+  i_done: "Parcours terminé : {n} exécutions de lignes{dropped}. Les lignes barrées n'ont jamais tourné à cette étape.", i_dropped: " (+{n} non enregistrées)",
+  i_running: "Exécution… événement {i} sur {n}. La ligne en surbrillance s'exécute maintenant.",
+  i_vars: "Variables (module)", i_frame: "Cadre {f}()", i_ret: "↩ {f}() a renvoyé {r}", i_never: "jamais exécutée à cette étape",
+  i_path: "parcours :", i_nocode: "(aucun code exécuté à cette étape)",
+  tools_none: "(aucun appel d'outil MCP à cette étape)",
+  hop_call: "L'interpréteur Python appelle l'outil",
+  hop_call_n: "Le nom désigne une enveloppe injectée dans l'espace de noms à partir du schéma d'outil du serveur. Le minuteur du bac à sable est en pause pendant l'appel.",
+  hop_wrap: "Enveloppe → hôte", hop_wrap_n: "Δ les arguments positionnels ont été associés aux noms de paramètres grâce au schéma de l'outil.",
+  hop_host: "Hôte → serveur MCP", hop_norec: "(requête non enregistrée dans cette source)",
+  hop_disp: "Le serveur MCP traite l'appel", hop_src: "D'où viennent les entrées de l'outil", hop_src_w1: "non générées par le LLM", hop_src_w2: "données de la tâche",
+  hop_repo: "Dépôt : {n} opération(s)", hop_fmt: "L'outil met en forme le résultat", hop_back: "Serveur MCP → hôte", hop_ret: "Hôte → interpréteur",
+  hop_ret_err: "L'enveloppe lève ToolError à la ligne {l} ; le code peut l'intercepter.",
+  hop_ret_ok: "L'enveloppe renvoie ce str à la ligne {l} ; le minuteur reprend.", hop_wait: "En attente du serveur…",
+  seg_repo: "commandes sur le dépôt", seg_srv: "gestionnaire du serveur (validation, mise en forme)", seg_rpc: "transport MCP (JSON-RPC)", seg_proxy: "proxy bac à sable ↔ hôte",
+  kv_handler: "gestionnaire", kv_time: "temps serveur", kv_raw: "sortie brute", kv_ret: "renvoyé", kv_trunc: "tronqué",
+  kv_chars: "{c} caractères, {l} lignes", kv_yes: "oui (annoncé dans le texte)", kv_no: "non",
+  gen_prog: "Programme de test généré ({n} lignes) — ouvrir", eval_script: "Script d'évaluation ({n} lignes) — ouvrir",
+  m_title: "Python interpreter", m_step: "étape {n}", m_none: "Aucun code n'a encore tourné.",
+  m_pick: "Lancez l'exécution ou choisissez une étape : le code apparaît ici dès que l'interpréteur le reçoit.",
+},
+};
+const GLOSS_ORDER = ["llm", "agent", "iteration", "token", "sandbox", "tool", "mcp", "observation", "final_answer", "test", "patch", "budget", "moulinette"];
+const LOCALE = {en: "en-US", ru: "ru-RU", fr: "fr-FR"};
+let LANG = "en", MODE = "simple";
+/* Translate `key`, filling {placeholders} from `p`. Arrays (lists, glossary entries) are returned as-is. */
+function tr(key, p) {
+  let s = (I18N[LANG] || I18N.en)[key];
+  if (s == null) s = I18N.en[key];
+  if (s == null) return key;
+  if (typeof s !== "string") return s;
+  return p ? s.replace(/\{(\w+)\}/g, (m, k) => (p[k] != null ? String(p[k]) : m)) : s;
+}
+const num = (v) => Number(v || 0).toLocaleString(LOCALE[LANG] || "en-US");
 
 /* ======================= architecture model ======================= */
 const NODES = {
@@ -541,7 +1329,7 @@ function renderDiff(ops, labelA, labelB) {
   const flush = () => {
     if (!run.length) return;
     const hidden = run; run = [];
-    const btn = document.createElement("button"); btn.className = "fold"; btn.textContent = `⋯ ${hidden.length} unchanged line${hidden.length > 1 ? "s" : ""}`;
+    const btn = document.createElement("button"); btn.className = "fold"; btn.textContent = tr("fold", {n: hidden.length});
     btn.addEventListener("click", () => { const frag = document.createDocumentFragment(); hidden.forEach((o) => frag.appendChild(diffLine(o))); btn.replaceWith(frag); });
     box.appendChild(btn);
   };
@@ -576,9 +1364,9 @@ for (const [id, n] of Object.entries(NODES)) {
   el("rect", {class: "box", x: n.x, y: n.y, width: n.w, height: n.h, rx: 9}, g);
   el("rect", {class: "stripe", x: n.x, y: n.y + 10, width: 4, height: n.h - 20, rx: 2}, g);
   el("text", {x: n.x + 16, y: n.y + 27, class: "title"}, g).textContent = n.title;
-  el("text", {x: n.x + 16, y: n.y + 46, class: "sub"}, g).textContent = n.sub;
+  const sub = el("text", {x: n.x + 16, y: n.y + 46, class: "sub"}, g); sub.textContent = n.sub;
   const pill = el("text", {x: n.x + 16, y: n.y + n.h - 12, class: "pill"}, g); pill.style.fill = `var(${n.c})`;
-  nodeEls[id] = {g, pill};
+  nodeEls[id] = {g, pill, sub};
   const open = () => { showNode(id); if (id === "interp") openInterpModal(); };
   g.addEventListener("click", open);
   g.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(); } });
@@ -639,24 +1427,24 @@ function handoffs(s, st) {
   const list = [];
   const prev = st.steps.get(s.n - 1);
   if (s.delivered != null) {
-    if (s.n === 1) list.push({id: "orch_llm", title: "Task prompt → LLM", route: "Orchestrator → LLM API", sent: st.run && st.run.task_prompt, recv: s.delivered, sentLabel: "task prompt (Task + CLI)", recvLabel: "user message received by the LLM"});
-    else if (prev && prev.obs != null) list.push({id: "orch_llm", title: `Observation of step ${s.n - 1} → LLM`, route: "Interpreter → Orchestrator → LLM API", sent: "Observation:\n" + prev.obs, recv: s.delivered, sentLabel: `observation produced by the sandbox (step ${s.n - 1})`, recvLabel: `message received by the LLM (step ${s.n})`, note: (s.compacted || []).length ? `Older observations shortened in this request: steps ${s.compacted.join(", ")}.` : ""});
+    if (s.n === 1) list.push({id: "orch_llm", title: tr("h_task"), route: "Orchestrator → LLM API", sent: st.run && st.run.task_prompt, recv: s.delivered, sentLabel: tr("l_task_sent"), recvLabel: tr("l_task_recv")});
+    else if (prev && prev.obs != null) list.push({id: "orch_llm", title: tr("h_obs", {n: s.n - 1}), route: "Interpreter → Orchestrator → LLM API", sent: "Observation:\n" + prev.obs, recv: s.delivered, sentLabel: tr("l_obs_sent", {n: s.n - 1}), recvLabel: tr("l_obs_recv", {n: s.n}), note: (s.compacted || []).length ? tr("note_short", {list: s.compacted.join(", ")}) : ""});
   }
-  if (s.llm != null && s.code != null) list.push({id: "ext_interp", title: "LLM output → Interpreter", route: "LLM API → Code extraction → Python interpreter", sent: s.llm, recv: s.code || "", sentLabel: "raw LLM output", recvLabel: "sandbox input (code executed)", note: [s.format && `format: ${s.format}`, ...(s.notes || [])].filter(Boolean).join(" · ")});
+  if (s.llm != null && s.code != null) list.push({id: "ext_interp", title: tr("h_out"), route: "LLM API → Code extraction → Python interpreter", sent: s.llm, recv: s.code || "", sentLabel: tr("l_raw"), recvLabel: tr("l_sbin"), note: [s.format && tr("note_format", {f: s.format}), ...(s.notes || [])].filter(Boolean).join(" · ")});
   for (const t of s.tools) {
     const named = `${t.name}(${Object.entries(t.args || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")})`;
     // Only positional calls are transformed (mapped to parameter names); keyword calls pass through as written.
     const positional = t.written && /^\w+\(\s*[^)\s]/.test(t.written) && !/^\w+\(\s*\w+=/.test(t.written);
-    if (positional) list.push({id: "interp_mcpc", title: `Call ${t.name}: as written → as sent`, route: "Python interpreter → tool wrapper → MCP client", sent: t.written, recv: named, sentLabel: `line ${t.line ?? "?"} as written in the code`, recvLabel: "arguments sent to the MCP server (named)"});
+    if (positional) list.push({id: "interp_mcpc", title: tr("h_call", {name: t.name}), route: "Python interpreter → tool wrapper → MCP client", sent: t.written, recv: named, sentLabel: tr("l_written", {l: t.line ?? "?"}), recvLabel: tr("l_named")});
     const m = t.res && t.res.server;
     if (m && m.ops && m.ops.length) {
       const rawOut = m.ops.map((o) => o.stdout_head || "").join("\n");
-      if (m.truncated || m.raw_output_bytes > (m.result_chars || 0) * 1.5) list.push({id: "mcps_mcpc", title: `${t.name}: repository output → tool result`, route: "Repository → MCP server → MCP client", sent: rawOut, recv: t.res.result, sentLabel: `raw command output (first 300 chars of each op, ${kb(m.raw_output_bytes)} total)`, recvLabel: `result returned (${m.result_chars} chars)`, note: m.truncated ? "The tool truncated its output and said so in the result." : "The tool reformatted the raw command output."});
+      if (m.truncated || m.raw_output_bytes > (m.result_chars || 0) * 1.5) list.push({id: "mcps_mcpc", title: tr("h_repo", {name: t.name}), route: "Repository → MCP server → MCP client", sent: rawOut, recv: t.res.result, sentLabel: tr("l_rawout", {kb: kb(m.raw_output_bytes)}), recvLabel: tr("l_returned", {n: m.result_chars}), note: m.truncated ? tr("note_trunc") : tr("note_reformat")});
     }
   }
   if (s.obs != null && s.stdout != null) {
     const parts = [s.stdout, s.value != null ? `Out: ${s.value}` : "", s.error || ""].filter(Boolean).join("\n");
-    list.push({id: "interp_orch", title: "Program output → Observation", route: "Python interpreter → Orchestrator", sent: parts, recv: s.obs, sentLabel: "stdout + last value + error", recvLabel: "observation text (with sandbox notes)"});
+    list.push({id: "interp_orch", title: tr("h_prog"), route: "Python interpreter → Orchestrator", sent: parts, recv: s.obs, sentLabel: tr("l_prog_sent"), recvLabel: tr("l_prog_recv")});
   }
   for (const x of list) { x.ops = diffLines(x.sent, x.recv); x.stats = diffStats(x.ops); x.changed = x.stats.add + x.stats.del > 0; }
   return list;
@@ -685,28 +1473,37 @@ function go(i) {
   updatePills(e, st);
   renderState(st);
   renderLogCursor();
+  renderPlain(e, st);
 }
 function updatePills(e, st) {
   const s = st.steps.get(selectedStep);
   const set = (id, t) => { const max = Math.floor((NODES[id].w - 26) / 6.4); t = t || ""; nodeEls[id].pill.textContent = t.length > max ? t.slice(0, max - 1) + "…" : t; };
   set("llm", s && s.outTok != null ? `${s.inTok} in · ${s.outTok} out` : "");
   set("extract", s && s.format ? s.format : "");
-  set("interp", e.type === "exec_line" ? short(`line ${e.entry.l}${e.entry.v ? " · " + vars(e.entry.v) : ""}`, 26) : s && s.sbStatus ? `status: ${s.sbStatus}` : s && s.running ? "running…" : "");
-  set("mcpc", ["tool_call", "mcp_request", "mcp_response", "tool_result"].includes(e.type) ? short(e.name, 24) : s && s.tools.length ? `${s.tools.length} call(s)` : "");
-  set("mcps", e.type === "server_dispatch" ? short(e.handler, 24) : st.mcp ? `${(st.mcp.tools || []).length} tools` : "");
+  set("interp", e.type === "exec_line" ? short(`line ${e.entry.l}${e.entry.v ? " · " + vars(e.entry.v) : ""}`, 26) : s && s.sbStatus ? tr("p_status", {s: s.sbStatus}) : s && s.running ? tr("p_running") : "");
+  set("mcpc", ["tool_call", "mcp_request", "mcp_response", "tool_result"].includes(e.type) ? short(e.name, 24) : s && s.tools.length ? tr("p_calls", {n: s.tools.length}) : "");
+  set("mcps", e.type === "server_dispatch" ? short(e.handler, 24) : st.mcp ? tr("p_tools", {n: (st.mcp.tools || []).length}) : "");
   set("repo", e.type === "repo_op" ? `exit ${e.op.exit_code} · ${e.op.duration_ms} ms` : "");
-  set("orch", st.run ? `step ${selectedStep ?? "–"}` : "");
-  set("final", st.end ? (st.end.success ? "success" : "no success") : "");
+  set("orch", st.run ? tr("p_step", {n: selectedStep ?? "–"}) : "");
+  set("final", st.end ? tr(st.end.success ? "p_ok" : "p_bad") : "");
   set("task", st.run ? `${st.run.benchmark} · ${short(st.run.task_id, 14)}` : "");
 }
 
 /* ======================= rendering ======================= */
-function renderEmpty() { $("caption").querySelector(".txt").textContent = "No events in this trace."; $("steps").replaceChildren(h("div", "empty", "Steps appear here as the agent runs.")); }
-function meter(label, used, max, fmt = (v) => v.toLocaleString("en-US")) {
-  const m = h("div", "meter"), top = h("div", "meter-top"); top.append(h("span", "", label), h("span", "", `${fmt(used)} / ${fmt(max)}`));
+function renderEmpty() {
+  $("caption").querySelector(".txt").textContent = tr("empty_trace");
+  $("steps").replaceChildren(h("div", "empty", tr("empty_steps")));
+  renderPlain(null, derive(-1));
+}
+function meter(label, used, max, fmt = num, explain, term) {
+  const m = h("div", "meter"), top = h("div", "meter-top"), lab = h("span", "", label);
+  if (term) markTerm(lab, term);
+  top.append(lab, h("span", "", `${fmt(used)} / ${fmt(max)}`));
   const bar = h("div", "bar"), fill = document.createElement("i"), r = max ? used / max : 0;
   fill.style.width = `${Math.min(100, r * 100)}%`; if (r > .9) fill.className = "crit"; else if (r > .7) fill.className = "warn";
-  bar.appendChild(fill); m.append(top, bar); return m;
+  bar.appendChild(fill); m.append(top, bar);
+  if (explain) m.appendChild(h("div", "ex", explain));
+  return m;
 }
 function renderState(st) {
   const run = st.run || {}, lim = run.limits || {};
@@ -714,19 +1511,27 @@ function renderState(st) {
   if ((selectedStep == null || !st.steps.has(selectedStep)) && steps.length) selectedStep = steps[steps.length - 1].n;
   const inTok = steps.reduce((a, s) => a + (s.inTok || 0), 0), outTok = steps.reduce((a, s) => a + (s.outTok || 0), 0);
   const t = events[cursor] ? events[cursor].t ?? 0 : 0;
-  $("meters").replaceChildren(meter("Iterations", steps.filter((s) => s.llm !== undefined).length, lim.max_iterations || 0), meter("Input tokens", inTok, lim.max_input_tokens || 0), meter("Output tokens", outTok, lim.max_output_tokens || 0), meter("Wall-clock", t, lim.timeout_seconds || 0, (v) => `${Number(v).toFixed(1)}s`));
+  const words = (n) => num(Math.round(n * 0.75));
+  $("meters").replaceChildren(
+    meter(tr("m_iter"), steps.filter((s) => s.llm !== undefined).length, lim.max_iterations || 0, num, tr("mx_iter"), "iteration"),
+    meter(tr("m_in"), inTok, lim.max_input_tokens || 0, num, tr("mx_in", {w: words(inTok)}), "token"),
+    meter(tr("m_out"), outTok, lim.max_output_tokens || 0, num, tr("mx_out", {w: words(outTok)}), "token"),
+    meter(tr("m_time"), t, lim.timeout_seconds || 0, (v) => `${Number(v).toFixed(1)} s`, tr("mx_time")));
   $("model").textContent = run.model || "";
-  $("result").textContent = st.end ? (st.end.success ? "solved" : "not solved") : (st.run ? "running" : "");
+  $("result").textContent = st.end ? tr(st.end.success ? "chip_ok" : "chip_bad") : (st.run ? tr("chip_run") : "");
   $("result").style.color = st.end ? `var(${st.end.success ? "--c-final" : "--c-error"})` : "var(--muted)";
   $("sysprompt").textContent = run.system_prompt || "(not available in this trace)";
   const list = $("steps"); list.replaceChildren();
-  if (!steps.length) list.appendChild(h("div", "empty", "No step yet: the first LLM call starts step 1."));
+  if (!steps.length) list.appendChild(h("div", "empty", tr("steps_empty")));
   for (const s of steps) {
     const b = h("button", "step"); b.setAttribute("aria-current", String(s.n === selectedStep));
     const mid = document.createElement("span"); mid.style.minWidth = "0";
-    mid.append(h("div", "t", thought(s.llm) || "waiting for the LLM…"), h("div", "tools", s.tools.map((x) => x.name).join(" · ") || (s.code ? "no tool calls" : "")));
+    mid.append(stepIcons(s), h("div", "sum", stepSummary(s)));
+    const th = thought(s.llm); if (th) mid.appendChild(h("div", "th", `“${th}”`));
+    mid.appendChild(h("div", "tools det", s.tools.map((x) => x.name).join(" · ") || (s.code ? tr("no_tools") : "")));
     const cls = s.status === "final" ? "final" : s.status === "err" ? "err" : s.status === "nocode" ? "nocode" : s.status === "ok" ? "ok" : "run";
-    b.append(h("span", "n", String(s.n).padStart(2, "0")), mid, h("span", `st ${cls}`, s.status === "final" ? "final" : s.status === "err" ? (s.sbStatus || "error") : s.status === "nocode" ? "no code" : s.status === "ok" ? "ok" : "…"));
+    const label = s.status === "final" ? tr("st_final") : s.status === "err" ? statusName(s.sbStatus || "error") : s.status === "nocode" ? tr("st_nocode") : s.status === "ok" ? tr("st_ok") : tr("st_run");
+    b.append(h("span", "n", String(s.n).padStart(2, "0")), mid, h("span", `st ${cls}`, label));
     b.addEventListener("click", () => { selectedStep = s.n; tabPinned = false; renderState(derive(cursor)); updatePills(events[cursor], derive(cursor)); });
     list.appendChild(b);
   }
@@ -777,7 +1582,7 @@ function nodeIO(id, s, st) {
 function renderToolList(st, s) {
   const wrap = h("div", "toolsel");
   const mcp = st.mcp;
-  if (!mcp) { wrap.appendChild(h("div", "sum", "Not connected yet: the tool list appears when the agent connects to the server.")); return wrap; }
+  if (!mcp) { wrap.appendChild(h("div", "sum", tr("tl_notconn"))); return wrap; }
   const specs = mcp.tool_specs || (mcp.tools || []).map((n) => ({name: n, signature: `${n}(…)`, description: ""}));
   const runCount = new Map(), stepCount = new Map(), last = new Map();
   for (const step of st.steps.values()) for (const t of step.tools) {
@@ -786,18 +1591,18 @@ function renderToolList(st, s) {
     last.set(t.name, {step: step.n, t});
   }
   const used = specs.filter((x) => runCount.get(x.name)).length;
-  wrap.appendChild(h("div", "sum", `Server "${mcp.server}" exposes ${specs.length} tool${specs.length === 1 ? "" : "s"}${mcp.transport ? ` over ${mcp.transport.split(" ")[0]}` : ""}; ${used} used so far. Built-in final_answer is not an MCP tool.${mcp.resources ? " Resources: yes." : ""}${mcp.prompts ? " Prompts: yes." : ""}`));
+  wrap.appendChild(h("div", "sum", tr("tl_sum", {server: mcp.server, n: specs.length, used, via: mcp.transport ? tr("tl_via", {tr: mcp.transport.split(" ")[0]}) : ""})
+    + (mcp.resources ? tr("tl_res") : "") + (mcp.prompts ? tr("tl_prm") : "")));
   const sorted = [...specs].sort((a, b) => (runCount.get(b.name) || 0) - (runCount.get(a.name) || 0));
   for (const spec of sorted) {
     const n = runCount.get(spec.name) || 0, k = stepCount.get(spec.name) || 0;
     const row = h("div", `tl ${n ? "used" : "unused"}`);
     const sig = h("div", "sig"); const i = spec.signature.indexOf("(");
     sig.append(h("b", "", i > 0 ? spec.signature.slice(0, i) : spec.signature), i > 0 ? spec.signature.slice(i) : "");
-    const cnt = h("div", "cnt"); cnt.append(h("b", "", String(k)), ` in step ${s ? s.n : "–"} · `, h("b", "", String(n)), " in run");
-    row.append(sig, cnt);
+    row.append(sig, h("div", "cnt", tr("tl_cnt", {k, s: s ? s.n : "–", n})));
     if (spec.description) row.appendChild(h("div", "desc", spec.description.replace(/\s+/g, " ")));
     const l = last.get(spec.name);
-    if (l) row.appendChild(h("div", "lastcall", `last call (step ${l.step}): ${short(l.t.written || l.t.name + "(" + argPreview(l.t.args) + ")", 140)}`));
+    if (l) row.appendChild(h("div", "lastcall", tr("tl_last", {s: l.step, call: short(l.t.written || l.t.name + "(" + argPreview(l.t.args) + ")", 140)})));
     wrap.appendChild(row);
   }
   return wrap;
@@ -808,17 +1613,17 @@ function showNode(id, st, s, hands) {
   for (const [k, v] of Object.entries(nodeEls)) v.g.classList.toggle("selected", k === id);
   const n = NODES[id], box = $("node-info"); box.replaceChildren();
   const head = h("h3", "", n.title); head.style.color = `var(${n.c})`;
-  const ul = document.createElement("ul"); n.info.forEach((line) => ul.appendChild(h("li", "", line)));
+  const ul = document.createElement("ul"); ((I18N[LANG] && I18N[LANG]["ni_" + id]) || n.info).forEach((line) => ul.appendChild(h("li", "", line)));
   box.append(head, ul, h("div", "path mono", n.path));
   if (id === "mcps") box.appendChild(renderToolList(st, s));
   const io = nodeIO(id, s, st);
   if (io && (io.in != null || io.out != null)) {
     const grid = h("div", "io");
     const delta = hands.find((x) => x.id === io.edge);
-    for (const [label, text] of [["Input", io.in], ["Output", io.out]]) {
-      const c = document.createElement("div"); const hh = h("h4", "", `${label} · step ${s.n}`);
-      if (label === "Output" && delta) hh.appendChild(h("span", `st ${delta.changed ? "chg" : "same"}`, delta.changed ? `Δ −${delta.stats.del} +${delta.stats.add}` : "unchanged"));
-      c.append(hh, pre(text == null || text === "" ? "(nothing recorded)" : String(text), ""));
+    for (const [key, text] of [["io_input", io.in], ["io_output", io.out]]) {
+      const c = document.createElement("div"); const hh = h("h4", "", `${tr(key)} · ${tr("io_step", {n: s.n})}`);
+      if (key === "io_output" && delta) hh.appendChild(h("span", `st ${delta.changed ? "chg" : "same"}`, delta.changed ? `Δ −${delta.stats.del} +${delta.stats.add}` : tr("unchanged")));
+      c.append(hh, pre(text == null || text === "" ? tr("nothing") : String(text), ""));
       grid.appendChild(c);
     }
     box.appendChild(grid);
@@ -830,18 +1635,18 @@ $("nodes").addEventListener("click", () => {});
 function renderDetail(s, st, hands) {
   const body = $("detail-body"), meta = $("detail-meta");
   body.replaceChildren(); meta.replaceChildren();
-  if (!s) { $("detail-title").textContent = "Step detail"; body.appendChild(pre(st.end && st.end.solution ? "Solution:\n\n" + st.end.solution : "Select a step.")); return; }
-  $("detail-title").textContent = `Step ${s.n}`;
+  if (!s) { $("detail-title").textContent = tr("detail_h"); body.appendChild(pre(st.end && st.end.solution ? `${tr("d_solution")}\n\n${st.end.solution}` : tr("d_select"))); return; }
+  $("detail-title").textContent = tr("step_n", {n: s.n});
   [s.inTok != null && `${s.inTok} in`, s.outTok != null && `${s.outTok} out`, s.ms != null && `${Math.round(s.ms)} ms`, s.retries ? `${s.retries} retries` : null, s.format && `format: ${s.format}`, s.sbStatus && `sandbox: ${s.sbStatus}`].filter(Boolean).forEach((b) => meta.appendChild(h("span", "", b)));
   if (activeTab === "flow") body.appendChild(renderFlow(s, hands));
   else if (activeTab === "interp") body.appendChild(renderInterp(s));
   else if (activeTab === "tools") body.appendChild(renderTools(s));
-  else if (activeTab === "llm") body.appendChild(s.llm == null ? pre("(waiting for the response)") : markedText(s.llm, s.code, "-", "Lines in red did not reach the interpreter (removed by code extraction)."));
-  else if (activeTab === "code") body.appendChild(s.code ? markedText(s.code, s.llm, "+", "Lines in green were not in the LLM output verbatim (added or converted by code extraction).", true) : pre("(no code extracted for this step)"));
+  else if (activeTab === "llm") body.appendChild(s.llm == null ? pre(tr("d_wait")) : markedText(s.llm, s.code, "-", tr("d_red")));
+  else if (activeTab === "code") body.appendChild(s.code ? markedText(s.code, s.llm, "+", tr("d_green"), true) : pre(tr("d_nocode")));
   else if (activeTab === "obs") {
     const next = st.steps.get(s.n + 1);
-    if (s.obs == null) body.appendChild(pre("(not executed yet)"));
-    else if (next && next.delivered != null && next.delivered !== "Observation:\n" + s.obs) { body.append(h("div", "note warn", `The LLM received a shortened version at step ${s.n + 1} — see Flow & diffs.`), pre(s.obs)); }
+    if (s.obs == null) body.appendChild(pre(tr("d_notexec")));
+    else if (next && next.delivered != null && next.delivered !== "Observation:\n" + s.obs) { body.append(h("div", "note warn", tr("d_short", {n: s.n + 1})), pre(s.obs)); }
     else body.appendChild(pre(s.obs));
   }
 }
@@ -859,13 +1664,13 @@ function markedText(text, other, mark, legend, reverse) {
 }
 function renderFlow(s, hands) {
   const flow = h("div", "flow");
-  if (!hands.length) { flow.appendChild(h("div", "empty", "Hand-offs appear as the step progresses.")); return flow; }
+  if (!hands.length) { flow.appendChild(h("div", "empty", tr("flow_empty"))); return flow; }
   for (const x of hands) {
     const card = h("div", "hand"), head = h("div", "hand-h");
-    head.append(h("h4", "", x.title), h("span", "route", x.route), h("span", `st ${x.changed ? "chg" : "same"}`, x.changed ? `changed −${x.stats.del} +${x.stats.add}` : "identical"));
+    head.append(h("h4", "", x.title), h("span", "route", x.route), h("span", `st ${x.changed ? "chg" : "same"}`, x.changed ? tr("chg", {d: x.stats.del, a: x.stats.add}) : tr("identical")));
     const views = h("div", "views"); const content = document.createElement("div");
     const show = (v) => { for (const b of views.children) b.setAttribute("aria-pressed", String(b.dataset.v === v)); content.replaceChildren(v === "diff" ? renderDiff(x.ops, x.sentLabel, x.recvLabel) : pre(v === "sent" ? x.sent ?? "" : x.recv ?? "")); };
-    for (const [v, label] of [["diff", "Diff"], ["sent", "Sent"], ["recv", "Received"]]) { const b = h("button", "mini", label); b.dataset.v = v; b.addEventListener("click", () => show(v)); views.appendChild(b); }
+    for (const [v, key] of [["diff", "v_diff"], ["sent", "v_sent"], ["recv", "v_recv"]]) { const b = h("button", "mini", tr(key)); b.dataset.v = v; b.addEventListener("click", () => show(v)); views.appendChild(b); }
     head.appendChild(views); card.appendChild(head);
     if (x.note) card.appendChild(h("div", "note", x.note));
     card.appendChild(content); show(x.changed ? "diff" : "recv");
@@ -876,9 +1681,9 @@ function renderFlow(s, hands) {
 function renderInterp(s) {
   const trace = s.trace || s.fullTrace;
   const box = document.createElement("div");
-  if (!s.code) { box.appendChild(pre("(no code was executed in this step)")); return box; }
+  if (!s.code) { box.appendChild(pre(tr("i_nocode"))); return box; }
   const entries = (trace && trace.entries) || [];
-  if (!entries.length) box.appendChild(h("div", "note", "No line trace in this source (solution.json files do not keep one; run the agent with --trace-file). Showing the executed code."));
+  if (!entries.length) box.appendChild(h("div", "note", tr("i_notrace")));
   const pos = s.done && s.traceIdx < 0 ? entries.length - 1 : s.traceIdx < 0 && !s.running ? entries.length - 1 : s.traceIdx;
   const upto = entries.slice(0, pos + 1);
   const hits = new Map(), fullHits = new Map(), tags = new Map();
@@ -898,12 +1703,12 @@ function renderInterp(s) {
     const r = h("div", `xl${n ? " ran" : ""}${skipped ? " skip" : ""}${cur && cur.l === ln && !finished ? " cur" : ""}`);
     const code = h("code", "", src || " ");
     const tg = tags.get(ln); if (tg) code.appendChild(h("span", `tag ${tg[0]}`, tg[1]));
-    if (skipped) code.title = "never executed in this step";
+    if (skipped) code.title = tr("i_never");
     r.append(h("span", "h", n ? `${n}×` : ""), h("span", "g", ln), code);
     lines.appendChild(r);
   });
   codeBox.appendChild(lines);
-  const legend = h("div", "note", entries.length ? (finished ? `Path complete: ${entries.filter((x) => x.e === "line").length} line executions${trace.dropped ? ` (+${trace.dropped} not recorded)` : ""}. Struck-through lines never ran in this step.` : `Executing… event ${pos + 1} of ${entries.length}. The highlighted line is running now.`) : "");
+  const legend = h("div", "note", entries.length ? (finished ? tr("i_done", {n: entries.filter((x) => x.e === "line").length, dropped: trace.dropped ? tr("i_dropped", {n: trace.dropped}) : ""}) : tr("i_running", {i: pos + 1, n: entries.length})) : "");
   codeBox.prepend(legend);
   // variables (module scope + current function frame)
   const varsBox = h("div", "vars");
@@ -918,14 +1723,14 @@ function renderInterp(s) {
   const table = (title, obj) => { const wrap = document.createElement("div"); wrap.appendChild(h("h4", "", title)); const tb = document.createElement("table");
     const keys = Object.keys(obj); if (!keys.length) { wrap.appendChild(h("div", "muted mono", "(none)")); return wrap; }
     keys.forEach((k) => { const tr = document.createElement("tr"); if (fresh.has(k)) tr.className = "fresh"; tr.append(h("td", "", k), h("td", "", obj[k])); tb.appendChild(tr); }); wrap.appendChild(tb); return wrap; };
-  varsBox.appendChild(table("Variables (module)", module));
-  if (frames.length) varsBox.appendChild(table(`Frame ${frames[frames.length - 1].f}()`, frames[frames.length - 1].v));
-  if (cur && cur.e === "return" && cur.r != null) varsBox.appendChild(h("div", "mono", `↩ ${cur.f}() returned ${cur.r}`));
+  varsBox.appendChild(table(tr("i_vars"), module));
+  if (frames.length) varsBox.appendChild(table(tr("i_frame", {f: frames[frames.length - 1].f}), frames[frames.length - 1].v));
+  if (cur && cur.e === "return" && cur.r != null) varsBox.appendChild(h("div", "mono", tr("i_ret", {f: cur.f, r: cur.r})));
   if (s.stdout) { varsBox.appendChild(h("h4", "", "stdout")); varsBox.appendChild(pre(short(s.stdout, 600), "mono")); }
   grid.append(codeBox, varsBox); box.appendChild(grid);
   // execution path chips
   if (entries.length) {
-    const path = h("div", "path"); path.appendChild(h("b", "muted", "path:"));
+    const path = h("div", "path"); path.appendChild(h("b", "muted", tr("i_path")));
     entries.slice(0, 400).forEach((x, i) => {
       let label = null, cls = "";
       if (x.e === "line") label = (x.f && x.f !== "<module>" ? `${x.f}:` : "") + x.l;
@@ -950,7 +1755,7 @@ function isInsideString(code, ln) {
 }
 function renderTools(s) {
   const box = document.createElement("div");
-  if (!s.tools.length) { box.appendChild(pre("(no MCP tool calls in this step)")); return box; }
+  if (!s.tools.length) { box.appendChild(pre(tr("tools_none"))); return box; }
   for (const t of s.tools) box.appendChild(renderCall(t));
   return box;
 }
@@ -967,22 +1772,21 @@ function renderCall(t) {
   // timing bar
   const total = r.duration_ms || 0, rtt = r.rtt_ms || 0, server = m.duration_ms || 0, opsMs = ops.reduce((a, o) => a + (o.duration_ms || 0), 0);
   if (total) {
-    const segs = [["repository commands", opsMs, "--c-repo"], ["server handler (validation, formatting)", Math.max(0, server - opsMs), "--c-mcp"], ["MCP transport (JSON-RPC)", Math.max(0, rtt - server), "--c-llm"], ["sandbox ↔ host proxy", Math.max(0, total - rtt), "--c-sandbox"]];
+    const segs = [[tr("seg_repo"), opsMs, "--c-repo"], [tr("seg_srv"), Math.max(0, server - opsMs), "--c-mcp"], [tr("seg_rpc"), Math.max(0, rtt - server), "--c-llm"], [tr("seg_proxy"), Math.max(0, total - rtt), "--c-sandbox"]];
     const bar = h("div", "timing"), leg = h("div", "timing-legend");
     for (const [label, ms, c] of segs) { const i = document.createElement("i"); i.style.width = `${(ms / total) * 100}%`; i.style.background = `var(${c})`; i.title = `${label}: ${ms.toFixed(1)} ms`; bar.appendChild(i); const sp = h("span", "", `${label} ${ms.toFixed(1)} ms`); sp.style.setProperty("--sw", `var(${c})`); leg.appendChild(sp); }
     card.append(bar, leg);
   }
   const ol = h("ol", "hops");
   const positional = t.written && !/\w+=/.test(t.written.slice(t.written.indexOf("(")));
-  ol.appendChild(hop("--c-sandbox", "Python interpreter calls the tool", `sandbox worker · line ${t.line ?? "?"}`,
-    pre(t.written || `${t.name}(…)`, ""), h("div", "note", "The name resolves to a wrapper injected into the namespace from the server's tool schema. The sandbox timer is paused while the call is out.")));
-  ol.appendChild(hop("--c-sandbox", "Wrapper → host", "JSON line over a private fd",
+  ol.appendChild(hop("--c-sandbox", tr("hop_call"), `sandbox worker · line ${t.line ?? "?"}`, pre(t.written || `${t.name}(…)`, ""), h("div", "note", tr("hop_call_n"))));
+  ol.appendChild(hop("--c-sandbox", tr("hop_wrap"), "JSON line over a private fd",
     pre(JSON.stringify({type: "tool_call", name: t.name, args: t.args || {}, line: t.line}, null, 2), ""),
-    positional ? h("div", "note warn", "Δ positional arguments were mapped to parameter names using the tool schema.") : null));
-  ol.appendChild(hop("--c-mcp", "Host → MCP server", r.transport || "MCP client",
-    r.request ? pre(JSON.stringify(r.request, null, 2), "") : h("div", "note", "(request not recorded in this source)")));
-  if (m.handler) ol.appendChild(hop("--c-mcp", "MCP server dispatches", `${m.server} · ${m.executor || ""}${m.target ? " @ " + m.target : ""}`,
-    kv([["handler", m.handler], ["server time", `${m.duration_ms} ms`]]), pre("received_args = " + JSON.stringify(m.received_args, null, 2), "")));
+    positional ? h("div", "note warn", tr("hop_wrap_n")) : null));
+  ol.appendChild(hop("--c-mcp", tr("hop_host"), r.transport || "MCP client",
+    r.request ? pre(JSON.stringify(r.request, null, 2), "") : h("div", "note", tr("hop_norec"))));
+  if (m.handler) ol.appendChild(hop("--c-mcp", tr("hop_disp"), `${m.server} · ${m.executor || ""}${m.target ? " @ " + m.target : ""}`,
+    kv([[tr("kv_handler"), m.handler], [tr("kv_time"), `${m.duration_ms} ms`]]), pre("received_args = " + JSON.stringify(m.received_args, null, 2), "")));
   const dt = m.details;
   if (dt) {
     const parts = [h("div", "note", dt.source || "")];
@@ -991,10 +1795,10 @@ function renderCall(t) {
     const code = dt.harness || dt.script;
     if (code) {
       const det = document.createElement("details"); det.className = "sys";
-      det.append(h("summary", "", dt.harness ? `Generated test program (${code.split("\n").length} lines) — open` : `Eval script (${code.split("\n").length} lines) — open`), pre(code, "code"));
+      det.append(h("summary", "", tr(dt.harness ? "gen_prog" : "eval_script", {n: code.split("\n").length})), pre(code, "code"));
       parts.push(det);
     }
-    ol.appendChild(hop("--c-task", "Where the tool's inputs come from", dt.tests ? "not generated by the LLM" : "task data", ...parts));
+    ol.appendChild(hop("--c-task", tr("hop_src"), dt.tests ? tr("hop_src_w1") : tr("hop_src_w2"), ...parts));
   }
   if (ops.length) {
     const list = h("div", ""); list.style.display = "grid"; list.style.gap = "6px";
@@ -1006,15 +1810,15 @@ function renderCall(t) {
       if (o.stderr_head) op.appendChild(pre(o.stderr_head, ""));
       list.appendChild(op);
     });
-    ol.appendChild(hop("--c-repo", `Repository: ${ops.length} operation${ops.length > 1 ? "s" : ""}`, m.executor === "docker" ? `docker exec into ${m.target}` : m.executor === "sandbox" ? "isolated test sandbox" : `local ${m.repo_root || ""}`, list));
+    ol.appendChild(hop("--c-repo", tr("hop_repo", {n: ops.length}), m.executor === "docker" ? `docker exec into ${m.target}` : m.executor === "sandbox" ? "isolated test sandbox" : `local ${m.repo_root || ""}`, list));
   }
-  if (m.handler) ol.appendChild(hop("--c-mcp", "Tool formats the result", "raw output → returned text",
-    kv([["raw output", kb(m.raw_output_bytes)], ["returned", `${m.result_chars} chars, ${m.result_lines} lines`], ["truncated", m.truncated ? "yes (announced in the text)" : "no"]])));
+  if (m.handler) ol.appendChild(hop("--c-mcp", tr("hop_fmt"), "raw output → returned text",
+    kv([[tr("kv_raw"), kb(m.raw_output_bytes)], [tr("kv_ret"), tr("kv_chars", {c: m.result_chars, l: m.result_lines})], [tr("kv_trunc"), m.truncated ? tr("kv_yes") : tr("kv_no")]])));
   if (r.result != null) {
-    ol.appendChild(hop("--c-mcp", "MCP server → host", `CallToolResult · isError=${!!r.is_error}${rtt ? ` · round trip ${rtt} ms` : ""}`, pre(r.result, "")));
-    ol.appendChild(hop("--c-sandbox", "Host → interpreter", `tool_result · total ${Math.round(total)} ms`,
-      h("div", "note", r.is_error ? `The wrapper raises ToolError on line ${t.line ?? "?"}; the code can catch it.` : `The wrapper returns this str to line ${t.line ?? "?"}; the timer resumes.`)));
-  } else ol.appendChild(hop("--c-mcp", "Waiting for the server…", ""));
+    ol.appendChild(hop("--c-mcp", tr("hop_back"), `CallToolResult · isError=${!!r.is_error}${rtt ? ` · round trip ${rtt} ms` : ""}`, pre(r.result, "")));
+    ol.appendChild(hop("--c-sandbox", tr("hop_ret"), `tool_result · total ${Math.round(total)} ms`,
+      h("div", "note", r.is_error ? tr("hop_ret_err", {l: t.line ?? "?"}) : tr("hop_ret_ok", {l: t.line ?? "?"}))));
+  } else ol.appendChild(hop("--c-mcp", tr("hop_wait"), ""));
   card.appendChild(ol);
   return card;
 }
@@ -1030,19 +1834,19 @@ function renderModal(st) {
   const steps = [...st.steps.values()].filter((x) => x.n > 0 && x.code).sort((a, b) => a.n - b.n);
   if (selectedStep == null && steps.length) selectedStep = steps[steps.length - 1].n;
   const s = st.steps.get(selectedStep);
-  $("modal-title").textContent = s ? `Python interpreter · step ${s.n}` : "Python interpreter";
+  $("modal-title").textContent = s ? `${tr("m_title")} · ${tr("m_step", {n: s.n})}` : tr("m_title");
   const e = events[cursor];
   $("modal-now").textContent = e ? (e.type === "exec_line" ? activity(e).text : `${e.type}: ${activity(e).text}`) : "";
   const bar = $("modal-steps"); bar.replaceChildren();
-  if (!steps.length) bar.appendChild(h("span", "muted", "No code has run yet."));
+  if (!steps.length) bar.appendChild(h("span", "muted", tr("m_none")));
   for (const x of steps) {
-    const b = h("button", "mini", `step ${x.n}${x.sbStatus ? " · " + x.sbStatus : x.running ? " · running" : ""}`);
+    const b = h("button", "mini", `${tr("m_step", {n: x.n})}${x.sbStatus ? " · " + statusName(x.sbStatus) : x.running ? " · " + tr("p_running") : ""}`);
     b.setAttribute("aria-pressed", String(x.n === selectedStep));
     b.addEventListener("click", () => { selectedStep = x.n; renderState(derive(cursor)); });
     bar.appendChild(b);
   }
   const body = $("modal-body");
-  body.replaceChildren(s ? renderInterp(s) : h("div", "empty", "Play the run or pick a step: the code appears here as soon as the interpreter receives it."));
+  body.replaceChildren(s ? renderInterp(s) : h("div", "empty", tr("m_pick")));
   const cur = body.querySelector(".xl.cur"); if (cur) scrollWithin(body, cur);
   $("mi-play").innerHTML = playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M4 2v12l10-6z"/>';
 }
@@ -1086,11 +1890,12 @@ function tick() {
   if (cursor >= events.length - 1) { stop(); return; }
   const next = events[cursor + 1];
   const gap = ((next.t ?? 0) - (events[cursor].t ?? 0)) * 1000;
-  const base = next.type === "exec_line" ? 260 : SUB_EVENTS.has(next.type) ? 420 : Math.min(1400, Math.max(420, gap));
+  const simple = MODE === "simple";
+  const base = next.type === "exec_line" ? (simple ? 340 : 260) : SUB_EVENTS.has(next.type) ? (simple ? 1100 : 420) : simple ? 2000 : Math.min(1400, Math.max(420, gap));
   timer = setTimeout(() => { go(cursor + 1); tick(); }, base / speed());
 }
 function stop() { playing = false; clearTimeout(timer); setPlayIcon(); }
-function setPlayIcon() { const icon = playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M4 2v12l10-6z"/>'; $("i-play").innerHTML = icon; const mi = document.getElementById("mi-play"); if (mi) mi.innerHTML = icon; $("b-play").setAttribute("aria-label", playing ? "Pause" : "Play"); }
+function setPlayIcon() { const icon = playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M4 2v12l10-6z"/>'; $("i-play").innerHTML = icon; const mi = document.getElementById("mi-play"); if (mi) mi.innerHTML = icon; $("b-play").setAttribute("aria-label", playing ? "Pause" : "Play"); syncBigPlay(); }
 $("b-play").addEventListener("click", () => playing ? stop() : play());
 $("b-next").addEventListener("click", () => { stop(); go(cursor + 1); });
 $("b-prev").addEventListener("click", () => { stop(); go(cursor - 1); });
@@ -1105,12 +1910,14 @@ document.addEventListener("keydown", (ev) => {
 
 /* ======================= sources ======================= */
 function pressed(id) { for (const b of document.querySelectorAll(".sources .chip-btn")) b.setAttribute("aria-pressed", String(b.id === id)); }
-function banner(kind, text) { const b = $("banner"); b.replaceChildren(h("span", `badge ${kind}`, kind === "demo" ? "scripted demo" : kind), h("span", "", text)); }
+let lastBanner = null;
+function banner(kind, key, params) {
+  lastBanner = [kind, key, params];
+  $("banner").replaceChildren(h("span", `badge ${kind}`, tr("badge_" + kind)), h("span", "", tr(key, params)));
+}
 function loadDemo(which) {
   pressed(which === "mbpp" ? "src-mbpp" : "src-swe");
-  banner("demo", which === "mbpp"
-    ? "Real framework run on MBPP task 282: sandbox, MCP server, run_tests in an isolated test sandbox. Only the LLM answers are scripted; the first attempt is wrong on purpose so you can watch the path change."
-    : "Real framework run on a small local repository with the SWE-bench MCP tools (search, read, reproduce, edit, run_tests, get_patch). Only the LLM answers are scripted.");
+  banner("demo", which === "mbpp" ? "demo_mbpp" : "demo_swe");
   setRaw((DEMO && DEMO[which]) || [], "demo");
 }
 $("src-mbpp").addEventListener("click", () => loadDemo("mbpp"));
@@ -1120,8 +1927,8 @@ $("file").addEventListener("change", (ev) => { const f = ev.target.files[0]; if 
 function readFile(file) {
   const r = new FileReader();
   r.onload = () => {
-    try { const list = parseTrace(String(r.result)); pressed("src-file"); banner("file", `${file.name}: ${list.length} events`); setRaw(list, "file"); }
-    catch (err) { banner("file", `Could not read ${file.name}: ${err.message}. Expected events.jsonl (from --trace-file) or solution.json.`); }
+    try { const list = parseTrace(String(r.result)); pressed("src-file"); banner("file", "file_loaded", {name: file.name, n: list.length}); setRaw(list, "file"); }
+    catch (err) { banner("file", "file_error", {name: file.name, err: err.message}); }
   };
   r.readAsText(file);
 }
@@ -1177,7 +1984,7 @@ async function probeLive() {
   } catch (_) { /* static hosting: demo and file modes only */ }
 }
 function startLive() {
-  pressed("src-live"); banner("live", "Following the agent's trace file in real time.");
+  pressed("src-live"); banner("live", "live_follow");
   setRaw([], "live"); if (es) es.close();
   es = new EventSource("events");
   es.onmessage = (m) => {
@@ -1187,7 +1994,367 @@ function startLive() {
   };
 }
 
+/* ======================= plain-language layer =======================
+   Everything below is derived from the same trace events as the technical view: nothing is invented. */
+const SIMPLE_OF = {
+  run_start: "task", docker_pull: "task", docker_started: "task", mcp_connected: "sandbox",
+  llm_request: "ai", llm_retry: "ai", llm_fallback: "ai", llm_error: "ai", llm_response: "ai", extraction: "ai", budget: "ai", loop_detected: "ai",
+  sandbox_start: "sandbox", exec_line: "sandbox", exec_more: "sandbox", tool_call: "sandbox", mcp_request: "sandbox", server_dispatch: "sandbox",
+  repo_op: "sandbox", mcp_response: "sandbox", tool_result: "sandbox", sandbox_end: "sandbox", observation: "loop",
+  final_answer: "answer", fallback_answer: "answer", budget_stop: "answer", interrupted: "answer", run_end: "answer", docker_removed: "answer",
+};
+const TOOL_EVENTS = new Set(["tool_call", "mcp_request", "server_dispatch", "repo_op", "mcp_response", "tool_result"]);
+const BLOCK_RE = /SecurityError|SecurityViolation|Sandbox: |is not allowed in the sandbox|access to private attribute|access to module '/;
+
+function errLine(err) { const l = String(err || "").split("\n").map((x) => x.trim()).filter(Boolean); return l.length ? l[l.length - 1] : ""; }
+function hostOf(url) { try { return new URL(url).host; } catch (_) { return ""; } }
+function statusName(s) { const k = "status_" + s; return I18N.en[k] ? tr(k) : s; }
+/* run_tests output: MBPP "ALL TESTS PASSED (2/2)" / "TESTS FAILED (0/2 passed)"; SWE-bench "summary: 2 passed, 0 failed/errored". */
+function testResult(text) {
+  text = String(text || "");
+  let m = text.match(/ALL TESTS PASSED \((\d+)\/(\d+)\)/); if (m) return {pass: +m[1], total: +m[2], ok: true};
+  m = text.match(/TESTS FAILED \((\d+)\/(\d+) passed\)/); if (m) return {pass: +m[1], total: +m[2], ok: false};
+  m = text.match(/summary: (\d+) passed, (\d+) failed/); if (m) return {pass: +m[1], total: +m[1] + +m[2], ok: +m[2] === 0 && +m[1] > 0};
+  return null;
+}
+function testsText(r) { return tr("tests_x", {p: r.pass, n: r.total}); }
+function toolWhat(name, a) {
+  a = a || {}; const k = "tool_" + name;
+  return I18N.en[k] ? tr(k, {file: a.filepath ?? "", pattern: short(a.pattern ?? "", 40), dir: a.directory ?? ".", name: a.name ?? ""}) : tr("tool_generic", {name});
+}
+/* Something the sandbox refused (policy, audit hook, module proxy) or stopped (time / memory limit). */
+function blockedInfo(e) {
+  if (!e || e.type !== "sandbox_end") return null;
+  const err = String(e.error || "");
+  if (e.status === "security_error" || BLOCK_RE.test(err)) {
+    const lines = err.split("\n").map((x) => x.trim()).filter(Boolean);
+    let i = lines.findIndex((x) => BLOCK_RE.test(x)); if (i < 0) i = lines.length - 1;
+    let msg = lines[i] || e.status; if (msg.endsWith(":") && lines[i + 1]) msg += " " + lines[i + 1];
+    return {kind: "blocked", msg: short(msg, 150)};
+  }
+  if (e.status === "timeout" || e.status === "memory") return {kind: "limit", msg: tr(e.status === "timeout" ? "sec_limit_timeout" : "sec_limit_memory")};
+  return null;
+}
+
+/* One plain sentence for the current event. */
+function narrate(e) {
+  const R = (ico, key, p, tone = "info", quote) => ({ico, text: tr(key, p), tone, quote});
+  if (!e) return R("▶️", "n_idle");
+  switch (e.type) {
+    case "run_start": return R("📋", "n_run_start", {model: e.model || "?"});
+    case "mcp_connected": return R("🔌", "n_mcp", {n: (e.tools || []).length, names: (e.tools || []).join(", ")});
+    case "docker_pull": return R("📦", "n_docker_pull");
+    case "docker_started": return R("📦", "n_docker_started");
+    case "docker_removed": return R("🧹", "n_docker_removed", null, "good");
+    case "llm_request": return R("🧠", e.step === 1 ? "n_req_first" : "n_req_next", {n: e.step});
+    case "llm_retry": return R("⏳", "n_retry", null, "warn");
+    case "llm_fallback": return R("🔁", "n_fallback", {to: e.to}, "warn");
+    case "llm_error": return R("⚠️", "n_llm_error", null, "bad");
+    case "llm_response": return R("💬", "n_resp", null, "info", thought(e.text));
+    case "extraction": return e.code ? R("✂️", "n_extract") : R("✂️", "n_extract_none", null, "warn");
+    case "sandbox_start": return R("🛡️", "n_sb_start");
+    case "exec_line": {
+      const x = e.entry;
+      if (x.e === "exception") return R("❌", "n_exc", {l: x.l, x: x.x}, "bad");
+      if (x.e === "final") return R("🏁", "n_final_line", null, "good");
+      if (x.e === "call") return R("▶️", "n_call", {f: x.f});
+      if (x.e === "return") return R("↩️", "n_return", {f: x.f, r: short(x.r, 40)});
+      return R("▶️", "n_line", {l: x.l});
+    }
+    case "exec_more": return R("▶️", "n_more", {n: e.count});
+    case "tool_call": return R("🔧", "n_tool_call", {what: toolWhat(e.name, e.args)});
+    case "mcp_request": return R("📨", "n_mcp_req");
+    case "server_dispatch": return R("⚙️", "n_dispatch", {name: e.handler || e.name});
+    case "repo_op": return e.op.exit_code === 0 ? R("💻", "n_repo_ok") : R("💻", "n_repo_err", {c: e.op.exit_code}, "warn");
+    case "mcp_response": return R("📨", "n_mcp_resp");
+    case "tool_result": {
+      const r = e.name === "run_tests" ? testResult(e.result) : null;
+      if (r) return R(r.ok ? "✅" : "❌", r.ok ? "n_tests_ok" : "n_tests_bad", {txt: testsText(r)}, r.ok ? "good" : "bad");
+      if (e.is_error) return R("⚠️", "n_tool_err", null, "warn");
+      return R("📥", "n_tool_res", {first: short(firstLine(e.result), 90)});
+    }
+    case "sandbox_end": {
+      const b = blockedInfo(e);
+      if (b && b.kind === "blocked") return R("🛡️", "n_sb_blocked", {err: b.msg}, "bad");
+      if (e.status === "timeout") return R("⏱️", "n_sb_timeout", null, "bad");
+      if (e.status === "memory") return R("🧱", "n_sb_memory", null, "bad");
+      if (e.is_final || e.status === "final_answer") return R("🏁", "n_sb_final", null, "good");
+      if (e.status === "ok") return R("✔️", "n_sb_ok");
+      return R("❌", "n_sb_err", {err: short(errLine(e.error) || e.status, 90)}, "bad");
+    }
+    case "observation": return R("👀", "n_obs");
+    case "budget": return R("📊", "n_budget", {inp: num(e.input_tokens), max: num(e.max_input_tokens)});
+    case "final_answer": return R("🏁", "n_final", null, "good");
+    case "fallback_answer": return R("🏁", "n_fallback_answer", null, "warn");
+    case "budget_stop": return R("⛔", "n_budget_stop", {reason: e.reason}, "bad");
+    case "loop_detected": return R("🔁", "n_loop", null, "warn");
+    case "interrupted": return R("⛔", "n_interrupted", null, "bad");
+    case "run_end": return e.success
+      ? R("✅", "n_end_ok", {n: e.iterations, s: Number(e.total_time_seconds || 0).toFixed(1)}, "good")
+      : R("❌", "n_end_bad", {n: e.iterations}, "bad");
+    default: return R("•", "n_idle");
+  }
+}
+
+/* Plain one-line summary of a step and its icon strip. */
+function stepBlock(s) { return s.done ? blockedInfo({type: "sandbox_end", status: s.sbStatus, error: s.error}) : null; }
+function stepSummary(s) {
+  if (s.llm == null) return tr("ss_waiting");
+  if (s.status === "nocode") return tr("ss_nocode");
+  const parts = [];
+  for (const x of s.tools) {
+    const r = x.name === "run_tests" && x.res ? testResult(x.res.result) : null;
+    const label = r ? tr("ss_tests", {txt: testsText(r)}) : I18N.en["ss_t_" + x.name] ? tr("ss_t_" + x.name) : tr("ss_t_generic", {name: x.name});
+    const last = parts[parts.length - 1];
+    if (last && last.label === label) last.n++; else parts.push({label, n: 1});
+  }
+  const out = parts.map((p) => p.n > 1 ? `${p.label} ×${p.n}` : p.label);
+  if (s.running) out.push(tr("ss_running"));
+  else if (s.done) {
+    const b = stepBlock(s);
+    if (b) out.push(tr(b.kind === "blocked" ? "ss_blocked" : "ss_limit"));
+    else if (s.status === "err") out.push(tr("ss_error", {err: short(errLine(s.error) || s.sbStatus, 50)}));
+    if (s.status === "final") out.push(tr("ss_final"));
+    if (!out.length) out.push(tr("ss_ran"));
+  }
+  const txt = out.join(" · ");
+  return /_/.test(txt.split(" ")[0]) ? txt : txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+function stepIcons(s) {
+  const box = h("div", "icons");
+  const add = (txt, tip, cls = "") => { const sp = h("span", cls, txt); sp.title = tip; box.appendChild(sp); };
+  if (s.llm != null) add("🧠", tr("ic_llm"));
+  if (s.code) add("▶", tr("ic_code"));
+  if (s.tools.length) add(`🔧${s.tools.length > 1 ? "×" + s.tools.length : ""}`, `${tr("ic_tools")}: ${[...new Set(s.tools.map((x) => x.name))].join(", ")}`);
+  const tests = s.tools.map((x) => (x.name === "run_tests" && x.res ? testResult(x.res.result) : null)).filter(Boolean);
+  if (tests.length) { const r = tests[tests.length - 1]; add(`${r.ok ? "✅" : "❌"} ${r.pass}/${r.total}`, tr("ic_tests"), r.ok ? "good" : "bad"); }
+  const b = stepBlock(s);
+  if (b) add(b.kind === "blocked" ? "🛡" : "⏱", tr("ic_block"), "bad");
+  else if (s.status === "err") add("⚠", tr("ic_err"), "bad");
+  if (s.status === "final") add("🏁", tr("ic_final"), "good");
+  return box;
+}
+
+/* ---------- story line ---------- */
+function stepsSoFar(st) { return Math.max(0, ...[...st.steps.keys()].filter((k) => k > 0)); }
+function renderStory(e, st) {
+  const n = narrate(e);
+  $("story").className = `panel story ${n.tone}`;
+  $("story-ico").textContent = n.ico;
+  const say = $("story-say"); say.replaceChildren(n.text);
+  if (n.quote) { say.append(" "); say.appendChild(h("q", "", n.quote)); }
+  const lim = (st.run && st.run.limits) || {}, k = stepsSoFar(st);
+  $("story-where").textContent = k && lim.max_iterations ? tr("where_step", {n: k, max: lim.max_iterations}) : "";
+  syncBigPlay();
+}
+function syncBigPlay() {
+  const b = $("s-play"); if (!b) return;
+  b.hidden = sourceKind === "live";
+  b.textContent = playing ? tr("pause") : events.length > 1 && cursor >= events.length - 1 ? tr("replay") : tr("play");
+}
+
+/* ---------- simple diagram ---------- */
+const SBOX = [["task", "📋", "--c-task", null], ["ai", "🧠", "--c-llm", "llm"], ["sandbox", "🛡️", "--c-sandbox", "sandbox"], ["answer", "🏁", "--c-final", "final_answer"]];
+let simpleEls = null;
+function initSimple() {
+  const root = $("simple"); root.replaceChildren(); simpleEls = {};
+  SBOX.forEach(([id, ico, c, term], i) => {
+    if (i) root.appendChild(h("div", "sarrow", "→"));
+    const b = h("div", "sbox"); b.style.setProperty("--sc", `var(${c})`);
+    const title = h("h3", "", tr("sb_" + id)); if (term) markTerm(title, term);
+    b.append(h("div", "big", ico), title, h("div", "ex", tr("sb_" + id + "_x")), h("div", "now", ""));
+    root.appendChild(b); simpleEls[id] = b;
+  });
+  const loop = h("div", "sloop"), lbl = h("span", "", ""); loop.appendChild(lbl); root.appendChild(loop);
+  simpleEls.loop = loop; simpleEls.loopLbl = lbl;
+}
+function renderSimple(e, st) {
+  if (!simpleEls) return;
+  const act = e ? SIMPLE_OF[e.type] || "" : "";
+  for (const [id] of SBOX) simpleEls[id].classList.toggle("on", act === id);
+  simpleEls.loop.classList.toggle("on", act === "loop" || (!!e && e.type === "llm_request" && e.step > 1));
+  const s = e && e.step != null ? st.steps.get(e.step) : st.steps.get(selectedStep);
+  const now = (id, txt) => { simpleEls[id].querySelector(".now").textContent = txt || ""; };
+  now("task", st.run ? `${st.run.benchmark} · ${short(st.run.task_id, 28)}` : "");
+  now("ai", s ? (s.llm == null ? tr("sbn_thinking") : tr("sbn_answered", {n: s.n})) : "");
+  let sb = "";
+  if (e && e.type === "exec_line") sb = tr("sbn_line", {l: e.entry.l});
+  else if (e && TOOL_EVENTS.has(e.type)) sb = tr("sbn_tool", {name: e.name});
+  else if (s && s.running) sb = tr("ss_running");
+  else if (s && s.sbStatus) sb = tr("sbn_status", {status: statusName(s.sbStatus)});
+  now("sandbox", sb);
+  now("answer", st.end ? tr(st.end.success ? "sbn_ok" : "sbn_bad") : st.run ? tr("sbn_waiting") : "");
+  const lim = (st.run && st.run.limits) || {}, k = stepsSoFar(st);
+  simpleEls.loopLbl.textContent = tr("s_loop") + (k ? " · " + tr("where_step", {n: k, max: lim.max_iterations || "?"}) : "");
+}
+
+/* ---------- task and result ---------- */
+function renderTaskCard(st) {
+  const run = st.run, lim = (run && run.limits) || {};
+  $("tc-kind-b").textContent = run ? ({mbpp: "MBPP", swebench: "SWE-bench"}[run.benchmark] || run.benchmark || "") : "";
+  $("tc-kind").textContent = run ? tr(run.benchmark === "mbpp" ? "kind_mbpp" : "kind_swe") : tr("kind_none");
+  $("tc-text").textContent = run ? (run.task_prompt || String(run.task_id ?? "")) : "";
+  $("tc-text").hidden = !run;
+  const m = $("tc-model"); m.replaceChildren();
+  if (run && run.model) { m.append(`${tr("model_lbl")}: `, h("b", "", run.model)); const host = hostOf(run.api_url); if (host) m.append(` ${tr("via")} ${host}`); }
+  const steps = [...st.steps.values()].filter((s) => s.n > 0), big = $("res-big");
+  const inTok = steps.reduce((a, s) => a + (s.inTok || 0), 0);
+  if (st.end) {
+    big.textContent = tr(st.end.success ? "res_ok" : "res_fail"); big.className = `res-big ${st.end.success ? "ok" : "bad"}`;
+    $("res-stats").textContent = tr("res_stats", {n: st.end.iterations ?? steps.length, s: Number(st.end.total_time_seconds || 0).toFixed(1),
+      pct: lim.max_input_tokens ? Math.round((100 * inTok) / lim.max_input_tokens) : "?"});
+  } else if (run) { big.textContent = tr("res_running", {n: Math.max(1, stepsSoFar(st))}); big.className = "res-big run"; $("res-stats").textContent = ""; }
+  else { big.textContent = tr("res_idle"); big.className = "res-big"; $("res-stats").textContent = ""; }
+  let last = null;
+  for (const s of steps.sort((a, b) => a.n - b.n)) for (const x of s.tools) if (x.name === "run_tests" && x.res) { const r = testResult(x.res.result); if (r) last = r; }
+  $("res-tests").textContent = run ? (last ? tr("res_tests", {txt: `${last.ok ? "✅" : "❌"} ${testsText(last)}`}) : tr("res_tests_none")) : "";
+  $("res-note").textContent = tr("how_know");
+}
+
+/* ---------- security ---------- */
+function renderSecurity() {
+  const box = $("security"); box.replaceChildren();
+  const ul = document.createElement("ul"); tr("sec_guards").forEach((g) => ul.appendChild(h("li", "", g))); box.appendChild(ul);
+  const found = [];
+  for (let i = 0; i <= cursor && i < events.length; i++) { const b = blockedInfo(events[i]); if (b) found.push({step: events[i].step, ...b}); }
+  const cnt = $("sec-count"); cnt.textContent = tr("sec_count", {n: found.length});
+  cnt.style.color = found.length ? "var(--c-error)" : "var(--c-final)";
+  if (!found.length) { box.appendChild(h("div", "none", tr("sec_none"))); return; }
+  box.appendChild(h("div", "cnt", tr("sec_list")));
+  for (const f of found) box.appendChild(h("div", `blk ${f.kind}`, tr("sec_item", {n: f.step ?? "?", msg: f.msg})));
+}
+
+/* ---------- answer ---------- */
+function renderAnswer(st) {
+  const body = $("ans-body"); body.replaceChildren();
+  const run = st.run, swe = !!run && run.benchmark !== "mbpp";
+  $("ans-sub").textContent = run ? tr(swe ? "ans_swe_x" : "ans_mbpp_x") : "";
+  let sol = st.end ? st.end.solution : null, partial = false;
+  if (sol == null) for (const s of st.steps.values()) if (s.final != null) sol = s.final;
+  if (sol == null && swe) {
+    for (const s of [...st.steps.values()].sort((a, b) => a.n - b.n)) for (const x of s.tools)
+      if (x.name === "get_patch" && x.res && /^diff --git/m.test(x.res.result || "")) { sol = x.res.result; partial = true; }
+  }
+  if (sol == null || String(sol).trim() === "") { body.appendChild(h("div", "empty", tr("ans_wait"))); return; }
+  if (partial) body.appendChild(h("div", "note", tr("ans_partial")));
+  body.appendChild(swe && /^(diff --git|--- |@@ )/m.test(sol) ? renderPatch(sol) : pre(String(sol).replace(/^\n+/, "")));
+}
+function renderPatch(text) {
+  const box = h("div", "lines patch");
+  String(text).replace(/\s+$/, "").split("\n").forEach((line) => {
+    const c = /^(diff --git|index )/.test(line) ? "meta" : /^(\+\+\+|---)/.test(line) ? "file" : line.startsWith("@@") ? "hunk"
+      : line.startsWith("+") ? "add" : line.startsWith("-") ? "del" : "ctx";
+    const body = c === "add" || c === "del" || c === "ctx" ? line.slice(1) : line;
+    const r = h("div", `pl ${c}`); r.append(h("span", "s", c === "add" ? "+" : c === "del" ? "−" : ""), h("code", "", body || " "));
+    box.appendChild(r);
+  });
+  return box;
+}
+function renderPlain(e, st) { renderStory(e, st); renderSimple(e, st); renderTaskCard(st); renderSecurity(); renderAnswer(st); }
+
+/* ---------- glossary: ⓘ terms, tooltip, dialog ---------- */
+function markTerm(node, key) { node.dataset.term = key; node.tabIndex = 0; return node; }
+const tip = $("tip");
+function showTip(target) {
+  const g = tr("g_" + target.dataset.term); if (!Array.isArray(g)) return;
+  tip.replaceChildren(h("b", "", g[0]), g[1]); tip.hidden = false;
+  const r = target.getBoundingClientRect(), w = tip.offsetWidth, hh = tip.offsetHeight;
+  const x = Math.min(window.innerWidth - w - 8, Math.max(8, r.left));
+  let y = r.bottom + 8; if (y + hh > window.innerHeight - 8) y = Math.max(8, r.top - hh - 8);
+  tip.style.left = `${x}px`; tip.style.top = `${y}px`;
+}
+document.addEventListener("mouseover", (ev) => { const x = ev.target.closest && ev.target.closest("[data-term]"); if (x) showTip(x); else tip.hidden = true; });
+document.addEventListener("focusin", (ev) => { const x = ev.target.closest && ev.target.closest("[data-term]"); if (x) showTip(x); });
+document.addEventListener("focusout", () => { tip.hidden = true; });
+window.addEventListener("scroll", () => { tip.hidden = true; }, true);
+const gloss = $("gloss-modal");
+function renderGloss() {
+  $("gloss-title").textContent = tr("gloss_title");
+  const dl = document.createElement("dl"); dl.className = "gl";
+  for (const k of GLOSS_ORDER) { const g = tr("g_" + k); dl.append(h("dt", "", g[0]), h("dd", "", g[1])); }
+  $("gloss-body").replaceChildren(dl);
+}
+$("b-gloss").addEventListener("click", () => { renderGloss(); if (!gloss.open) { try { gloss.showModal(); } catch (_) { gloss.setAttribute("open", ""); } } });
+$("gloss-close").addEventListener("click", () => gloss.close());
+gloss.addEventListener("click", (ev) => { if (ev.target === gloss) gloss.close(); });
+
+/* ---------- guided tour ---------- */
+const TOUR_TARGETS = [".viewctl", "#taskcard", "#story", "#simple-panel, #arch-panel", "#steps", "#meters", "#security", "#answer", "#b-gloss"];
+let tourI = -1;
+function tourTarget(i) { return [...document.querySelectorAll(TOUR_TARGETS[i])].find((x) => x.getClientRects().length); }
+function tourStart() { stop(); tip.hidden = true; tourI = 0; $("tour").hidden = false; tourShow(); }
+function tourEnd() { $("tour").hidden = true; tourI = -1; try { localStorage.setItem("as-tour-done", "1"); } catch (_) { /* storage blocked */ } }
+function tourShow() {
+  const steps = tr("tour"), [title, body] = steps[tourI], target = tourTarget(tourI);
+  $("tour-n").textContent = tr("tour_n", {i: tourI + 1, n: steps.length});
+  $("tour-t").textContent = title; $("tour-p").textContent = body;
+  $("tour-back").hidden = tourI === 0; $("tour-back").textContent = tr("tour_back");
+  $("tour-skip").textContent = tr("tour_skip"); $("tour-skip").hidden = tourI === steps.length - 1;
+  $("tour-next").textContent = tourI === steps.length - 1 ? tr("tour_done") : tr("tour_next");
+  if (target) target.scrollIntoView({block: "center", behavior: "auto"});
+  requestAnimationFrame(tourPlace);
+  $("tour-next").focus({preventScroll: true});
+}
+function tourPlace() {
+  if (tourI < 0) return;
+  const target = tourTarget(tourI), hole = $("tour-hole"), card = $("tour-card"), pad = 6, vw = window.innerWidth, vh = window.innerHeight;
+  const r = target ? target.getBoundingClientRect() : {left: vw / 2, top: vh / 2, width: 0, height: 0, bottom: vh / 2};
+  const top = Math.max(4, r.top - pad), bottom = Math.min(vh - 4, r.top + r.height + pad);
+  Object.assign(hole.style, {left: `${Math.max(4, r.left - pad)}px`, top: `${top}px`, width: `${Math.min(vw - 8, r.width + 2 * pad)}px`, height: `${Math.max(0, bottom - top)}px`});
+  const cw = card.offsetWidth, ch = card.offsetHeight;
+  let y = bottom + 10; if (y + ch > vh - 8) y = top - 10 - ch; if (y < 8) y = Math.min(vh - ch - 8, top + 12);
+  card.style.left = `${Math.min(vw - cw - 8, Math.max(8, r.left))}px`; card.style.top = `${Math.max(8, y)}px`;
+}
+$("tour-next").addEventListener("click", () => { if (tourI >= tr("tour").length - 1) tourEnd(); else { tourI++; tourShow(); } });
+$("tour-back").addEventListener("click", () => { if (tourI > 0) { tourI--; tourShow(); } });
+$("tour-skip").addEventListener("click", tourEnd);
+$("b-tour").addEventListener("click", tourStart);
+window.addEventListener("resize", tourPlace);
+window.addEventListener("scroll", tourPlace, true);
+document.addEventListener("keydown", (ev) => {
+  if (tourI < 0) return;
+  if (ev.key === "Escape") { ev.preventDefault(); tourEnd(); }
+  else if (ev.key === "ArrowRight" || ev.key === "Enter") { ev.preventDefault(); $("tour-next").click(); }
+  else if (ev.key === "ArrowLeft") { ev.preventDefault(); $("tour-back").click(); }
+  ev.stopImmediatePropagation();
+}, true);
+
+/* ---------- language and view switches ---------- */
+function store(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* storage blocked */ } }
+function stored(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+function applyStatic() {
+  document.querySelectorAll("[data-i18n]").forEach((x) => { x.textContent = tr(x.dataset.i18n); });
+  if ($("src-live").disabled) $("src-live").title = tr("live_title");
+  nodeEls.interp.sub.textContent = tr("sub_interp"); nodeEls.mcps.sub.textContent = tr("sub_mcps");
+}
+function setLang(l) {
+  LANG = I18N[l] ? l : "en"; document.documentElement.lang = LANG; store("as-lang", LANG);
+  for (const b of $("lang-seg").children) b.setAttribute("aria-pressed", String(b.dataset.lang === LANG));
+  applyStatic(); initSimple(); tip.hidden = true;
+  if (lastBanner) banner(...lastBanner);
+  if (events.length) go(cursor); else renderEmpty();
+  if (gloss.open) renderGloss();
+  if (tourI >= 0) tourShow();
+}
+function setMode(m) {
+  MODE = m === "detailed" ? "detailed" : "simple"; document.body.dataset.mode = MODE; store("as-mode", MODE);
+  for (const b of $("mode-seg").children) b.setAttribute("aria-pressed", String(b.dataset.mode === MODE));
+  if (MODE === "simple" && modal.open) modal.close();
+}
+$("lang-seg").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-lang]"); if (b) setLang(b.dataset.lang); });
+$("mode-seg").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-mode]"); if (b) setMode(b.dataset.mode); });
+$("s-play").addEventListener("click", () => { playing ? stop() : play(); });
+document.querySelectorAll("[data-term]").forEach((x) => { x.tabIndex = 0; });
+
+/* ======================= start ======================= */
+LANG = (() => { const s = stored("as-lang"); if (s && I18N[s]) return s; const n = (navigator.language || "en").slice(0, 2); return I18N[n] ? n : "en"; })();
+setMode(stored("as-mode") || "simple");
+document.documentElement.lang = LANG;
+for (const b of $("lang-seg").children) b.setAttribute("aria-pressed", String(b.dataset.lang === LANG));
+applyStatic();
+initSimple();
 showNode("interp");
 loadDemo("mbpp");
 probeLive();
+if (!stored("as-tour-done")) setTimeout(tourStart, 700);
 </script>
