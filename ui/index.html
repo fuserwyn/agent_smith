@@ -725,6 +725,7 @@ en: {
   tour_next: "Next", tour_back: "Back", tour_skip: "Skip", tour_done: "Start", tour_n: "{i} of {n}",
 
   docker_off: "Docker Desktop is not running. The moulinette checks answers in Docker, so the last step will fail: start Docker Desktop first.",
+  file_mode_cmds: "This page is opened as a file, so it cannot launch runs. Below are the commands for the default model and task, ready to copy into a terminal. To launch with the Run button, start uv run agent-ui and open",
   ln_h: "What to show",
   ln_srv_on: "local server connected: runs can be launched from this page",
   ln_srv_off: "file mode: demos and files only; start uv run agent-ui to launch runs",
@@ -1014,6 +1015,7 @@ ru: {
   ni_repo: ["SWE-bench: команды выполняются через docker exec в контейнере задачи (--network none).", "Локально (тесты, демо): те же команды в TESTBED_PATH. MBPP: изолированная песочница для тестов."],
   ni_final: ["success, solution (код или патч), итерации, запросы, токены, время.", "Каждый шаг хранит llm_output, sandbox_input, sandbox_output, retries."],
   docker_off: "Docker Desktop не запущен. Moulinette проверяет ответы в Docker, поэтому последний шаг упадёт: сначала запустите Docker Desktop.",
+  file_mode_cmds: "Страница открыта как файл, поэтому запускать прогоны она не может. Ниже команды для модели и задачи по умолчанию, их можно скопировать в терминал. Чтобы запускать кнопкой, выполните uv run agent-ui и откройте",
   ln_h: "Что показать",
   ln_srv_on: "локальный сервер подключён: прогоны можно запускать с этой страницы",
   ln_srv_off: "режим файла: только демо и файлы; для запуска прогонов выполните uv run agent-ui",
@@ -1303,6 +1305,7 @@ fr: {
   ni_repo: ["SWE-bench : commandes exécutées via docker exec dans le conteneur de la tâche (--network none).", "En local (tests, démo) : mêmes commandes dans TESTBED_PATH. MBPP : bac à sable de test isolé."],
   ni_final: ["success, solution (code ou patch), itérations, requêtes, jetons, temps.", "Chaque étape garde llm_output, sandbox_input, sandbox_output, retries."],
   docker_off: "Docker Desktop n'est pas lancé. La moulinette vérifie les réponses dans Docker, donc la dernière étape échouera : lancez d'abord Docker Desktop.",
+  file_mode_cmds: "Cette page est ouverte comme fichier, elle ne peut donc pas lancer d'exécution. Ci-dessous, les commandes pour le modèle et la tâche par défaut, prêtes à copier dans un terminal. Pour lancer avec le bouton, démarrez uv run agent-ui et ouvrez",
   ln_h: "Que montrer",
   ln_srv_on: "serveur local connecté : les exécutions peuvent être lancées depuis cette page",
   ln_srv_off: "mode fichier : démos et fichiers seulement ; lancez uv run agent-ui pour exécuter",
@@ -2304,6 +2307,8 @@ function startLive(choiceId = "src-live", bannerKey = "live_follow", params = nu
 const RUN_ACTION = {"run-mbpp": "mbpp", "run-swe": "swebench", "run-sandbox": "sandbox", "run-exam": "exam"};
 const CHOICE_KEY = {"src-mbpp": "c_demo_mbpp", "src-swe": "c_demo_swe", "src-rec": "c_rec", "run-mbpp": "c_run_mbpp", "run-swe": "c_run_swe",
   "run-sandbox": "c_sandbox", "run-exam": "c_exam", "src-file": "c_file", "src-live": "c_live"};
+/* Default commands for file:// mode, generated from ui_jobs.py by scripts/embed_ui_commands.py. */
+const STATIC_CMDS = /*CMDS_START*/{"mbpp": {"steps": [{"key": "step_dump", "command": "(cd moulinette && PYTHONPATH=. uv run moulinette_eval dump mbpp --output ../runs/ui/manual-mbpp/task.json)"}, {"key": "step_agent", "command": "uv run python -m agent_mbpp --task-file runs/ui/manual-mbpp/task.json --output runs/ui/manual-mbpp/solution.json --model-name qwen/qwen3.8-27b --provider-url https://api.groq.com/openai/v1 --env-file .env --trace-file runs/ui/manual-mbpp/events.jsonl"}, {"key": "step_validate", "command": "(cd moulinette && PYTHONPATH=. DOCKER_HOST=\"$(docker context inspect --format '{{.Endpoints.docker.Host}}')\" uv run moulinette_eval validate mbpp ../runs/ui/manual-mbpp/task.json ../runs/ui/manual-mbpp/solution.json)"}], "dir": "runs/ui/manual-mbpp", "trace": "runs/ui/manual-mbpp/events.jsonl"}, "swebench": {"steps": [{"key": "step_dump", "command": "(cd moulinette && PYTHONPATH=. uv run moulinette_eval dump swebench --task-id sympy__sympy-13480 --output ../runs/ui/manual-swebench/task.json)"}, {"key": "step_agent", "command": "uv run python -m agent_swebench --task-file runs/ui/manual-swebench/task.json --output runs/ui/manual-swebench/solution.json --model-name nvidia/nemotron-3.5-lightning-30b-a3b --provider-url https://integrate.api.nvidia.com/v1 --env-file .env --trace-file runs/ui/manual-swebench/events.jsonl"}, {"key": "step_containers", "command": "docker ps -a --filter label=agent-smith"}, {"key": "step_validate", "command": "(cd moulinette && PYTHONPATH=. DOCKER_HOST=\"$(docker context inspect --format '{{.Endpoints.docker.Host}}')\" uv run moulinette_eval validate swebench ../runs/ui/manual-swebench/task.json ../runs/ui/manual-swebench/solution.json)"}], "dir": "runs/ui/manual-swebench", "trace": "runs/ui/manual-swebench/events.jsonl"}, "sandbox": {"steps": [{"key": "step_sandbox", "command": "./scripts/mock_exam.sh sandbox --student-path . --moulinette-path ./moulinette --env-file .env"}], "dir": "runs/ui/manual-sandbox", "trace": null}, "exam": {"steps": [{"key": "step_exam", "command": "./scripts/mock_exam.sh all --student-path . --moulinette-path ./moulinette --env-file .env"}], "dir": "runs/ui/manual-exam", "trace": null}}/*CMDS_END*/;
 const LIVE_CMDS = [
   {key: "cmd_ui", command: "uv run agent-ui --trace runs/live.jsonl"},
   {key: "cmd_dump", command: "(cd moulinette && PYTHONPATH=. uv run moulinette_eval dump mbpp --output ../cache/mbpp_task.json)"},
@@ -2383,9 +2388,12 @@ function currentParams(action) {
 }
 async function loadActions() { if (!ACTIONS) ACTIONS = await api("actions"); return ACTIONS; }
 function renderRunChoice(ci, action) {
-  if (!SERVER || !SERVER.runs) {
-    ci.appendChild(h("p", "warn", tr("needs_server")));
-    ci.appendChild(cmdBlock([{key: "cmd_ui", command: "uv run agent-ui"}]));
+  if (!SERVER || !SERVER.runs) {  // opened as a file: show this action's own commands, launching needs the server
+    const note = h("p", "warn"), link = document.createElement("a");
+    link.href = "http://127.0.0.1:8765/"; link.textContent = "http://127.0.0.1:8765"; link.target = "_blank"; link.rel = "noopener";
+    note.append(tr("file_mode_cmds") + " ", link); ci.appendChild(note);
+    const pv = STATIC_CMDS[action];
+    if (pv) { ci.appendChild(cmdBlock(pv.steps)); ci.appendChild(h("div", "where", tr("ci_where", {dir: pv.dir}))); }
     return;
   }
   if (!ACTIONS) { loadActions().then(() => { if (RUN_ACTION[choice] === action) renderChoice(); }).catch((e) => ci.appendChild(h("p", "warn", e.message))); return; }

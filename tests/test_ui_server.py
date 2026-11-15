@@ -101,3 +101,14 @@ def test_job_runs_steps_and_reads_verdict(monkeypatch, tmp_path):
     finally:
         import shutil
         shutil.rmtree(ui_jobs.ROOT / "runs" / "ui-test", ignore_errors=True)
+
+
+def test_embedded_file_mode_commands_match_the_server_recipes():
+    """ui/index.html carries the default commands for file:// mode; they must equal ui_jobs' recipes."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("embed", ui_jobs.ROOT / "scripts" / "embed_ui_commands.py")
+    embed = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(embed)
+    stored = embed.embedded(embed.UI.read_text(encoding="utf-8"))
+    assert stored == ui_jobs.static_commands(), "run: uv run python scripts/embed_ui_commands.py"
+    assert "docker context inspect" in stored["swebench"]["steps"][-1]["command"]

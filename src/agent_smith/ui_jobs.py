@@ -192,6 +192,25 @@ def preview(action: str, params: Dict[str, Any]) -> Dict[str, Any]:
             if action in ("mbpp", "swebench") else None}
 
 
+PORTABLE_DOCKER_HOST = "\"$(docker context inspect --format '{{.Endpoints.docker.Host}}')\""
+STATIC_DEFAULTS = (("mbpp", {}), ("swebench", {"task_id": "sympy__sympy-13480"}), ("sandbox", {}), ("exam", {}))
+
+
+def static_commands() -> Dict[str, Any]:
+    """Default commands embedded in ui/index.html for when the page is opened as a file (no server).
+
+    Same recipes as ``preview``; the machine-specific Docker socket is replaced by a portable expression.
+    Refresh with ``uv run python scripts/embed_ui_commands.py`` (a test fails when they drift).
+    """
+    out = {}
+    for action, params in STATIC_DEFAULTS:
+        pv = preview(action, params)
+        for step in pv["steps"]:
+            step["command"] = re.sub(r"DOCKER_HOST=(?:'[^']*'|\S+)", lambda m: "DOCKER_HOST=" + PORTABLE_DOCKER_HOST, step["command"])
+        out[action] = pv
+    return out
+
+
 # ---------------------------------------------------------------- jobs
 class JobManager:
     """Runs one job at a time in a background thread; the UI polls ``snapshot()``."""
