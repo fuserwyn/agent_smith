@@ -252,6 +252,7 @@ details.sys summary { cursor: pointer; padding: 10px 14px; font-size: 13px; colo
 details.sys pre { border-top: 1px solid var(--line); }
 
 /* ---------- launcher ---------- */
+body[data-view="none"] .replay { display: none !important; }
 .choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; padding: 12px 14px; }
 .choice { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; text-align: left;
   border: 1px solid var(--line); background: var(--panel-2); border-radius: 10px; padding: 9px 11px; min-width: 0; }
@@ -295,6 +296,13 @@ details.sys pre { border-top: 1px solid var(--line); }
   background: var(--panel-2); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; }
 .rec-row[aria-current="true"] { border-color: var(--c-orch); box-shadow: 0 0 0 3px var(--glow); }
 .rec-row span.muted { font-family: var(--f-mono); font-size: 11.5px; }
+.sbres { display: grid; gap: 8px; }
+.sbsum { font-weight: 600; display: flex; align-items: center; gap: 6px; } .sbsum.good { color: var(--c-final); } .sbsum.bad { color: var(--c-error); }
+.sbres ul { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 4px 16px; }
+.sbres li { display: flex; gap: 7px; align-items: baseline; font-size: 12.5px; font-family: var(--f-mono); min-width: 0; }
+.sbres li .ic { flex: none; transform: translateY(2px); } .sbres li.ok .ic { color: var(--c-final); } .sbres li.fail .ic { color: var(--c-error); }
+.sbres li .muted { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logwrap summary { cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 2px 0 6px; }
 /* ---------- plain-language layer ---------- */
 .ic { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.14em; }
 .story .ico { color: var(--c-orch); display: grid; place-items: center; } .story.good .ico { color: var(--c-final); } .story.bad .ico { color: var(--c-error); } .story.warn .ico { color: var(--c-warn); }
@@ -410,7 +418,7 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
       <button class="chip-btn" id="b-tour" data-i18n="tour_btn">Guided tour</button>
       <button class="chip-btn" id="b-gloss" data-i18n="gloss_btn">Glossary</button>
     </div>
-    <div class="controls">
+    <div class="controls replay">
       <button class="ctl" id="b-first" aria-label="Go to start"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
       <button class="ctl" id="b-prev" aria-label="Previous event"><svg viewBox="0 0 16 16"><path d="M12 2v12L4 8z"/></svg></button>
       <button class="ctl play" id="b-play" aria-label="Play"><svg viewBox="0 0 16 16" id="i-play"><path d="M4 2v12l10-6z"/></svg></button>
@@ -439,9 +447,9 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
     <div class="choice-info" id="choice-info"></div>
   </section>
 
-  <div class="banner" id="banner"></div>
+  <div class="banner replay" id="banner"></div>
 
-  <section class="panel taskcard" id="taskcard" aria-label="Task and result">
+  <section class="panel taskcard replay" id="taskcard" aria-label="Task and result">
     <div>
       <div class="tc-h"><h2 data-i18n="task_h">Task</h2><span class="kindb" id="tc-kind-b"></span></div>
       <div class="tc-kind" id="tc-kind"></div>
@@ -457,20 +465,20 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
     </div>
   </section>
 
-  <section class="panel story info" id="story" aria-label="What is happening now">
+  <section class="panel story info replay" id="story" aria-label="What is happening now">
     <button class="bigplay" id="s-play">Play</button>
     <span class="ico" id="story-ico" aria-hidden="true"></span>
     <div class="say" id="story-say"></div>
     <span class="where" id="story-where"></span>
   </section>
 
-  <div class="scrubrow">
+  <div class="scrubrow replay">
     <input type="range" class="scrub" id="scrub" min="0" max="0" value="0" aria-label="Event position">
     <span class="pos" id="pos">0 / 0</span>
     <label class="toggle det"><input type="checkbox" id="opt-lines" checked> <span data-i18n="opt_lines">code lines in timeline</span></label>
   </div>
 
-  <div class="main">
+  <div class="main replay">
     <div class="leftcol">
     <section class="panel smp" id="simple-panel" aria-label="How the agent works">
       <div class="panel-h"><h2 data-i18n="simple_h" data-term="agent">How the agent works</h2><span class="muted" data-i18n="simple_hint">the highlighted block is working now</span></div>
@@ -516,7 +524,7 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
     </aside>
   </div>
 
-  <div class="lower">
+  <div class="lower replay">
     <section class="panel det" aria-label="Step detail">
       <div class="panel-h"><h2 id="detail-title" data-i18n="detail_h">Step detail</h2>
         <div class="tabs" role="tablist" id="tabs">
@@ -726,6 +734,14 @@ en: {
 
   docker_off: "Docker Desktop is not running. The moulinette checks answers in Docker, so the last step will fail: start Docker Desktop first.",
   file_mode_cmds: "This page is opened as a file, so it cannot launch runs. Below are the commands for the default model and task, ready to copy into a terminal. To launch with the Run button, start uv run agent-ui and open",
+  cmd_bench: "SWE-bench benchmark: every model in MODELS on the 3 tasks (edit MODELS / TASKS)",
+  cmd_ablation: "Ablation: the same tasks with the minimal prompt",
+  cmd_mbpp_bench: "MBPP runs: one model, 5 tasks (seeds 1–5)",
+  cmd_table: "Rebuild the tables of BENCHMARK_REPORT.md from the solution.json files",
+  rec_how: "How these runs were produced:",
+  full_out: "Full output",
+  sb_res_sum: "{p} of {n} checks passed",
+  rec_pick: "Pick a run in the list to replay it below.",
   ln_h: "What to show",
   ln_srv_on: "local server connected: runs can be launched from this page",
   ln_srv_off: "file mode: demos and files only; start uv run agent-ui to launch runs",
@@ -1016,6 +1032,14 @@ ru: {
   ni_final: ["success, solution (код или патч), итерации, запросы, токены, время.", "Каждый шаг хранит llm_output, sandbox_input, sandbox_output, retries."],
   docker_off: "Docker Desktop не запущен. Moulinette проверяет ответы в Docker, поэтому последний шаг упадёт: сначала запустите Docker Desktop.",
   file_mode_cmds: "Страница открыта как файл, поэтому запускать прогоны она не может. Ниже команды для модели и задачи по умолчанию, их можно скопировать в терминал. Чтобы запускать кнопкой, выполните uv run agent-ui и откройте",
+  cmd_bench: "Бенчмарк SWE-bench: каждая модель из MODELS на 3 задачах (MODELS / TASKS можно поменять)",
+  cmd_ablation: "Ablation: те же задачи с минимальным промптом",
+  cmd_mbpp_bench: "Прогоны MBPP: одна модель, 5 задач (seed 1–5)",
+  cmd_table: "Пересобрать таблицы BENCHMARK_REPORT.md из файлов solution.json",
+  rec_how: "Как получены эти прогоны:",
+  full_out: "Полный вывод",
+  sb_res_sum: "пройдено проверок: {p} из {n}",
+  rec_pick: "Выберите прогон в списке, чтобы воспроизвести его ниже.",
   ln_h: "Что показать",
   ln_srv_on: "локальный сервер подключён: прогоны можно запускать с этой страницы",
   ln_srv_off: "режим файла: только демо и файлы; для запуска прогонов выполните uv run agent-ui",
@@ -1306,6 +1330,14 @@ fr: {
   ni_final: ["success, solution (code ou patch), itérations, requêtes, jetons, temps.", "Chaque étape garde llm_output, sandbox_input, sandbox_output, retries."],
   docker_off: "Docker Desktop n'est pas lancé. La moulinette vérifie les réponses dans Docker, donc la dernière étape échouera : lancez d'abord Docker Desktop.",
   file_mode_cmds: "Cette page est ouverte comme fichier, elle ne peut donc pas lancer d'exécution. Ci-dessous, les commandes pour le modèle et la tâche par défaut, prêtes à copier dans un terminal. Pour lancer avec le bouton, démarrez uv run agent-ui et ouvrez",
+  cmd_bench: "Benchmark SWE-bench : chaque modèle de MODELS sur les 3 tâches (modifier MODELS / TASKS)",
+  cmd_ablation: "Ablation : les mêmes tâches avec le prompt minimal",
+  cmd_mbpp_bench: "Exécutions MBPP : un modèle, 5 tâches (seeds 1 à 5)",
+  cmd_table: "Reconstruire les tableaux de BENCHMARK_REPORT.md à partir des solution.json",
+  rec_how: "Comment ces exécutions ont été produites :",
+  full_out: "Sortie complète",
+  sb_res_sum: "{p} contrôles réussis sur {n}",
+  rec_pick: "Choisissez une exécution dans la liste pour la rejouer ci-dessous.",
   ln_h: "Que montrer",
   ln_srv_on: "serveur local connecté : les exécutions peuvent être lancées depuis cette page",
   ln_srv_off: "mode fichier : démos et fichiers seulement ; lancez uv run agent-ui pour exécuter",
@@ -2223,6 +2255,7 @@ function loadDemo(which) {
   pressed(which === "mbpp" ? "src-mbpp" : "src-swe");
   banner("demo", which === "mbpp" ? "demo_mbpp" : "demo_swe");
   setRaw((DEMO && DEMO[which]) || [], "demo");
+  shown = which === "mbpp" ? "src-mbpp" : "src-swe"; updateView();
 }
 $("src-mbpp").addEventListener("click", () => loadDemo("mbpp"));
 $("src-swe").addEventListener("click", () => loadDemo("swebench"));
@@ -2231,7 +2264,7 @@ $("file").addEventListener("change", (ev) => { const f = ev.target.files[0]; if 
 function readFile(file) {
   const r = new FileReader();
   r.onload = () => {
-    try { const list = parseTrace(String(r.result)); pressed("src-file"); banner("file", "file_loaded", {name: file.name, n: list.length}); setRaw(list, "file"); }
+    try { const list = parseTrace(String(r.result)); pressed("src-file"); banner("file", "file_loaded", {name: file.name, n: list.length}); setRaw(list, "file"); shown = "src-file"; selectChoice("src-file"); }
     catch (err) { banner("file", "file_error", {name: file.name, err: err.message}); }
   };
   r.readAsText(file);
@@ -2285,14 +2318,20 @@ async function probeLive() {
     const info = await r.json(); if (!info || info.app !== "agent-smith-ui") return;
     SERVER = info; $("src-live").title = info.trace;
     renderLaunchState(); renderChoice();
-    const j = await api("job");  // page reloaded while a run is going: pick it up again
-    if (j.status === "running") { JOB = j; if (j.trace) startLive(null, "live_job", {dir: j.dir}); pollJob(); }
+    const j = await api("job");
+    if (j.status === "running") {  // page reloaded while a run is going: pick it up again
+      JOB = j; const card = Object.keys(RUN_ACTION).find((k) => RUN_ACTION[k] === j.action);
+      if (card) { choice = card; pressed(card); renderChoice(); }
+      if (j.trace) startLive(card, "live_job", {dir: j.dir}); else updateView();
+      pollJob();
+    }
   } catch (_) { renderLaunchState(); /* static hosting: demo and file modes only */ }
 }
 /* Follow a trace over SSE. followDefault = the --trace file (runs started in a terminal). */
 function startLive(choiceId = "src-live", bannerKey = "live_follow", params = null, followDefault = false) {
   if (choiceId) pressed(choiceId);
   banner("live", bannerKey, params);
+  shown = choiceId || "src-live"; updateView();
   setRaw([], "live"); if (es) es.close();
   es = new EventSource(followDefault ? "events?default=1" : "events");
   es.onmessage = (m) => {
@@ -2309,12 +2348,25 @@ const CHOICE_KEY = {"src-mbpp": "c_demo_mbpp", "src-swe": "c_demo_swe", "src-rec
   "run-sandbox": "c_sandbox", "run-exam": "c_exam", "src-file": "c_file", "src-live": "c_live"};
 /* Default commands for file:// mode, generated from ui_jobs.py by scripts/embed_ui_commands.py. */
 const STATIC_CMDS = /*CMDS_START*/{"mbpp": {"steps": [{"key": "step_dump", "command": "(cd moulinette && PYTHONPATH=. uv run moulinette_eval dump mbpp --output ../runs/ui/manual-mbpp/task.json)"}, {"key": "step_agent", "command": "uv run python -m agent_mbpp --task-file runs/ui/manual-mbpp/task.json --output runs/ui/manual-mbpp/solution.json --model-name qwen/qwen3.8-27b --provider-url https://api.groq.com/openai/v1 --env-file .env --trace-file runs/ui/manual-mbpp/events.jsonl"}, {"key": "step_validate", "command": "(cd moulinette && PYTHONPATH=. DOCKER_HOST=\"$(docker context inspect --format '{{.Endpoints.docker.Host}}')\" uv run moulinette_eval validate mbpp ../runs/ui/manual-mbpp/task.json ../runs/ui/manual-mbpp/solution.json)"}], "dir": "runs/ui/manual-mbpp", "trace": "runs/ui/manual-mbpp/events.jsonl"}, "swebench": {"steps": [{"key": "step_dump", "command": "(cd moulinette && PYTHONPATH=. uv run moulinette_eval dump swebench --task-id sympy__sympy-13480 --output ../runs/ui/manual-swebench/task.json)"}, {"key": "step_agent", "command": "uv run python -m agent_swebench --task-file runs/ui/manual-swebench/task.json --output runs/ui/manual-swebench/solution.json --model-name nvidia/nemotron-3.5-lightning-30b-a3b --provider-url https://integrate.api.nvidia.com/v1 --env-file .env --trace-file runs/ui/manual-swebench/events.jsonl"}, {"key": "step_containers", "command": "docker ps -a --filter label=agent-smith"}, {"key": "step_validate", "command": "(cd moulinette && PYTHONPATH=. DOCKER_HOST=\"$(docker context inspect --format '{{.Endpoints.docker.Host}}')\" uv run moulinette_eval validate swebench ../runs/ui/manual-swebench/task.json ../runs/ui/manual-swebench/solution.json)"}], "dir": "runs/ui/manual-swebench", "trace": "runs/ui/manual-swebench/events.jsonl"}, "sandbox": {"steps": [{"key": "step_sandbox", "command": "./scripts/mock_exam.sh sandbox --student-path . --moulinette-path ./moulinette --env-file .env"}], "dir": "runs/ui/manual-sandbox", "trace": null}, "exam": {"steps": [{"key": "step_exam", "command": "./scripts/mock_exam.sh all --student-path . --moulinette-path ./moulinette --env-file .env"}], "dir": "runs/ui/manual-exam", "trace": null}}/*CMDS_END*/;
+const REC_CMDS = [
+  {key: "cmd_bench", command: 'MODELS="https://integrate.api.nvidia.com/v1|nvidia/nemotron-3.5-lightning-30b-a3b" ./scripts/run_benchmark.sh main'},
+  {key: "cmd_ablation", command: 'AGENT_ARGS="--prompt-variant minimal" ./scripts/run_benchmark.sh ablation-minimal-prompt'},
+  {key: "cmd_mbpp_bench", command: "./scripts/run_mbpp.sh qwen/qwen3.8-27b https://api.groq.com/openai/v1 1 2 3 4 5"},
+  {key: "cmd_table", command: "uv run python scripts/benchmark_table.py benchmarks/swebench/main"},
+];
 const LIVE_CMDS = [
   {key: "cmd_ui", command: "uv run agent-ui --trace runs/live.jsonl"},
   {key: "cmd_dump", command: "(cd moulinette && PYTHONPATH=. uv run moulinette_eval dump mbpp --output ../cache/mbpp_task.json)"},
   {key: "cmd_agent", command: "uv run python -m agent_mbpp --task-file cache/mbpp_task.json --output cache/mbpp_solution.json --model-name qwen/qwen3.8-27b --provider-url https://api.groq.com/openai/v1 --env-file .env --trace-file runs/live.jsonl"},
 ];
-let ACTIONS = null, RUNS = null, JOB = null, jobTimer = null, choice = "src-mbpp", recSel = null;
+let ACTIONS = null, RUNS = null, JOB = null, jobTimer = null, choice = "src-mbpp", recSel = null, shown = "src-mbpp";
+/* The replay area (task, story, diagram, steps, answer) shows only content that belongs to the chosen card:
+   a demo, a recorded run once picked, a file once opened, a run once launched. Sandbox tests and the mock exam have none. */
+function updateView() {
+  const own = shown === choice && choice !== "run-sandbox" && choice !== "run-exam";
+  document.body.dataset.view = own ? "replay" : "none";
+  if (!own) stop();
+}
 const form = {mbpp: {key: "", task: ""}, swebench: {key: "", task: ""}};
 
 async function api(path, body) {
@@ -2326,6 +2378,7 @@ async function api(path, body) {
 }
 function selectChoice(id) {
   choice = id;
+  queueMicrotask(updateView);
   if (RUN_ACTION[id]) ACTIONS = null;  // re-read keys and Docker state each time a run is chosen
   if (RUN_ACTION[id] || id === "src-rec" || (id === "src-live" && !SERVER)) pressed(id);
   renderChoice();
@@ -2401,7 +2454,11 @@ function renderRunChoice(ci, action) {
   if (action === "mbpp" || action === "swebench") ci.appendChild(runForm(action));
   const cmds = h("div", ""), where = h("div", "where"), act = h("div", "ci-actions"), log = h("pre", "joblog");
   cmds.id = "job-cmds"; where.id = "job-where"; act.id = "job-act"; log.id = "job-log"; log.hidden = true;
-  ci.append(cmds, where, act, log);
+  const res = h("div", "sbres"); res.id = "job-res"; res.hidden = true;
+  if (action === "sandbox") {  // results as a checklist; the raw output stays one click away
+    const det = document.createElement("details"); det.className = "logwrap"; det.hidden = true;
+    det.append(h("summary", "", tr("full_out")), log); ci.append(cmds, where, act, res, det);
+  } else ci.append(cmds, where, act, log);
   fillJobArea(action);
 }
 function runForm(action) {
@@ -2461,6 +2518,25 @@ async function fillJobArea(action) {
     const atBottom = log.hidden || log.scrollTop + log.clientHeight >= log.scrollHeight - 8;
     log.hidden = false; log.textContent = job.log.join("\n"); if (atBottom) log.scrollTop = log.scrollHeight;
   } else log.hidden = true;
+  if (log.parentElement && log.parentElement.tagName === "DETAILS") log.parentElement.hidden = log.hidden;
+  const res = $("job-res");
+  if (res) { res.hidden = !(showJob && action === "sandbox"); if (!res.hidden) renderSandboxResults(res, job.log || []); }
+}
+/* mock_exam.sh sandbox prints "  <check name>   OK|FAIL  [detail]" per check. */
+function renderSandboxResults(box, lines) {
+  const rows = [];
+  for (const l of lines) { const m = l.match(/^\s{2}(\S.*?)\s{2,}(OK|FAIL)\b\s*(.*)$/); if (m) rows.push({name: m[1], ok: m[2] === "OK", detail: m[3]}); }
+  box.replaceChildren();
+  if (!rows.length) return;
+  const passed = rows.filter((r) => r.ok).length, sum = h("div", `sbsum ${passed === rows.length ? "good" : "bad"}`);
+  sum.append(icon(passed === rows.length ? "checkcircle" : "xcircle"), " " + tr("sb_res_sum", {p: passed, n: rows.length}));
+  const ul = document.createElement("ul");
+  for (const r of rows) {
+    const li = h("li", r.ok ? "ok" : "fail"); li.append(icon(r.ok ? "checkcircle" : "xcircle"), h("span", "", r.name));
+    if (r.detail) li.appendChild(h("span", "muted", r.detail));
+    ul.appendChild(li);
+  }
+  box.append(sum, ul);
 }
 async function startJob(action) {
   try { JOB = await api("run", {action, params: currentParams(action)}); }
@@ -2480,8 +2556,10 @@ async function cancelJob() { try { JOB = await api("cancel", {}); } catch (_) { 
 
 /* ---------- recorded runs ---------- */
 function renderRec(ci) {
-  if (!SERVER) { ci.appendChild(h("p", "warn", tr("needs_server_rec"))); ci.appendChild(cmdBlock([{key: "cmd_ui", command: "uv run agent-ui"}])); return; }
-  const list = h("div", "rec"), repro = h("div", ""); repro.id = "rec-repro"; ci.append(list, repro);
+  const how = () => { const d = h("div", ""); d.append(h("p", "", tr("rec_how")), cmdBlock(REC_CMDS)); return d; };
+  if (!SERVER) { ci.appendChild(h("p", "warn", tr("needs_server_rec"))); ci.appendChild(how()); return; }
+  if (shown !== "src-rec") ci.appendChild(h("p", "muted", tr("rec_pick")));
+  const list = h("div", "rec"), repro = h("div", ""); repro.id = "rec-repro"; ci.append(list, repro, how());
   Promise.all([RUNS ? RUNS : api("runs"), loadActions()]).then(([runs]) => {
     RUNS = runs;
     if (!runs.length) { list.appendChild(h("div", "muted", tr("rec_empty"))); return; }
@@ -2505,7 +2583,7 @@ async function openRecorded(r) {
     if (!res.ok) throw new Error(res.statusText);
     const list = parseTrace(await res.text());
     if (es) { es.close(); es = null; }
-    pressed("src-rec"); banner("file", "rec_loaded", {name: r.path}); setRaw(list, "file");
+    pressed("src-rec"); banner("file", "rec_loaded", {name: r.path}); setRaw(list, "file"); shown = "src-rec"; updateView();
   } catch (e) { banner("file", "file_error", {name: r.path, err: e.message}); }
   showRepro(r);
 }
@@ -2707,7 +2785,7 @@ function stepIcons(s) {
 function stepsSoFar(st) { return Math.max(0, ...[...st.steps.keys()].filter((k) => k > 0)); }
 function renderStory(e, st) {
   const n = narrate(e);
-  $("story").className = `panel story ${n.tone}`;
+  $("story").className = `panel story replay ${n.tone}`;
   $("story-ico").replaceChildren(icon(n.ico));
   const say = $("story-say"); say.replaceChildren(n.text);
   if (n.quote) { say.append(" "); say.appendChild(h("q", "", n.quote)); }
@@ -2857,7 +2935,9 @@ gloss.addEventListener("click", (ev) => { if (ev.target === gloss) gloss.close()
 const TOUR_TARGETS = [".viewctl", "#launcher", "#taskcard", "#story", "#simple-panel, #arch-panel", "#steps", "#meters", "#security", "#answer", "#b-gloss"];
 let tourI = -1;
 function tourTarget(i) { return [...document.querySelectorAll(TOUR_TARGETS[i])].find((x) => x.getClientRects().length); }
-function tourStart() { stop(); tip.hidden = true; tourI = 0; $("tour").hidden = false; tourShow(); }
+function tourStart() {
+  if (document.body.dataset.view === "none") { selectChoice("src-mbpp"); loadDemo("mbpp"); }
+  stop(); tip.hidden = true; tourI = 0; $("tour").hidden = false; tourShow(); }
 function tourEnd() { $("tour").hidden = true; tourI = -1; try { localStorage.setItem("as-tour-done", "1"); } catch (_) { /* storage blocked */ } }
 function tourShow() {
   const steps = tr("tour"), [title, body] = steps[tourI], target = tourTarget(tourI);
