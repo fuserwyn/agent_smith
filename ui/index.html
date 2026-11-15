@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Smith Observatory</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1506,7 +1508,7 @@ function meter(label, used, max, fmt = num, explain, term) {
   return m;
 }
 function renderState(st) {
-  const run = st.run || {}, lim = run.limits || {};
+  const run = st.run || events.find((x) => x.type === "run_start") || {}, lim = run.limits || {};
   const steps = [...st.steps.values()].filter((s) => s.n > 0).sort((a, b) => a.n - b.n);
   if ((selectedStep == null || !st.steps.has(selectedStep)) && steps.length) selectedStep = steps[steps.length - 1].n;
   const inTok = steps.reduce((a, s) => a + (s.inTok || 0), 0), outTok = steps.reduce((a, s) => a + (s.outTok || 0), 0);
@@ -2190,7 +2192,8 @@ function renderSimple(e, st) {
 
 /* ---------- task and result ---------- */
 function renderTaskCard(st) {
-  const run = st.run, lim = (run && run.limits) || {};
+  // Task text, model and limits are known from the run_start event even before playback reaches it.
+  const run = st.run || events.find((x) => x.type === "run_start") || null, lim = (run && run.limits) || {};
   $("tc-kind-b").textContent = run ? ({mbpp: "MBPP", swebench: "SWE-bench"}[run.benchmark] || run.benchmark || "") : "";
   $("tc-kind").textContent = run ? tr(run.benchmark === "mbpp" ? "kind_mbpp" : "kind_swe") : tr("kind_none");
   $("tc-text").textContent = run ? (run.task_prompt || String(run.task_id ?? "")) : "";
@@ -2203,7 +2206,7 @@ function renderTaskCard(st) {
     big.textContent = tr(st.end.success ? "res_ok" : "res_fail"); big.className = `res-big ${st.end.success ? "ok" : "bad"}`;
     $("res-stats").textContent = tr("res_stats", {n: st.end.iterations ?? steps.length, s: Number(st.end.total_time_seconds || 0).toFixed(1),
       pct: lim.max_input_tokens ? Math.round((100 * inTok) / lim.max_input_tokens) : "?"});
-  } else if (run) { big.textContent = tr("res_running", {n: Math.max(1, stepsSoFar(st))}); big.className = "res-big run"; $("res-stats").textContent = ""; }
+  } else if (st.run) { big.textContent = tr("res_running", {n: Math.max(1, stepsSoFar(st))}); big.className = "res-big run"; $("res-stats").textContent = ""; }
   else { big.textContent = tr("res_idle"); big.className = "res-big"; $("res-stats").textContent = ""; }
   let last = null;
   for (const s of steps.sort((a, b) => a.n - b.n)) for (const x of s.tools) if (x.name === "run_tests" && x.res) { const r = testResult(x.res.result); if (r) last = r; }
