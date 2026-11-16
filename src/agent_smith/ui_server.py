@@ -24,6 +24,7 @@ open in the same browser cannot trigger a run.
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import os
 import threading
@@ -178,7 +179,16 @@ def main(argv=None) -> int:
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args(argv)
     trace = Path(args.trace).resolve()
-    server = ThreadingHTTPServer((args.host, args.port), make_handler(trace, host=args.host, port=args.port))
+    try:
+        server = ThreadingHTTPServer((args.host, args.port), make_handler(trace, host=args.host, port=args.port))
+    except OSError as exc:
+        if exc.errno != errno.EADDRINUSE:
+            raise
+        print(f"agent-ui: port {args.port} is already in use — the UI is probably running already: "
+              f"open http://{args.host}:{args.port}\n"
+              f"  or start another one:  uv run agent-ui --port {args.port + 1}\n"
+              f"  or free the port:      lsof -ti tcp:{args.port} | xargs kill")
+        return 1
     print(f"Agent Smith UI on http://{args.host}:{args.port}  (following {trace})")
     try:
         server.serve_forever()
