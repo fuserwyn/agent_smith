@@ -102,6 +102,18 @@ def swebench_pool() -> List[str]:
 
 
 @functools.lru_cache(maxsize=1)
+def mbpp_tasks() -> List[Dict[str, Any]]:
+    """MBPP task list for the picker: id, split, statement only (never the reference code or the tests)."""
+    src = MOULINETTE / "moulinette" / "mbpp" / "data" / "sanitized_tasks.json"
+    try:
+        data = json.loads(src.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return sorted(({"id": t["task_id"], "split": t.get("split", ""), "text": " ".join(str(t.get("task_definition", "")).split())}
+                   for t in data if isinstance(t.get("task_id"), int)), key=lambda t: t["id"])
+
+
+@functools.lru_cache(maxsize=1)
 def docker_host() -> str:
     if os.environ.get("DOCKER_HOST"):
         return os.environ["DOCKER_HOST"]
@@ -130,7 +142,7 @@ def docker_running() -> bool:
 
 
 def actions() -> Dict[str, Any]:
-    return {"models": model_choices(), "pool": swebench_pool(), "defaults": {k: {"provider": p, "model": m} for k, (p, m) in DEFAULTS.items()},
+    return {"models": model_choices(), "pool": swebench_pool(), "mbpp": mbpp_tasks(), "defaults": {k: {"provider": p, "model": m} for k, (p, m) in DEFAULTS.items()},
             "moulinette": (MOULINETTE / "pyproject.toml").is_file(), "env_file": (ROOT / ".env").is_file(),
             "docker": bool(shutil.which("docker")), "docker_running": docker_running(), "uv": bool(shutil.which("uv"))}
 

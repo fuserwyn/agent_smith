@@ -789,6 +789,8 @@ en: {
   lbl_model: "AI model",
   lbl_task: "Task",
   lbl_random: "empty = random task",
+  opt_random: "Random task (as the moulinette does)",
+  mbpp_split: "split: {s}",
   no_key: "no key in .env",
   key_missing: "No key for this provider in .env ({env}): the run will fail.",
   needs_server: "Launching from the page needs the local server. Start it, then open http://127.0.0.1:8765:",
@@ -1087,6 +1089,8 @@ ru: {
   lbl_model: "Модель ИИ",
   lbl_task: "Задача",
   lbl_random: "пусто = случайная задача",
+  opt_random: "Случайная задача (как делает moulinette)",
+  mbpp_split: "раздел: {s}",
   no_key: "нет ключа в .env",
   key_missing: "В .env нет ключа этого провайдера ({env}): прогон завершится ошибкой.",
   needs_server: "Для запуска со страницы нужен локальный сервер. Запустите его и откройте http://127.0.0.1:8765:",
@@ -1385,6 +1389,8 @@ fr: {
   lbl_model: "Modèle d'IA",
   lbl_task: "Tâche",
   lbl_random: "vide = tâche au hasard",
+  opt_random: "Tâche au hasard (comme la moulinette)",
+  mbpp_split: "partie : {s}",
   no_key: "pas de clé dans .env",
   key_missing: "Aucune clé pour ce fournisseur dans .env ({env}) : l'exécution échouera.",
   needs_server: "Lancer depuis la page nécessite le serveur local. Démarrez-le, puis ouvrez http://127.0.0.1:8765 :",
@@ -2475,7 +2481,25 @@ function runForm(action) {
   sel.value = f.key; sel.addEventListener("change", () => { f.key = sel.value; renderChoice(); });
   ml.appendChild(sel); wrap.appendChild(ml);
   const tl = h("label", "", tr("lbl_task"));
-  if (action === "mbpp") {
+  let taskNote = null;
+  if (action === "mbpp" && (ACTIONS.mbpp || []).length) {  // every task of the moulinette, with its statement
+    const ts = document.createElement("select"), rnd = document.createElement("option"), splits = {};
+    rnd.value = ""; rnd.textContent = tr("opt_random"); ts.appendChild(rnd);
+    for (const t of ACTIONS.mbpp) (splits[t.split] = splits[t.split] || []).push(t);
+    for (const sp of ["test", "val", "train", "fewshot", ...Object.keys(splits)].filter((v, i, a) => splits[v] && a.indexOf(v) === i)) {
+      const og = document.createElement("optgroup"); og.label = tr("mbpp_split", {s: sp});
+      for (const t of splits[sp]) {
+        const o = document.createElement("option"); o.value = String(t.id);
+        o.textContent = `#${t.id} · ${t.text.length > 70 ? t.text.slice(0, 69) + "…" : t.text}`; og.appendChild(o);
+      }
+      ts.appendChild(og);
+    }
+    ts.value = f.task; if (ts.value !== f.task) { f.task = ""; ts.value = ""; }
+    ts.addEventListener("change", () => { f.task = ts.value; renderChoice(); });
+    tl.appendChild(ts);
+    const t = ACTIONS.mbpp.find((x) => String(x.id) === f.task);
+    if (t) taskNote = h("div", "note-m", `#${t.id} (${t.split}): ${t.text}`);
+  } else if (action === "mbpp") {
     const inp = document.createElement("input"); inp.type = "text"; inp.inputMode = "numeric"; inp.placeholder = tr("lbl_random"); inp.value = f.task;
     let t = null; inp.addEventListener("input", () => { f.task = inp.value.trim(); clearTimeout(t); t = setTimeout(() => fillJobArea(action), 250); });
     tl.appendChild(inp);
@@ -2486,6 +2510,7 @@ function runForm(action) {
     tl.appendChild(ts);
   }
   wrap.appendChild(tl);
+  if (taskNote) wrap.appendChild(taskNote);
   const m = ACTIONS.models.find((x) => `${x.provider}|${x.model}` === f.key);
   if (m && m.notes) wrap.appendChild(h("div", "note-m", m.notes));
   if (m && !m.key_ok) wrap.appendChild(h("div", "warn", tr("key_missing", {env: m.key_env})));

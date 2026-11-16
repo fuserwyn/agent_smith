@@ -74,6 +74,8 @@ def test_actions_and_runs_endpoints(server):
     data = json.loads(body)
     assert code == 200 and data["defaults"]["mbpp"]["model"] and all("key_ok" in m for m in data["models"])
     assert "OPENROUTER_API_KEY=" not in body  # key presence only, never values
+    assert len(data["mbpp"]) > 400 and set(data["mbpp"][0]) == {"id", "split", "text"}  # statements only
+    assert '"test_list"' not in body and '"code"' not in body  # never the hidden tests or the reference solution
     code, body = call(server, "/api/trace?path=../.env")
     assert code == 400
 
