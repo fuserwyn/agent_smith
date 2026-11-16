@@ -271,6 +271,7 @@ body[data-view="none"] .replay { display: none !important; }
 .ci-form select, .ci-form input { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 8px;
   font-size: 13px; width: min(340px, 100%); max-width: 100%; }
 .ci-form .note-m { flex-basis: 100%; font-size: 12px; color: var(--muted); }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--c-orch); font: inherit; text-decoration: underline; cursor: pointer; }
 .cmds { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
 .cmds-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; background: var(--panel-2);
   border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
@@ -791,6 +792,9 @@ en: {
   lbl_model: "AI model",
   lbl_task: "Task",
   lbl_random: "empty = random task",
+  opt_random_swe: "Random task (from the exam pool)",
+  swe_picked: "Drawn at random from the exam pool: {id}",
+  btn_reroll: "Draw again",
   rt_wait: "pause in the recording: {s} s",
   speed_real: "Real time",
   opt_random: "Random task (as the moulinette does)",
@@ -1093,6 +1097,9 @@ ru: {
   lbl_model: "Модель ИИ",
   lbl_task: "Задача",
   lbl_random: "пусто = случайная задача",
+  opt_random_swe: "Случайная задача (из пула экзамена)",
+  swe_picked: "Случайно выпала задача из пула экзамена: {id}",
+  btn_reroll: "Вытянуть другую",
   rt_wait: "пауза в записи: {s} с",
   speed_real: "Реальное время",
   opt_random: "Случайная задача (как делает moulinette)",
@@ -1395,6 +1402,9 @@ fr: {
   lbl_model: "Modèle d'IA",
   lbl_task: "Tâche",
   lbl_random: "vide = tâche au hasard",
+  opt_random_swe: "Tâche au hasard (pool d’examen)",
+  swe_picked: "Tirée au hasard dans le pool d’examen : {id}",
+  btn_reroll: "Tirer une autre",
   rt_wait: "pause dans l’enregistrement : {s} s",
   speed_real: "Temps réel",
   opt_random: "Tâche au hasard (comme la moulinette)",
@@ -2463,8 +2473,12 @@ function renderChoice() {
 function currentParams(action) {
   if (action !== "mbpp" && action !== "swebench") return {};
   const f = form[action], [provider, model] = (f.key || "").split("|"), p = {provider, model};
-  if (f.task) p.task_id = f.task;
+  if (f.task) p.task_id = f.task; else if (action === "swebench" && f.pick) p.task_id = f.pick;
   return p;
+}
+function drawSwe(not) {
+  const pool = ((ACTIONS && ACTIONS.pool) || []).filter((x) => x !== not);
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : not || "";
 }
 async function loadActions() { if (!ACTIONS) ACTIONS = await api("actions"); return ACTIONS; }
 function renderRunChoice(ci, action) {
@@ -2491,7 +2505,7 @@ function renderRunChoice(ci, action) {
 function runForm(action) {
   const f = form[action], wrap = h("div", "ci-form");
   if (!f.key) { const d = ACTIONS.defaults[action]; f.key = `${d.provider}|${d.model}`; }
-  if (action === "swebench" && !f.task) f.task = ACTIONS.pool.includes("sympy__sympy-13480") ? "sympy__sympy-13480" : ACTIONS.pool[0] || "";
+  if (action === "swebench" && !f.pick) f.pick = drawSwe();
   const ml = h("label", "", tr("lbl_model")), sel = document.createElement("select"), groups = {};
   for (const m of ACTIONS.models) (groups[m.provider] = groups[m.provider] || []).push(m);
   for (const [prov, list] of Object.entries(groups)) {
@@ -2525,10 +2539,18 @@ function runForm(action) {
     let t = null; inp.addEventListener("input", () => { f.task = inp.value.trim(); clearTimeout(t); t = setTimeout(() => fillJobArea(action), 250); });
     tl.appendChild(inp);
   } else {
-    const ts = document.createElement("select");
+    // "random" draws one task of the exam pool here, like `moulinette_eval select`, so the commands stay exact
+    const ts = document.createElement("select"), rnd = document.createElement("option");
+    rnd.value = ""; rnd.textContent = tr("opt_random_swe"); ts.appendChild(rnd);
     for (const id of ACTIONS.pool) { const o = document.createElement("option"); o.value = o.textContent = id; ts.appendChild(o); }
-    ts.value = f.task; ts.addEventListener("change", () => { f.task = ts.value; fillJobArea(action); });
+    ts.value = f.task; if (ts.value !== f.task) { f.task = ""; ts.value = ""; }
+    ts.addEventListener("change", () => { f.task = ts.value; if (!f.task) f.pick = drawSwe(); renderChoice(); });
     tl.appendChild(ts);
+    if (!f.task && f.pick) {
+      taskNote = h("div", "note-m", tr("swe_picked", {id: f.pick}) + " ");
+      const rb = h("button", "linkbtn", tr("btn_reroll"));
+      rb.addEventListener("click", () => { f.pick = drawSwe(f.pick); renderChoice(); }); taskNote.appendChild(rb);
+    }
   }
   wrap.appendChild(tl);
   if (taskNote) wrap.appendChild(taskNote);
