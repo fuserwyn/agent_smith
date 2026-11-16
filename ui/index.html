@@ -56,6 +56,7 @@ button { cursor: pointer; }
 .ctl { border: 1px solid var(--line); background: var(--panel); width: 36px; height: 34px; border-radius: 8px; display: grid; place-items: center; }
 .ctl svg { width: 16px; height: 16px; fill: currentColor; }
 .ctl.play { width: 44px; background: var(--c-orch); color: var(--panel); border-color: var(--c-orch); }
+.rtwait { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .speed { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; height: 34px; padding: 0 6px; }
 .scrubrow { display: flex; gap: 10px; align-items: center; }
 .scrub { flex: 1 1 220px; min-width: 160px; accent-color: var(--c-orch); }
@@ -425,8 +426,9 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
       <button class="ctl" id="b-next" aria-label="Next event"><svg viewBox="0 0 16 16"><path d="M4 2v12l8-6z"/></svg></button>
       <button class="ctl" id="b-last" aria-label="Go to end"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
       <select class="speed" id="speed" aria-label="Playback speed">
-        <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option>
+        <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option><option value="real" data-i18n="speed_real">Real time</option>
       </select>
+      <span class="rtwait" id="rtwait" hidden></span>
     </div>
   </header>
 
@@ -789,6 +791,8 @@ en: {
   lbl_model: "AI model",
   lbl_task: "Task",
   lbl_random: "empty = random task",
+  rt_wait: "pause in the recording: {s} s",
+  speed_real: "Real time",
   opt_random: "Random task (as the moulinette does)",
   mbpp_split: "split: {s}",
   no_key: "no key in .env",
@@ -1089,6 +1093,8 @@ ru: {
   lbl_model: "Модель ИИ",
   lbl_task: "Задача",
   lbl_random: "пусто = случайная задача",
+  rt_wait: "пауза в записи: {s} с",
+  speed_real: "Реальное время",
   opt_random: "Случайная задача (как делает moulinette)",
   mbpp_split: "раздел: {s}",
   no_key: "нет ключа в .env",
@@ -1389,6 +1395,8 @@ fr: {
   lbl_model: "Modèle d'IA",
   lbl_task: "Tâche",
   lbl_random: "vide = tâche au hasard",
+  rt_wait: "pause dans l’enregistrement : {s} s",
+  speed_real: "Temps réel",
   opt_random: "Tâche au hasard (comme la moulinette)",
   mbpp_split: "partie : {s}",
   no_key: "pas de clé dans .env",
@@ -1725,7 +1733,9 @@ function pulse(edgeId) {
 /* ======================= state ======================= */
 let raw = [], events = [], cursor = -1, playing = false, timer = null, sourceKind = "demo";
 let selectedStep = null, activeTab = "flow", tabPinned = false, selectedNode = "interp";
-const speed = () => parseFloat($("speed").value);
+/* "real": the recorded pace (event field t, seconds since start); animations then run at 1x. */
+const realTime = () => $("speed").value === "real";
+const speed = () => realTime() ? 1 : parseFloat($("speed").value);
 const withLines = () => $("opt-lines").checked;
 
 function setRaw(list, kind) {
@@ -2234,9 +2244,20 @@ function tick() {
   const gap = ((next.t ?? 0) - (events[cursor].t ?? 0)) * 1000;
   const simple = MODE === "simple";
   const base = next.type === "exec_line" ? (simple ? 340 : 260) : SUB_EVENTS.has(next.type) ? (simple ? 1100 : 420) : simple ? 2000 : Math.min(1400, Math.max(420, gap));
-  timer = setTimeout(() => { go(cursor + 1); tick(); }, base / speed());
+  const delay = realTime() ? Math.max(0, gap) : base / speed();
+  rtWait(realTime() && delay >= 2000 ? delay : 0);
+  timer = setTimeout(() => { rtWait(0); go(cursor + 1); tick(); }, delay);
 }
-function stop() { playing = false; clearTimeout(timer); setPlayIcon(); }
+/* Real-time playback can wait tens of seconds (the model was thinking): count it down so it does not look frozen. */
+let rtTimer = null;
+function rtWait(ms) {
+  clearInterval(rtTimer); const el = $("rtwait"), end = performance.now() + ms;
+  el.hidden = !ms; if (!ms) return;
+  const upd = () => { el.textContent = tr("rt_wait", {s: Math.max(0, Math.ceil((end - performance.now()) / 1000))}); };
+  upd(); rtTimer = setInterval(upd, 250);
+}
+function stop() { playing = false; clearTimeout(timer); rtWait(0); setPlayIcon(); }
+$("speed").addEventListener("change", () => { if (playing) { clearTimeout(timer); tick(); } });  // a new speed applies at once
 function setPlayIcon() { const icon = playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M4 2v12l10-6z"/>'; $("i-play").innerHTML = icon; const mi = document.getElementById("mi-play"); if (mi) mi.innerHTML = icon; $("b-play").setAttribute("aria-label", playing ? "Pause" : "Play"); syncBigPlay(); }
 $("b-play").addEventListener("click", () => playing ? stop() : play());
 $("b-next").addEventListener("click", () => { stop(); go(cursor + 1); });
