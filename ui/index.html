@@ -388,6 +388,8 @@ body[data-mode="detailed"] .smp { display: none !important; }
 .tip { position: fixed; z-index: 60; max-width: 320px; background: var(--ink); color: var(--panel); border-radius: 8px; padding: 8px 11px;
   font-size: 12.5px; line-height: 1.45; box-shadow: 0 10px 30px rgba(10, 16, 30, .3); pointer-events: none; }
 .tip b { display: block; margin-bottom: 2px; }
+.tip { white-space: pre-line; }
+.step .icons span[data-tip-title] { cursor: help; }
 dl.gl { margin: 0; padding: 14px 18px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 18px; }
 dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
 .tour { position: fixed; inset: 0; z-index: 50; }
@@ -691,6 +693,14 @@ en: {
   ss_t_run_command: "ran a command", ss_t_generic: "{name}",
   ic_llm: "the AI answered", ic_code: "code ran in the sandbox", ic_tools: "tools used", ic_tests: "test result",
   ic_err: "error", ic_final: "answer handed in", ic_block: "blocked / stopped",
+  icd_llm: "The agent sent the conversation so far to the AI model and got a reply: a short thought (Thought) and a piece of Python code.",
+  icd_code: "The code from the reply was run in our restricted Python sandbox. What it printed went back to the model as the Observation.",
+  icd_tools: "The code called tools served by the MCP server: {names}. Tools are functions the agent may use, e.g. to run tests or read files.",
+  icd_tests: "run_tests: {pass} of {total} public tests of the task passed. One more hidden test is run later by the moulinette.",
+  icd_blocked: "The sandbox refused something forbidden here (e.g. a banned import or file access). The agent sees the refusal and has to find another way.",
+  icd_timeout: "The step was stopped by a limit (time or resources). The agent sees it and can try a different approach.",
+  icd_err: "The code crashed with an error. The agent reads the error message on the next step and tries to fix the code.",
+  icd_final: "The agent called final_answer(): it considers the task solved and hands the solution in. The moulinette then checks it.",
 
   m_iter: "Steps (iterations)", m_in: "Text read by the AI (input tokens)", m_out: "Text written by the AI (output tokens)", m_time: "Time",
   mx_iter: "one step = ask the AI once and run its code", mx_in: "≈ {w} words in total", mx_out: "≈ {w} words in total", mx_time: "seconds since the start",
@@ -987,6 +997,14 @@ ru: {
   ss_t_run_command: "выполнил команду", ss_t_generic: "{name}",
   ic_llm: "ИИ ответил", ic_code: "код выполнен в песочнице", ic_tools: "использованы инструменты", ic_tests: "результат тестов",
   ic_err: "ошибка", ic_final: "ответ сдан", ic_block: "заблокировано / остановлено",
+  icd_llm: "Агент отправил модели ИИ весь разговор до этого момента и получил ответ: короткую мысль (Thought) и кусок кода на Python.",
+  icd_code: "Код из ответа выполнен в нашей ограниченной песочнице Python. То, что он напечатал, вернулось модели как наблюдение (Observation).",
+  icd_tools: "Код вызвал инструменты MCP-сервера: {names}. Инструменты — это функции, которыми агенту можно пользоваться, например запуск тестов или чтение файлов.",
+  icd_tests: "run_tests: прошло {pass} из {total} открытых тестов задачи. Ещё один, скрытый, тест потом запускает moulinette.",
+  icd_blocked: "Песочница отказалась выполнить запрещённое действие (например, запрещённый импорт или доступ к файлам). Агент видит отказ и должен найти другой путь.",
+  icd_timeout: "Шаг остановлен лимитом (время или ресурсы). Агент это видит и может попробовать по-другому.",
+  icd_err: "Код упал с ошибкой. На следующем шаге агент прочитает сообщение об ошибке и попробует исправить код.",
+  icd_final: "Агент вызвал final_answer(): он считает задачу решённой и сдаёт решение. Дальше его проверяет moulinette.",
 
   m_iter: "Шаги (итерации)", m_in: "Прочитано ИИ (входные токены)", m_out: "Написано ИИ (выходные токены)", m_time: "Время",
   mx_iter: "один шаг = один вопрос к ИИ и запуск его кода", mx_in: "≈ {w} слов всего", mx_out: "≈ {w} слов всего", mx_time: "секунд с начала",
@@ -1292,6 +1310,14 @@ fr: {
   ss_t_run_command: "a lancé une commande", ss_t_generic: "{name}",
   ic_llm: "l'IA a répondu", ic_code: "code exécuté dans le bac à sable", ic_tools: "outils utilisés", ic_tests: "résultat des tests",
   ic_err: "erreur", ic_final: "réponse rendue", ic_block: "bloqué / arrêté",
+  icd_llm: "L’agent a envoyé au modèle d’IA toute la conversation jusqu’ici et a reçu une réponse : une courte réflexion (Thought) et un bout de code Python.",
+  icd_code: "Le code de la réponse a été exécuté dans notre bac à sable Python restreint. Ce qu’il a affiché est revenu au modèle comme observation (Observation).",
+  icd_tools: "Le code a appelé des outils du serveur MCP : {names}. Les outils sont des fonctions que l’agent peut utiliser, par exemple lancer les tests ou lire des fichiers.",
+  icd_tests: "run_tests : {pass} tests publics sur {total} réussis. Un test caché est lancé ensuite par la moulinette.",
+  icd_blocked: "Le bac à sable a refusé une action interdite (par exemple un import interdit ou un accès aux fichiers). L’agent voit le refus et doit trouver un autre chemin.",
+  icd_timeout: "L’étape a été arrêtée par une limite (temps ou ressources). L’agent le voit et peut essayer autrement.",
+  icd_err: "Le code a planté avec une erreur. À l’étape suivante, l’agent lit le message d’erreur et essaie de corriger le code.",
+  icd_final: "L’agent a appelé final_answer() : il considère la tâche résolue et rend la solution. La moulinette la vérifie ensuite.",
 
   m_iter: "Étapes (itérations)", m_in: "Texte lu par l'IA (jetons en entrée)", m_out: "Texte écrit par l'IA (jetons en sortie)", m_time: "Temps",
   mx_iter: "une étape = une question à l'IA et l'exécution de son code", mx_in: "≈ {w} mots au total", mx_out: "≈ {w} mots au total", mx_time: "secondes depuis le début",
@@ -2836,16 +2862,21 @@ function stepSummary(s) {
 }
 function stepIcons(s) {
   const box = h("div", "icons");
-  const add = (ic, txt, tip, cls = "") => { const sp = h("span", cls); sp.appendChild(icon(ic)); if (txt) sp.append(txt); sp.title = tip; box.appendChild(sp); };
-  if (s.llm != null) add("bot", "", tr("ic_llm"));
-  if (s.code) add("code", "", tr("ic_code"));
-  if (s.tools.length) add("wrench", s.tools.length > 1 ? `×${s.tools.length}` : "", `${tr("ic_tools")}: ${[...new Set(s.tools.map((x) => x.name))].join(", ")}`);
+  // hover / focus shows a tooltip (same box as the glossary): a title and what this badge means for this step
+  const add = (ic, txt, title, desc, cls = "") => {
+    const sp = h("span", cls); sp.appendChild(icon(ic)); if (txt) sp.append(txt);
+    sp.dataset.tipTitle = title; sp.dataset.tipText = desc; sp.setAttribute("aria-label", `${title}: ${desc}`); box.appendChild(sp);
+  };
+  if (s.llm != null) add("bot", "", tr("ic_llm"), tr("icd_llm"));
+  if (s.code) add("code", "", tr("ic_code"), tr("icd_code"));
+  const names = [...new Set(s.tools.map((x) => x.name))].join(", ");
+  if (s.tools.length) add("wrench", s.tools.length > 1 ? `×${s.tools.length}` : "", `${tr("ic_tools")}: ${names}`, tr("icd_tools", {names}));
   const tests = s.tools.map((x) => (x.name === "run_tests" && x.res ? testResult(x.res.result) : null)).filter(Boolean);
-  if (tests.length) { const r = tests[tests.length - 1]; add(r.ok ? "checkcircle" : "xcircle", `${r.pass}/${r.total}`, tr("ic_tests"), r.ok ? "good" : "bad"); }
+  if (tests.length) { const r = tests[tests.length - 1]; add(r.ok ? "checkcircle" : "xcircle", `${r.pass}/${r.total}`, tr("ic_tests"), tr("icd_tests", {pass: r.pass, total: r.total}), r.ok ? "good" : "bad"); }
   const b = stepBlock(s);
-  if (b) add(b.kind === "blocked" ? "shield" : "clock", "", tr("ic_block"), "bad");
-  else if (s.status === "err") add("alert", "", tr("ic_err"), "bad");
-  if (s.status === "final") add("flag", "", tr("ic_final"), "good");
+  if (b) add(b.kind === "blocked" ? "shield" : "clock", "", tr("ic_block"), tr(b.kind === "blocked" ? "icd_blocked" : "icd_timeout") + (b.msg ? `\n${b.msg}` : ""), "bad");
+  else if (s.status === "err") add("alert", "", tr("ic_err"), tr("icd_err"), "bad");
+  if (s.status === "final") add("flag", "", tr("ic_final"), tr("icd_final"), "good");
   return box;
 }
 
@@ -2976,16 +3007,18 @@ function renderPlain(e, st) { renderStory(e, st); renderSimple(e, st); renderTas
 /* ---------- glossary: (i) terms, tooltip, dialog ---------- */
 function markTerm(node, key) { node.dataset.term = key; node.tabIndex = 0; return node; }
 const tip = $("tip");
+const TIP_SEL = "[data-term], [data-tip-title]";
 function showTip(target) {
-  const g = tr("g_" + target.dataset.term); if (!Array.isArray(g)) return;
+  const g = target.dataset.tipTitle ? [target.dataset.tipTitle, target.dataset.tipText || ""] : tr("g_" + target.dataset.term);
+  if (!Array.isArray(g)) return;
   tip.replaceChildren(h("b", "", g[0]), g[1]); tip.hidden = false;
   const r = target.getBoundingClientRect(), w = tip.offsetWidth, hh = tip.offsetHeight;
   const x = Math.min(window.innerWidth - w - 8, Math.max(8, r.left));
   let y = r.bottom + 8; if (y + hh > window.innerHeight - 8) y = Math.max(8, r.top - hh - 8);
   tip.style.left = `${x}px`; tip.style.top = `${y}px`;
 }
-document.addEventListener("mouseover", (ev) => { const x = ev.target.closest && ev.target.closest("[data-term]"); if (x) showTip(x); else tip.hidden = true; });
-document.addEventListener("focusin", (ev) => { const x = ev.target.closest && ev.target.closest("[data-term]"); if (x) showTip(x); });
+document.addEventListener("mouseover", (ev) => { const x = ev.target.closest && ev.target.closest(TIP_SEL); if (x) showTip(x); else tip.hidden = true; });
+document.addEventListener("focusin", (ev) => { const x = ev.target.closest && ev.target.closest(TIP_SEL); if (x) showTip(x); });
 document.addEventListener("focusout", () => { tip.hidden = true; });
 window.addEventListener("scroll", () => { tip.hidden = true; }, true);
 const gloss = $("gloss-modal");
