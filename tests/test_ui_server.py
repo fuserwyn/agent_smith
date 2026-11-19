@@ -127,3 +127,11 @@ def test_paid_model_is_flagged_and_free_fallback_is_on():
     assert f"--model-name {paid[0]['model']} --provider-url https://openrouter.ai/api/v1" in cmd
     cfg = load_models_config()
     assert cfg.fallback_enabled and not any(f.paid for f in cfg.fallbacks)  # running out of quota never lands on paid
+
+
+def test_mock_exam_free_by_default_paid_on_request():
+    free = ui_jobs.preview("exam", {})["steps"][0]["command"]
+    assert free.startswith("./scripts/mock_exam.sh all") and "--paid" not in free
+    assert ui_jobs.preview("exam", {"tier": "paid"})["steps"][0]["command"].endswith(" --paid")
+    with pytest.raises(ui_jobs.ActionError):
+        ui_jobs.preview("exam", {"tier": "gold"})

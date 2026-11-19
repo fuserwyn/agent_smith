@@ -804,10 +804,11 @@ en: {
   lbl_task: "Task",
   lbl_random: "empty = random task",
   tier_label: "Models",
-  tier_free: "Free APIs",
-  tier_paid: "Paid (OpenRouter)",
-  paid_warn: "Paid model: it spends OpenRouter credits. The subject asks for free tiers only, so use it only as a backup if the free quotas run out.",
-  fb_note: "If a free key runs out of quota, the agent switches by itself to the next key, then to another free provider (fallbacks in config/models.json).",
+  tier_free: "Standard",
+  tier_paid: "OpenRouter",
+  exam_paid_model: "Every part (MBPP and SWE-bench) runs on {model} via OpenRouter.",
+  exam_free_models: "MBPP on Groq, SWE-bench on NVIDIA; if a quota runs out the agent switches to the next provider.",
+  fb_note: "If a key runs out of quota, the agent switches by itself to the next key, then to another provider (fallbacks in config/models.json).",
   opt_random_swe: "Random task (from the exam pool)",
   swe_picked: "Drawn at random from the exam pool: {id}",
   btn_reroll: "Draw again",
@@ -1122,10 +1123,11 @@ ru: {
   lbl_task: "Задача",
   lbl_random: "пусто = случайная задача",
   tier_label: "Модели",
-  tier_free: "Бесплатные API",
-  tier_paid: "Платная (OpenRouter)",
-  paid_warn: "Платная модель: тратит кредиты OpenRouter. Сабжект требует только бесплатные тарифы, поэтому используйте её лишь как запасной вариант, если бесплатные квоты кончились.",
-  fb_note: "Если у бесплатного ключа кончится квота, агент сам перейдёт на следующий ключ, а затем на другого бесплатного провайдера (fallbacks в config/models.json).",
+  tier_free: "Стандартные",
+  tier_paid: "OpenRouter",
+  exam_paid_model: "Все части (MBPP и SWE-bench) идут на {model} через OpenRouter.",
+  exam_free_models: "MBPP на Groq, SWE-bench на NVIDIA; если квота кончится, агент перейдёт к следующему провайдеру.",
+  fb_note: "Если у ключа кончится квота, агент сам перейдёт на следующий ключ, а затем на другого провайдера (fallbacks в config/models.json).",
   opt_random_swe: "Случайная задача (из пула экзамена)",
   swe_picked: "Случайно выпала задача из пула экзамена: {id}",
   btn_reroll: "Вытянуть другую",
@@ -1440,10 +1442,11 @@ fr: {
   lbl_task: "Tâche",
   lbl_random: "vide = tâche au hasard",
   tier_label: "Modèles",
-  tier_free: "API gratuites",
-  tier_paid: "Payant (OpenRouter)",
-  paid_warn: "Modèle payant : il consomme des crédits OpenRouter. Le sujet demande uniquement des offres gratuites, à n’utiliser qu’en secours si les quotas gratuits sont épuisés.",
-  fb_note: "Si une clé gratuite épuise son quota, l’agent passe tout seul à la clé suivante, puis à un autre fournisseur gratuit (fallbacks dans config/models.json).",
+  tier_free: "Standard",
+  tier_paid: "OpenRouter",
+  exam_paid_model: "Toutes les parties (MBPP et SWE-bench) tournent sur {model} via OpenRouter.",
+  exam_free_models: "MBPP sur Groq, SWE-bench sur NVIDIA ; si un quota est épuisé, l’agent passe au fournisseur suivant.",
+  fb_note: "Si une clé épuise son quota, l’agent passe tout seul à la clé suivante, puis à un autre fournisseur (fallbacks dans config/models.json).",
   opt_random_swe: "Tâche au hasard (pool d’examen)",
   swe_picked: "Tirée au hasard dans le pool d’examen : {id}",
   btn_reroll: "Tirer une autre",
@@ -2446,7 +2449,7 @@ function updateView() {
   document.body.dataset.view = own ? "replay" : "none";
   if (!own) stop();
 }
-const form = {mbpp: {key: "", task: ""}, swebench: {key: "", task: ""}};
+const form = {mbpp: {key: "", task: ""}, swebench: {key: "", task: ""}, exam: {tier: "free"}};
 
 async function api(path, body) {
   const opts = body === undefined ? {cache: "no-store"} : {method: "POST", headers: {"Content-Type": "application/json", "X-Agent-Smith": "1"}, body: JSON.stringify(body)};
@@ -2513,6 +2516,7 @@ function renderChoice() {
 
 /* ---------- launchable runs ---------- */
 function currentParams(action) {
+  if (action === "exam") return form.exam.tier === "paid" ? {tier: "paid"} : {};
   if (action !== "mbpp" && action !== "swebench") return {};
   const f = form[action], [provider, model] = (f.key || "").split("|"), p = {provider, model};
   if (f.task) p.task_id = f.task; else if (action === "swebench" && f.pick) p.task_id = f.pick;
@@ -2535,6 +2539,7 @@ function renderRunChoice(ci, action) {
   if (!ACTIONS) { loadActions().then(() => { if (RUN_ACTION[choice] === action) renderChoice(); }).catch((e) => ci.appendChild(h("p", "warn", e.message))); return; }
   if (!ACTIONS.docker_running && action !== "sandbox") ci.appendChild(h("p", "warn", tr("docker_off")));
   if (action === "mbpp" || action === "swebench") ci.appendChild(runForm(action));
+  else if (action === "exam") ci.appendChild(examForm());
   const cmds = h("div", ""), where = h("div", "where"), act = h("div", "ci-actions"), log = h("pre", "joblog");
   cmds.id = "job-cmds"; where.id = "job-where"; act.id = "job-act"; log.id = "job-log"; log.hidden = true;
   const res = h("div", "sbres"); res.id = "job-res"; res.hidden = true;
@@ -2544,6 +2549,26 @@ function renderRunChoice(ci, action) {
   } else ci.append(cmds, where, act, log);
   fillJobArea(action);
 }
+function tierSeg(cur, onPick) {  // free APIs / paid OpenRouter segmented switch
+  const tl = h("label", "", tr("tier_label")), seg = h("div", "seg");
+  for (const t of ["free", "paid"]) {
+    const b = h("button", "", tr(t === "free" ? "tier_free" : "tier_paid")); b.type = "button";
+    b.setAttribute("aria-pressed", String(cur === t));
+    b.addEventListener("click", () => { if (cur !== t) onPick(t); });
+    seg.appendChild(b);
+  }
+  tl.appendChild(seg); return tl;
+}
+function examForm() {  // the mock exam runs mock_exam.sh: free models by default, --paid on the paid switch
+  const f = form.exam, wrap = h("div", "ci-form"), paid = ACTIONS.models.find((m) => m.paid);
+  if (!paid) return wrap;
+  wrap.appendChild(tierSeg(f.tier, (t) => { f.tier = t; renderChoice(); }));
+  if (f.tier === "paid") {
+    wrap.appendChild(h("div", "note-m", tr("exam_paid_model", {model: paid.model})));
+    if (!paid.key_ok) wrap.appendChild(h("div", "warn", tr("key_missing", {env: paid.key_env})));
+  } else wrap.appendChild(h("div", "note-m", tr("exam_free_models")));
+  return wrap;
+}
 function runForm(action) {
   const f = form[action], wrap = h("div", "ci-form");
   if (!f.key) { const d = ACTIONS.defaults[action]; f.key = `${d.provider}|${d.model}`; }
@@ -2552,20 +2577,10 @@ function runForm(action) {
   const keyOf = (m) => `${m.provider}|${m.model}`, paidModels = ACTIONS.models.filter((m) => m.paid);
   const cur = ACTIONS.models.find((m) => keyOf(m) === f.key);
   f.tier = f.tier || (cur && cur.paid ? "paid" : "free");
-  if (paidModels.length) {
-    const tl0 = h("label", "", tr("tier_label")), seg = h("div", "seg");
-    for (const t of ["free", "paid"]) {
-      const b = h("button", "", tr(t === "free" ? "tier_free" : "tier_paid")); b.type = "button";
-      b.setAttribute("aria-pressed", String(f.tier === t));
-      b.addEventListener("click", () => {
-        if (f.tier === t) return;
-        f.tier = t; const d = ACTIONS.defaults[action];
-        f.key = t === "paid" ? keyOf(paidModels[0]) : `${d.provider}|${d.model}`; renderChoice();
-      });
-      seg.appendChild(b);
-    }
-    tl0.appendChild(seg); wrap.appendChild(tl0);
-  }
+  if (paidModels.length) wrap.appendChild(tierSeg(f.tier, (t) => {
+    f.tier = t; const d = ACTIONS.defaults[action];
+    f.key = t === "paid" ? keyOf(paidModels[0]) : `${d.provider}|${d.model}`; renderChoice();
+  }));
   const ml = h("label", "", tr("lbl_model")), sel = document.createElement("select"), groups = {};
   for (const m of ACTIONS.models) if (!!m.paid === (f.tier === "paid")) (groups[m.provider] = groups[m.provider] || []).push(m);
   for (const [prov, list] of Object.entries(groups)) {
@@ -2615,9 +2630,8 @@ function runForm(action) {
   wrap.appendChild(tl);
   if (taskNote) wrap.appendChild(taskNote);
   const m = ACTIONS.models.find((x) => `${x.provider}|${x.model}` === f.key);
-  if (m && m.notes) wrap.appendChild(h("div", "note-m", m.notes));
-  if (m && m.paid) wrap.appendChild(h("div", "warn", tr("paid_warn")));
-  else if (m) wrap.appendChild(h("div", "note-m", tr("fb_note")));
+  if (m && m.notes && !m.paid) wrap.appendChild(h("div", "note-m", m.notes));
+  if (m && !m.paid) wrap.appendChild(h("div", "note-m", tr("fb_note")));
   if (m && !m.key_ok) wrap.appendChild(h("div", "warn", tr("key_missing", {env: m.key_env})));
   return wrap;
 }
