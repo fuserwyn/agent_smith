@@ -171,6 +171,12 @@
       "provider": "cohere",
       "model": "command-a-03-2025",
       "notes": "free trial key: 1000 calls/month, 20/min"
+    },
+    {
+      "provider": "openrouter",
+      "model": "deepseek/deepseek-v4-flash",
+      "notes": "PAID (OpenRouter credits): outside the subject's free-tier rule, use only as a backup",
+      "paid": true
     }
   ],
   "fallbacks": [
@@ -195,5 +201,5 @@
       "notes": "free; small prompts only"
     }
   ],
-  "fallback_enabled": false
+  "fallback_enabled": true
 }

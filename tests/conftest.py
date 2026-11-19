@@ -10,6 +10,12 @@ sys.path.insert(0, str(ROOT / "src"))
 FIXTURES = ROOT / "tests" / "fixtures"
 
 
+@pytest.fixture(autouse=True)
+def _offline_llm(monkeypatch):
+    """Tests talk to fake LLM servers only: never fall back to the real providers whose keys are in .env."""
+    monkeypatch.setenv("AGENT_FALLBACK", "0")
+
+
 @pytest.fixture
 def git_repo(tmp_path):
     """A small git repository used as a local 'testbed' for the SWE-bench tools."""

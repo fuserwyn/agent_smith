@@ -114,3 +114,16 @@ def test_embedded_file_mode_commands_match_the_server_recipes():
     stored = embed.embedded(embed.UI.read_text(encoding="utf-8"))
     assert stored == ui_jobs.static_commands(), "run: uv run python scripts/embed_ui_commands.py"
     assert "docker context inspect" in stored["swebench"]["steps"][-1]["command"]
+
+
+def test_paid_model_is_flagged_and_free_fallback_is_on():
+    from agent_smith.config import load_models_config
+    models = ui_jobs.model_choices()
+    paid = [m for m in models if m["paid"]]
+    assert paid and all(m["provider"] == "openrouter" for m in paid)
+    assert ui_jobs.DEFAULTS["mbpp"][1] not in {m["model"] for m in paid}  # defaults stay free
+    assert ui_jobs.DEFAULTS["swebench"][1] not in {m["model"] for m in paid}
+    cmd = ui_jobs.preview("mbpp", {"provider": "openrouter", "model": paid[0]["model"]})["steps"][1]["command"]
+    assert f"--model-name {paid[0]['model']} --provider-url https://openrouter.ai/api/v1" in cmd
+    cfg = load_models_config()
+    assert cfg.fallback_enabled and not any(f.paid for f in cfg.fallbacks)  # running out of quota never lands on paid

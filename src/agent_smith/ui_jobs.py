@@ -83,7 +83,7 @@ def model_choices() -> List[Dict[str, Any]]:
             continue
         prefix = p.key_env
         key_ok = prefix is None or any(n == prefix or n == prefix + "S" or n.startswith(prefix + "_") for n in have)
-        out.append({"provider": p.name, "model": m.model, "url": p.base_url, "notes": m.notes or "", "key_env": prefix, "key_ok": key_ok})
+        out.append({"provider": p.name, "model": m.model, "url": p.base_url, "notes": m.notes or "", "key_env": prefix, "key_ok": key_ok, "paid": m.paid})
     return out
 
 

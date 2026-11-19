@@ -271,6 +271,7 @@ body[data-view="none"] .replay { display: none !important; }
 .ci-form select, .ci-form input { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 8px;
   font-size: 13px; width: min(340px, 100%); max-width: 100%; }
 .ci-form .note-m { flex-basis: 100%; font-size: 12px; color: var(--muted); }
+.ci-form .warn { flex-basis: 100%; }
 .linkbtn { border: 0; background: none; padding: 0; color: var(--c-orch); font: inherit; text-decoration: underline; cursor: pointer; }
 .cmds { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
 .cmds-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; background: var(--panel-2);
@@ -802,6 +803,11 @@ en: {
   lbl_model: "AI model",
   lbl_task: "Task",
   lbl_random: "empty = random task",
+  tier_label: "Models",
+  tier_free: "Free APIs",
+  tier_paid: "Paid (OpenRouter)",
+  paid_warn: "Paid model: it spends OpenRouter credits. The subject asks for free tiers only, so use it only as a backup if the free quotas run out.",
+  fb_note: "If a free key runs out of quota, the agent switches by itself to the next key, then to another free provider (fallbacks in config/models.json).",
   opt_random_swe: "Random task (from the exam pool)",
   swe_picked: "Drawn at random from the exam pool: {id}",
   btn_reroll: "Draw again",
@@ -1115,6 +1121,11 @@ ru: {
   lbl_model: "Модель ИИ",
   lbl_task: "Задача",
   lbl_random: "пусто = случайная задача",
+  tier_label: "Модели",
+  tier_free: "Бесплатные API",
+  tier_paid: "Платная (OpenRouter)",
+  paid_warn: "Платная модель: тратит кредиты OpenRouter. Сабжект требует только бесплатные тарифы, поэтому используйте её лишь как запасной вариант, если бесплатные квоты кончились.",
+  fb_note: "Если у бесплатного ключа кончится квота, агент сам перейдёт на следующий ключ, а затем на другого бесплатного провайдера (fallbacks в config/models.json).",
   opt_random_swe: "Случайная задача (из пула экзамена)",
   swe_picked: "Случайно выпала задача из пула экзамена: {id}",
   btn_reroll: "Вытянуть другую",
@@ -1428,6 +1439,11 @@ fr: {
   lbl_model: "Modèle d'IA",
   lbl_task: "Tâche",
   lbl_random: "vide = tâche au hasard",
+  tier_label: "Modèles",
+  tier_free: "API gratuites",
+  tier_paid: "Payant (OpenRouter)",
+  paid_warn: "Modèle payant : il consomme des crédits OpenRouter. Le sujet demande uniquement des offres gratuites, à n’utiliser qu’en secours si les quotas gratuits sont épuisés.",
+  fb_note: "Si une clé gratuite épuise son quota, l’agent passe tout seul à la clé suivante, puis à un autre fournisseur gratuit (fallbacks dans config/models.json).",
   opt_random_swe: "Tâche au hasard (pool d’examen)",
   swe_picked: "Tirée au hasard dans le pool d’examen : {id}",
   btn_reroll: "Tirer une autre",
@@ -2532,8 +2548,26 @@ function runForm(action) {
   const f = form[action], wrap = h("div", "ci-form");
   if (!f.key) { const d = ACTIONS.defaults[action]; f.key = `${d.provider}|${d.model}`; }
   if (action === "swebench" && !f.pick) f.pick = drawSwe();
+  // free APIs (default) or the paid OpenRouter model; the list shows only the chosen kind
+  const keyOf = (m) => `${m.provider}|${m.model}`, paidModels = ACTIONS.models.filter((m) => m.paid);
+  const cur = ACTIONS.models.find((m) => keyOf(m) === f.key);
+  f.tier = f.tier || (cur && cur.paid ? "paid" : "free");
+  if (paidModels.length) {
+    const tl0 = h("label", "", tr("tier_label")), seg = h("div", "seg");
+    for (const t of ["free", "paid"]) {
+      const b = h("button", "", tr(t === "free" ? "tier_free" : "tier_paid")); b.type = "button";
+      b.setAttribute("aria-pressed", String(f.tier === t));
+      b.addEventListener("click", () => {
+        if (f.tier === t) return;
+        f.tier = t; const d = ACTIONS.defaults[action];
+        f.key = t === "paid" ? keyOf(paidModels[0]) : `${d.provider}|${d.model}`; renderChoice();
+      });
+      seg.appendChild(b);
+    }
+    tl0.appendChild(seg); wrap.appendChild(tl0);
+  }
   const ml = h("label", "", tr("lbl_model")), sel = document.createElement("select"), groups = {};
-  for (const m of ACTIONS.models) (groups[m.provider] = groups[m.provider] || []).push(m);
+  for (const m of ACTIONS.models) if (!!m.paid === (f.tier === "paid")) (groups[m.provider] = groups[m.provider] || []).push(m);
   for (const [prov, list] of Object.entries(groups)) {
     const og = document.createElement("optgroup"); og.label = prov;
     for (const m of list) { const o = document.createElement("option"); o.value = `${m.provider}|${m.model}`; o.textContent = m.model + (m.key_ok ? "" : ` (${tr("no_key")})`); og.appendChild(o); }
@@ -2582,6 +2616,8 @@ function runForm(action) {
   if (taskNote) wrap.appendChild(taskNote);
   const m = ACTIONS.models.find((x) => `${x.provider}|${x.model}` === f.key);
   if (m && m.notes) wrap.appendChild(h("div", "note-m", m.notes));
+  if (m && m.paid) wrap.appendChild(h("div", "warn", tr("paid_warn")));
+  else if (m) wrap.appendChild(h("div", "note-m", tr("fb_note")));
   if (m && !m.key_ok) wrap.appendChild(h("div", "warn", tr("key_missing", {env: m.key_env})));
   return wrap;
 }

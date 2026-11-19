@@ -4,6 +4,10 @@
 #   ./scripts/mock_exam.sh <mbpp|swebench|sandbox|all> --student-path . --moulinette-path ./moulinette --env-file .env \
 #       [--model-name M --provider-url URL]            (same model for every part)
 #       [--mbpp-model-name M --mbpp-provider-url URL]  (MBPP only; default qwen/qwen3.8-27b on Groq)
+#       [--paid]   paid OpenRouter model for every part (deepseek/deepseek-v4-flash; outside the free-tier rule)
+#
+# When a free key runs out of quota the agent moves to the next key, then to the free providers listed in
+# `fallbacks` of config/models.json (fallback_enabled: true; only providers with a key in .env).
 #
 # Mirrors the official flow: tasks are dumped by the moulinette, the agent runs with the exam CLI,
 # the moulinette validates. Results: evaluations/<type>/<YYYY-MM-DD_HH-MM-SS>/<task_id>/
@@ -27,7 +31,9 @@ while [[ $# -gt 0 ]]; do
     --provider-url) URL="$2"; MBPP_URL="$2"; shift 2 ;;
     --mbpp-model-name) MBPP_MODEL="$2"; shift 2 ;;
     --mbpp-provider-url) MBPP_URL="$2"; shift 2 ;;
-    --tasks) TASKS="$2"; shift 2 ;;   # SWE-bench only: space-separated instance ids instead of a random selection
+    --tasks) TASKS="$2"; shift 2 ;;
+    --paid) MODEL="deepseek/deepseek-v4-flash"; MBPP_MODEL="$MODEL"; URL="https://openrouter.ai/api/v1"; MBPP_URL="$URL"; shift
+            echo "WARNING: paid OpenRouter model ($MODEL) — the subject requires free tiers only" >&2 ;;   # SWE-bench only: space-separated instance ids instead of a random selection
     *) echo "unknown option $1"; exit 2 ;;
   esac
 done

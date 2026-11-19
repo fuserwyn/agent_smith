@@ -78,6 +78,7 @@ class ModelSpec(BaseModel):
     provider: str
     model: str
     notes: str = ""
+    paid: bool = Field(default=False, description="Costs money (purchased credits): hidden behind the paid switch in the UI")
 
 
 class ModelsConfig(BaseModel):
