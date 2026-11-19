@@ -69,15 +69,263 @@ button { cursor: pointer; }
 .badge.demo { color: var(--c-warn); } .badge.live { color: var(--c-final); } .badge.file { color: var(--c-mcp); }
 
 /* ---------- main grid ---------- */
-.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
 .panel-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
 .panel-h h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
 .panel-b { padding: 12px 14px; }
 
 /* diagram */
-.diagram-wrap { overflow-x: auto; }
-#diagram { display: block; width: 100%; min-width: 620px; height: auto; }
+/* floating player (bottom-centre, like a video / Figma toolbar): no page space used */
+.wrap { padding-bottom: 84px; }
+.player { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 40; width: min(1260px, calc(100vw - 24px));
+  display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(180px, 30%) auto; align-items: center; gap: 12px; padding: 7px 10px;
+  border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--panel) 86%, transparent);
+  backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2); box-shadow: 0 14px 40px rgba(0, 0, 0, .45); }
+.player .controls { margin-left: 0; flex-wrap: nowrap; gap: 4px; }
+.player .ctl { width: 32px; height: 30px; }
+.player .ctl.play { width: 40px; }
+.player .story { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0; box-shadow: none; }
+.player .story .ico { width: 20px; flex: none; }
+.player .story .ico .ic { width: 18px; height: 18px; }
+.player .story .say { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 500; }
+.player .caption { padding: 0; border: 0; min-height: 0; min-width: 0; gap: 8px; font-size: 12px; }
+.player .caption .txt { font-size: 12px; }
+body[data-mode="detailed"] .player .story .say, body[data-mode="detailed"] .player .story .ico { display: none; }
+body[data-mode="simple"] .player .caption { display: none; }
+.pscrub { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pscrub .scrub { min-width: 60px; flex: 1 1 auto; }
+.pscrub .pos { min-width: 0; font-size: 11.5px; }
+.pscrub .where { display: none; }
+.pextra { display: flex; align-items: center; gap: 8px; }
+.pextra .speed { height: 30px; width: 74px; }
+.pextra .toggle { display: inline-flex; gap: 4px; align-items: center; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+#s-play { display: none !important; }
+@media (max-width: 900px) { .player { grid-template-columns: auto minmax(0, 1fr) auto; bottom: 8px; } .pscrub { grid-column: 1 / -1; grid-row: 2; } }
+/* step inspector: one place for everything about the selected step (replaces the worker drawer and the old lower panel) */
+.insp.panel { border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
+/* fixed two-row grid: the status chip changes width while playing, nothing else may move */
+.insp-h { display: grid; grid-template-columns: auto auto minmax(0, auto) minmax(0, 1fr) auto auto;
+  grid-template-areas: "title nav stat . follow tog" "tabs tabs tabs tabs tabs tabs"; align-items: center; gap: 8px 10px; }
+.insp-h > h2 { grid-area: title; white-space: nowrap; min-width: 72px; font-variant-numeric: tabular-nums; }
+.insp-h > .insp-nav { grid-area: nav; }
+.insp-h > .dstat { grid-area: stat; min-width: 0; overflow: hidden; text-overflow: ellipsis; justify-self: start; }
+.insp-h > .follow { grid-area: follow; }
+.insp-h > .ptoggle { grid-area: tog; }
+.insp-h > .tabs { grid-area: tabs; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+.insp-h > .tabs .tab { flex: none; white-space: nowrap; }
+.insp-h h2 { color: var(--ink); font-size: 13px; }
+.insp-h .tabs { margin-left: 0; }
+.follow { border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); border-radius: 999px; padding: 3px 10px; font-size: 11.5px; white-space: nowrap; }
+.follow[aria-pressed="true"] { color: var(--c-sandbox); border-color: color-mix(in srgb, var(--c-sandbox) 55%, var(--line)); }
+.follow[aria-pressed="false"] { color: var(--c-warn); border-color: var(--c-warn); background: color-mix(in srgb, var(--c-warn) 10%, transparent); }
+.insp-nav { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); }
+.insp-nav .ctl { width: 24px; height: 24px; font-size: 14px; line-height: 1; }
+#st-pos { min-width: 7ch; text-align: center; font-variant-numeric: tabular-nums; }
+.tab-node { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#detail-body { height: var(--ih, 400px); overflow: auto; }
+#detail-body[hidden] { display: none; }
+#insp .node-info { height: var(--ih, 400px); overflow: auto; border-top: 0; }
+#detail-body.nbmode { overflow: hidden; }
+#detail-body.nbmode > div { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+#detail-body.nbmode .interp { flex: 1 1 auto; min-height: 0; grid-template-columns: minmax(0, 1fr) 8px var(--vw, 320px); }
+#detail-body.nbmode .interp > .vsplit { display: block; }
+#detail-body.nbmode .interp-code { overflow: auto; min-height: 0; }
+#detail-body.nbmode .vars { overflow: auto; min-height: 0; }
+#detail-body.nbmode .lines { max-height: none; overflow: visible; }
+#detail-body.nbmode .xl { width: max-content; min-width: 100%; grid-template-columns: 34px 40px max-content; }
+#detail-body.nbmode .xl code { white-space: pre; word-break: normal; }
+#detail-body.nbmode .path { flex: none; max-height: 56px; }
+.insp.collapsed .insp-grip { display: none; }
+@media (max-width: 860px) {
+  #detail-body.nbmode { overflow: auto; height: auto; max-height: 75vh; }
+  #detail-body.nbmode > div { height: auto; }
+  #detail-body.nbmode .interp { grid-template-columns: minmax(0, 1fr); }
+  #detail-body.nbmode .interp > .vsplit { display: none; }
+  #detail-body.nbmode .interp-code { max-height: 340px; }
+}
+/* bottom dock (VS Code panel / status bar pattern): one-line summaries, hover = peek, click = pin */
+.dock { position: relative; }
+.dock-tabs { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1.45fr) minmax(0, 1.5fr) minmax(0, 1fr); }
+body[data-mode="simple"] .dock-tabs { grid-template-columns: minmax(0, 2.4fr) minmax(0, 1.2fr) minmax(0, 1.4fr); }
+.dtab { display: flex; align-items: center; gap: 8px; padding: 9px 14px; min-width: 0; cursor: pointer; border-right: 1px solid var(--line); outline-offset: -2px; }
+.dtab:last-child { border-right: 0; }
+.dtab:hover, .dtab.peeking { background: var(--panel-2); }
+.dtab[aria-expanded="true"] { background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--c-orch); }
+.dt-t { font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; flex: none; }
+.dt-s { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.dt-r { flex: none; font-size: 11.5px; }
+.dt-c { color: var(--muted); flex: none; font-size: 11px; transition: transform .15s; }
+.dtab[aria-expanded="true"] .dt-c { transform: rotate(180deg); }
+.mb { display: inline-flex; align-items: center; gap: 4px; margin-right: 9px; font-family: var(--f-mono); font-size: 11px; }
+.mb .l { color: var(--muted); }
+.mbar { width: 24px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; flex: none; }
+.mbar i { display: block; height: 100%; background: var(--c-orch); }
+.mbar.hi i { background: var(--c-warn); } .mbar.over i { background: var(--c-error); }
+.sc-row { display: flex; gap: 3px; overflow: hidden; }
+.sc { flex: none; font-family: var(--f-mono); font-size: 10.5px; padding: 0 4px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); line-height: 1.6; cursor: pointer; }
+.sc.ok { color: var(--c-final); border-color: color-mix(in srgb, var(--c-final) 50%, var(--line)); }
+.sc.final { color: var(--panel); background: var(--c-final); border-color: var(--c-final); }
+.sc.err { color: var(--c-error); border-color: color-mix(in srgb, var(--c-error) 60%, var(--line)); }
+.sc.run { color: var(--c-warn); border-color: var(--c-warn); }
+.sc.cur { box-shadow: 0 0 0 2px var(--c-orch); }
+.sc.more { cursor: default; border-style: dashed; }
+.dock-body { border-top: 1px solid var(--line); padding: 12px 14px; max-height: var(--dkh, 340px); overflow: auto; }
+.dock-body[hidden] { display: none; }
+.dock-body.peek { position: absolute; left: -1px; right: -1px; top: 100%; z-index: 30; max-height: 360px; background: var(--panel); border: 1px solid var(--line); border-radius: 0 0 var(--r) var(--r); box-shadow: 0 16px 40px rgba(0, 0, 0, .45); }
+.dpane { display: none; } .dpane.on { display: block; }
+.dpane-h { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.dock .meters { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px 24px; }
+.dock .budget-note { padding: 10px 0 0; }
+.dock .steps { max-height: none; overflow: visible; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.dock .log { max-height: none; }
+.dock .sec { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+.dock-grip { height: 8px; cursor: ns-resize; touch-action: none; border-top: 1px solid var(--line); }
+.dock-grip:hover, .dock-grip.active { background: color-mix(in srgb, var(--c-orch) 18%, transparent); }
+@media (max-width: 1000px) { .dock-tabs, body[data-mode="simple"] .dock-tabs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } #dt-budget { grid-column: span 2; } .dtab { border-bottom: 1px solid var(--line); } }
+/* collapsible panels */
+.ptoggle { flex: none; margin-left: 6px; border: 1px solid transparent; background: none; color: var(--muted); border-radius: 6px; width: 24px; height: 22px; display: inline-grid; place-items: center; font-size: 12px; transition: transform .15s; }
+.ptoggle:hover { border-color: var(--line); color: var(--ink); }
+.collapsed .ptoggle { transform: rotate(-90deg); }
+.panel.collapsed:not(.taskcard) > :not(.panel-h) { display: none !important; }
+.panel.collapsed > .panel-h { border-bottom: 0; }
+.taskcard.collapsed .tc-text, .taskcard.collapsed .tc-model, .taskcard.collapsed .tc-kind, .taskcard.collapsed .res-stats, .taskcard.collapsed .res-tests, .taskcard.collapsed .res-note { display: none; }
+.taskcard.collapsed > div { padding-top: 8px; padding-bottom: 8px; }
+.taskcard.collapsed .res-big { font-size: 15px; }
+.node-info.collapsed > :not(h3) { display: none; }
+.node-info h3 { display: flex; align-items: center; }
+/* IDE-like resizable panes: drag the separators */
+.vsplit { align-self: stretch; width: 8px; cursor: col-resize; position: relative; touch-action: none; border-radius: 4px; }
+.vsplit::after { content: ""; position: absolute; top: 50%; left: 3px; width: 2px; height: 40px; margin-top: -20px; border-radius: 2px; background: var(--line); }
+.vsplit:hover, .vsplit.active { background: color-mix(in srgb, var(--c-orch) 14%, transparent); }
+.vsplit:hover::after, .vsplit.active::after { background: var(--c-orch); }
+.main-split { min-height: 200px; }
+.hgrip { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; cursor: ns-resize; z-index: 3; touch-action: none; }
+.hgrip:hover, .hgrip.active { background: color-mix(in srgb, var(--c-orch) 18%, transparent); }
+.diagram-wrap.sized { height: var(--ch); }
+.diagram-wrap.sized #diagram { height: 100%; }
+body.resizing, body.resizing * { user-select: none !important; }
+body.resizing-col, body.resizing-col * { cursor: col-resize !important; }
+body.resizing-row, body.resizing-row * { cursor: ns-resize !important; }
+/* "What to show" menu: a burger button in the header, the choices open as a popover */
+.menu-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 10px; padding: 6px 12px; font-size: 13px; max-width: 100%; min-width: 0; }
+.menu-btn:hover, .menu-btn[aria-expanded="true"] { border-color: var(--c-orch); box-shadow: 0 0 0 3px var(--glow); }
+.menu-btn .burger { display: grid; gap: 3px; width: 16px; flex: none; } .menu-btn .burger i { display: block; height: 2px; border-radius: 2px; background: currentColor; }
+.menu-btn .mlabel { color: var(--muted); white-space: nowrap; }
+.menu-btn b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.menu-btn .mstate { font-size: 11.5px; color: var(--c-warn); white-space: nowrap; }
+.menu-btn .mstate:empty { display: none; }
+.menu-btn .caret { color: var(--muted); font-size: 11px; }
+.launcher { position: absolute; z-index: 45; left: 0; right: 0; max-height: min(78vh, 760px); overflow: auto; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); }
+.launcher[hidden] { display: none; }
+.launcher .panel-h { position: sticky; top: 0; z-index: 1; background: var(--panel); }
+.launcher .panel-h .ctl { margin-left: auto; width: 30px; height: 28px; }
+.launcher .choices { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; padding: 10px 12px; }
+.launcher .choice { padding: 8px 10px; }
+.wrap { position: relative; }
+/* Jupyter-like cells in the Worker drawer: previous steps above, the current one with its trace */
+.nb-hist { padding: 4px 0 2px; border-bottom: 1px dashed var(--line); }
+.nb-cell { margin: 6px 12px; padding-left: 10px; border-left: 2px solid var(--line); opacity: .8; }
+.nb-cell:hover { opacity: 1; }
+.nb-in { font-family: var(--f-mono); font-size: 11px; color: var(--c-sandbox); }
+.nb-in.cur { margin: 8px 12px 2px; font-weight: 600; }
+.nb-out { font-family: var(--f-mono); font-size: 11px; color: var(--c-final); margin-top: 3px; }
+.nb-out.err { color: var(--c-error); }
+.nb-code, .nb-outp { margin: 1px 0 0; font-family: var(--f-mono); font-size: 12px; white-space: pre; }
+.nb-outp { color: var(--muted); white-space: pre-wrap; word-break: break-word; max-height: 8.5em; overflow: auto; }
+.nb-curout { margin: 6px 12px 10px; padding-left: 10px; border-left: 2px solid var(--c-final); }
+.nb-curout .nb-outp { max-height: 16em; color: var(--ink); }
+/* interactive canvas (Miro-like): pan, zoom, drag boxes */
+.diagram-wrap { position: relative; overflow: hidden; }
+#diagram { touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+#diagram.panning { cursor: grabbing; }
+#diagram .node { cursor: pointer; }
+#diagram .node.dragging { cursor: grabbing; }
+#diagram .node.dragging rect.box { filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .35)); }
+.canvas-bg { pointer-events: all; }
+.dot { fill: color-mix(in srgb, var(--muted) 35%, transparent); }
+.node .boundary-label { fill: var(--c-sandbox); }
+.canvas-tools { position: absolute; bottom: 8px; right: 8px; z-index: 2; display: flex; gap: 4px; align-items: center; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--panel) 92%, transparent); }
+.ctool { border: 1px solid transparent; background: transparent; color: var(--ink); border-radius: 7px; padding: 3px 9px; font-size: 12px; line-height: 1.4; }
+.ctool:hover { background: var(--panel-2); border-color: var(--line); }
+.ctool.zpct { min-width: 52px; font-family: var(--f-mono); font-size: 11px; }
+.csep { width: 1px; height: 18px; background: var(--line); margin: 0 2px; }
+.canvas-hint { position: absolute; left: 12px; bottom: 8px; z-index: 2; font-size: 11px; color: var(--muted); pointer-events: none; }
+@media (max-width: 760px) { .canvas-hint { display: none; } .canvas-tools .ctool[data-i18n] { padding: 3px 6px; font-size: 11px; } }
+#arch-panel:fullscreen { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
+#arch-panel:fullscreen .diagram-wrap { flex: 1 1 auto; min-height: 0; }
+#arch-panel:fullscreen #diagram { height: 100%; }
+#arch-panel:fullscreen .legend, #arch-panel:fullscreen .node-info { display: none; }
+/* Worker drawer: the debugger pattern of DevTools / VS Code (code + scope under the canvas) */
+.drawer { display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); height: var(--dh, 360px); border-top: 1px solid var(--line); background: var(--panel); }
+.drawer[hidden] { display: none; }
+#arch-panel:fullscreen .drawer { flex: none; }
+.drawer-grip { height: 10px; cursor: ns-resize; position: relative; touch-action: none; }
+.drawer-grip::after { content: ""; position: absolute; left: 50%; top: 3px; width: 44px; height: 4px; margin-left: -22px; border-radius: 4px; background: var(--line); }
+.drawer-grip:hover::after { background: var(--muted); }
+.drawer .modal-h { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; padding: 2px 14px 8px; border-bottom: 1px solid var(--line); }
+.drawer .modal-h h2 { font-size: 14px; }
+.drawer .modal-h .now { flex: 1 1 200px; min-width: 0; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drawer .modal-h .ctl { width: 30px; height: 28px; }
+.drawer .modal-steps { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 14px; border-bottom: 1px solid var(--line); }
+.dstat { font-family: var(--f-mono); font-size: 11px; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+.dstat.paused { color: var(--c-warn); border-color: var(--c-warn); background: color-mix(in srgb, var(--c-warn) 12%, transparent); }
+.dstat.run { color: var(--c-sandbox); border-color: var(--c-sandbox); }
+.dstat.done { color: var(--c-final); border-color: var(--c-final); }
+.drawer .modal-body { min-height: 0; overflow: hidden; }
+.drawer .modal-body > div { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.drawer .interp { flex: 1 1 auto; min-height: 0; grid-template-columns: minmax(0, 1fr) 8px var(--vw, 320px); }
+.interp > .vsplit { display: none; }
+.drawer .interp > .vsplit { display: block; }
+.vars { grid-template-columns: minmax(0, 1fr); }
+.vars pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
+.drawer .interp-code { overflow: auto; min-height: 0; }
+.drawer .vars { overflow: auto; min-height: 0; }
+.drawer .lines { max-height: none; overflow: visible; }
+.drawer .xl { width: max-content; min-width: 100%; grid-template-columns: 34px 40px max-content; }
+.drawer .xl code { white-space: pre; word-break: normal; }
+.drawer .path { flex: none; max-height: 56px; }
+.drawer .pausebar { position: sticky; left: 0; }
+@media (max-width: 860px) {
+  .drawer { height: auto; max-height: 75vh; }
+  .drawer .modal-body { overflow: auto; }
+  .drawer .modal-body > div { height: auto; }
+  .drawer .interp { grid-template-columns: minmax(0, 1fr); }
+  .drawer .interp > .vsplit { display: none; }
+  .drawer .interp-code { max-height: 340px; border-right: 0; border-bottom: 1px solid var(--line); }
+}
+/* environment card under the MCP server: tests (MBPP) or container + work phases (SWE-bench) */
+.env { font-family: var(--f-mono); font-size: 11px; line-height: 1.45; color: var(--ink); display: grid; gap: 3px; height: 100%; overflow: hidden; }
+.env .src { color: var(--muted); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.env .t { display: flex; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.env .t > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.env .i { width: 12px; flex: none; text-align: center; font-weight: 700; }
+.env .ok { color: var(--c-final); } .env .bad { color: var(--c-error); } .env .run { color: var(--c-warn); } .env .pend, .env .lock { color: var(--muted); }
+.env .row { display: flex; align-items: center; gap: 3px; flex-wrap: nowrap; overflow: hidden; }
+.env .row .arr { color: var(--muted); }
+.env .chip { padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-2); color: var(--muted); white-space: nowrap; font-size: 10.5px; flex: none; }
+.env .chip.done { color: var(--ink); border-color: var(--c-repo); }
+.env .chip.now { color: var(--ink); border-color: var(--c-warn); background: var(--cur-bg); }
+.env .chip b { color: var(--c-repo); font-weight: 600; margin-left: 3px; }
+.env .last { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.env .last.okt { color: var(--c-final); } .env .last.badt { color: var(--c-error); }
+.env .chip.bad { color: var(--c-error); border-color: var(--c-error); }
+.env .hl { color: var(--muted); font-size: 10px; margin-right: 2px; flex: none; }
+.harness { display: grid; gap: 6px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.harness h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--c-repo); }
+.harness ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.harness li.ok b { color: var(--c-final); } .harness li.bad b { color: var(--c-error); } .harness li.run b { color: var(--c-warn); }
+.harness .hcmd { margin: 3px 0 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); font-size: 11.5px; white-space: pre; overflow-x: auto; max-height: 160px; }
+.hdiff { margin-top: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); font-family: var(--f-mono); font-size: 11.5px; overflow-x: auto; max-height: 200px; padding: 4px 0; }
+.hdiff > div { white-space: pre; padding: 0 8px; }
+.hdiff .a { background: color-mix(in srgb, var(--c-final) 16%, transparent); } .hdiff .d { background: color-mix(in srgb, var(--c-error) 16%, transparent); }
+.hres { font-family: var(--f-mono); font-weight: 600; } .hres.ok { color: var(--c-final); } .hres.bad { color: var(--c-error); } .hres.run { color: var(--c-warn); }
+/* worker paused on a tool call: the line it waits on */
+.xl.paused { background: color-mix(in srgb, var(--c-warn) 16%, transparent); box-shadow: inset 3px 0 0 var(--c-warn); }
+.xl.paused .h { color: var(--c-warn); font-weight: 700; }
+.xl .tag.pause { color: var(--c-warn); }
+.pausebar { margin: 8px 12px 0; padding: 6px 10px; border: 1px solid var(--c-warn); border-radius: 6px; background: color-mix(in srgb, var(--c-warn) 10%, transparent); font-size: 12px; }
+#diagram { display: block; width: 100%; height: auto; }
 .node rect.box { fill: var(--panel-2); stroke: var(--line); stroke-width: 1.5; transition: stroke .2s, fill .2s; }
 .node text { fill: var(--ink); font-family: var(--f-ui); }
 .node .title { font-size: 14px; font-weight: 600; }
@@ -87,6 +335,8 @@ button { cursor: pointer; }
 .node.active rect.box { stroke: var(--nc); stroke-width: 2.5; fill: color-mix(in srgb, var(--nc) 12%, var(--panel-2)); }
 .node.error rect.box { stroke: var(--c-error); }
 .node.selected rect.box { stroke-dasharray: 5 3; stroke: var(--nc); }
+.node.paused rect.box { stroke: var(--c-warn); stroke-width: 2.5; stroke-dasharray: 4 3; fill: color-mix(in srgb, var(--c-warn) 10%, var(--panel-2)); }
+.node.paused .pill { fill: var(--c-warn) !important; }
 .node .stripe { fill: var(--nc); }
 .boundary { fill: none; stroke: var(--c-sandbox); stroke-width: 1.5; stroke-dasharray: 6 5; opacity: .8; }
 .boundary-label { fill: var(--c-sandbox); font-size: 11px; font-family: var(--f-mono); letter-spacing: .04em; }
@@ -408,7 +658,7 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
   .sloop { grid-column: 1; margin: 6px 6% 4px; } .sloop span { white-space: normal; text-align: center; width: max-content; max-width: 90%; }
   .story { flex-wrap: wrap; } .story .say { flex-basis: calc(100% - 50px); } dl.gl { grid-template-columns: minmax(0, 1fr); gap: 2px 0; } dl.gl dd { margin-bottom: 8px; }
 }
-@media (max-width: 1100px) { .main, .lower { grid-template-columns: minmax(0, 1fr); } .steps { max-height: 300px; } }
+@media (max-width: 1100px) { .main, .lower { grid-template-columns: minmax(0, 1fr); } .steps { max-height: 300px; } .main-split { display: none; } }
 @media (max-width: 760px) { .interp { grid-template-columns: minmax(0, 1fr); } .interp-code { border-right: 0; border-bottom: 1px solid var(--line); } .io { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { .brand span { display: none; } .controls { margin-left: 0; width: 100%; } .ln { grid-template-columns: 18px 32px 32px minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -417,27 +667,17 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
 <div class="wrap">
   <header class="top">
     <div class="brand"><h1>Agent Smith Observatory</h1><span data-i18n="subtitle">Thought → Code → Observation, step by step</span></div>
+    <button class="menu-btn" id="b-menu" aria-expanded="false" aria-controls="launcher"><span class="burger" aria-hidden="true"><i></i><i></i><i></i></span><span class="mlabel" data-i18n="ln_h">What to show</span><b id="menu-cur"></b><span class="mstate" id="menu-state"></span><span class="caret" aria-hidden="true">▾</span></button>
     <div class="viewctl">
       <div class="seg" role="group" aria-label="View" id="mode-seg"><button data-mode="simple" data-i18n="mode_simple">Simple</button><button data-mode="detailed" data-i18n="mode_detailed">Detailed</button></div>
       <div class="seg" role="group" aria-label="Language" id="lang-seg"><button data-lang="en" lang="en">EN</button><button data-lang="ru" lang="ru">RU</button><button data-lang="fr" lang="fr">FR</button></div>
       <button class="chip-btn" id="b-tour" data-i18n="tour_btn">Guided tour</button>
       <button class="chip-btn" id="b-gloss" data-i18n="gloss_btn">Glossary</button>
     </div>
-    <div class="controls replay">
-      <button class="ctl" id="b-first" aria-label="Go to start"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
-      <button class="ctl" id="b-prev" aria-label="Previous event"><svg viewBox="0 0 16 16"><path d="M12 2v12L4 8z"/></svg></button>
-      <button class="ctl play" id="b-play" aria-label="Play"><svg viewBox="0 0 16 16" id="i-play"><path d="M4 2v12l10-6z"/></svg></button>
-      <button class="ctl" id="b-next" aria-label="Next event"><svg viewBox="0 0 16 16"><path d="M4 2v12l8-6z"/></svg></button>
-      <button class="ctl" id="b-last" aria-label="Go to end"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
-      <select class="speed" id="speed" aria-label="Playback speed">
-        <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option><option value="real" data-i18n="speed_real">Real time</option>
-      </select>
-      <span class="rtwait" id="rtwait" hidden></span>
-    </div>
   </header>
 
-  <section class="panel launcher" id="launcher" aria-label="What to show">
-    <div class="panel-h"><h2 data-i18n="ln_h">What to show</h2><span class="muted ln-state" id="ln-state"></span></div>
+  <section class="panel launcher" id="launcher" aria-label="What to show" hidden>
+    <div class="panel-h"><h2 data-i18n="ln_h">What to show</h2><span class="muted ln-state" id="ln-state"></span><button class="ctl" id="menu-close" aria-label="Close"><svg viewBox="0 0 16 16"><path d="M3.5 2.1 8 6.6l4.5-4.5 1.4 1.4L9.4 8l4.5 4.5-1.4 1.4L8 9.4l-4.5 4.5-1.4-1.4L6.6 8 2.1 3.5z"/></svg></button></div>
     <div class="choices sources" role="group" aria-label="Trace source">
       <button class="choice" id="src-mbpp" data-ic="play" aria-pressed="true"><b data-i18n="c_demo_mbpp_t">Demo · MBPP</b><span data-i18n="c_demo_mbpp_s">recorded, AI answers scripted</span></button>
       <button class="choice" id="src-swe" data-ic="play" aria-pressed="false"><b data-i18n="c_demo_swe_t">Demo · SWE-bench</b><span data-i18n="c_demo_swe_s">recorded, AI answers scripted</span></button>
@@ -471,18 +711,7 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
     </div>
   </section>
 
-  <section class="panel story info replay" id="story" aria-label="What is happening now">
-    <button class="bigplay" id="s-play">Play</button>
-    <span class="ico" id="story-ico" aria-hidden="true"></span>
-    <div class="say" id="story-say"></div>
-    <span class="where" id="story-where"></span>
-  </section>
 
-  <div class="scrubrow replay">
-    <input type="range" class="scrub" id="scrub" min="0" max="0" value="0" aria-label="Event position">
-    <span class="pos" id="pos">0 / 0</span>
-    <label class="toggle det"><input type="checkbox" id="opt-lines" checked> <span data-i18n="opt_lines">code lines in timeline</span></label>
-  </div>
 
   <div class="main replay">
     <div class="leftcol">
@@ -493,75 +722,119 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
 
     <section class="panel det" id="arch-panel" aria-label="Architecture">
       <div class="panel-h"><h2 data-i18n="arch_h">Architecture · live component activity</h2><span class="mono muted" data-i18n="arch_hint">click a component: its input and output for the selected step</span></div>
-      <div class="diagram-wrap">
-        <svg id="diagram" viewBox="0 0 900 572" role="img" aria-label="Agent Smith architecture diagram">
+      <div class="diagram-wrap" id="diagram-wrap">
+        <div class="canvas-tools" role="toolbar" aria-label="Diagram view">
+          <button class="ctool" id="z-out" aria-label="Zoom out" title="Zoom out (−)">−</button>
+          <button class="ctool zpct" id="z-pct" title="100%">100%</button>
+          <button class="ctool" id="z-in" aria-label="Zoom in" title="Zoom in (+)">+</button>
+          <span class="csep"></span>
+          <button class="ctool" id="z-fit" data-i18n="z_fit">Fit</button>
+          <button class="ctool" id="z-reset" data-i18n="z_reset">Reset layout</button>
+          <button class="ctool" id="z-full" data-i18n="z_full">Full screen</button>
+        </div>
+        <div class="hgrip" id="canvas-grip" role="separator" aria-orientation="horizontal" data-i18n-title="split_tip" title="Drag to resize"></div>
+        <div class="canvas-hint" data-i18n="z_hint">Drag boxes · drag the background to move · Ctrl/⌘ + wheel or pinch to zoom</div>
+        <svg id="diagram" viewBox="0 0 900 626" role="img" aria-label="Agent Smith architecture diagram">
           <defs>
             <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+            <pattern id="dotgrid" width="20" height="20" patternUnits="userSpaceOnUse"><circle class="dot" cx="1" cy="1" r="1"/></pattern>
           </defs>
-          <g id="edges"></g>
-          <rect class="boundary" x="196" y="442" width="404" height="124" rx="14"/>
-          <text class="boundary-label" x="436" y="520">ISOLATED PROCESS</text>
-          <text class="boundary-label" x="436" y="536">no network · no keys</text>
-          <text class="boundary-label" x="436" y="552">audit hook · limits</text>
-          <g id="nodes"></g>
-          <g id="deltas"></g>
-          <g id="pulses"></g>
+          <g id="world">
+            <rect class="canvas-bg" x="-6000" y="-6000" width="12000" height="12000" fill="url(#dotgrid)"/>
+            <g id="edges"></g>
+            <g id="nodes"></g>
+            <g id="deltas"></g>
+            <g id="pulses"></g>
+          </g>
         </svg>
       </div>
-      <div class="caption" id="caption"><span class="kind">ready</span><span class="txt" data-i18n="caption_ready">Press play to replay the run.</span></div>
-      <div class="legend" id="legend"><span><b>Δ</b> <span data-i18n="legend_delta">data changed between the box that sent it and the box that received it (open the Flow tab for the diff)</span></span></div>
-      <div class="node-info" id="node-info"></div>
+      <section class="drawer" id="interp-modal" hidden aria-labelledby="modal-title">
+        <div class="drawer-grip" id="drawer-grip" data-i18n-title="d_grip" title="Drag to resize"></div>
+        <div class="modal-h">
+          <h2 id="modal-title">Python interpreter</h2>
+          <span class="dstat" id="modal-stat" hidden></span>
+          <span class="now" id="modal-now"></span>
+          <button class="ctl" id="m-prev" aria-label="Previous event"><svg viewBox="0 0 16 16"><path d="M12 2v12L4 8z"/></svg></button>
+          <button class="ctl play" id="m-play" aria-label="Play"><svg viewBox="0 0 16 16" id="mi-play"><path d="M4 2v12l10-6z"/></svg></button>
+          <button class="ctl" id="m-next" aria-label="Next event"><svg viewBox="0 0 16 16"><path d="M4 2v12l8-6z"/></svg></button>
+          <button class="ctl" id="m-close" aria-label="Close"><svg viewBox="0 0 16 16"><path d="M3.5 2.1 8 6.6l4.5-4.5 1.4 1.4L9.4 8l4.5 4.5-1.4 1.4L8 9.4l-4.5 4.5-1.4-1.4L6.6 8 2.1 3.5z"/></svg></button>
+        </div>
+        <div class="modal-steps" id="modal-steps" role="group" aria-label="Step"></div>
+        <div class="modal-body" id="modal-body"></div>
+      </section>
+      <section class="panel insp det" id="insp" aria-label="Step inspector">
+        <div class="panel-h insp-h">
+          <h2 id="detail-title" data-i18n="detail_h">Step detail</h2>
+          <span class="dstat" id="insp-stat" hidden></span>
+          <span class="insp-nav"><button class="ctl" id="st-prev" aria-label="Previous step">‹</button><span class="mono" id="st-pos"></span><button class="ctl" id="st-next" aria-label="Next step">›</button></span>
+          <button class="follow" id="tab-follow" type="button" aria-pressed="true"></button>
+          <div class="tabs" role="tablist" id="tabs">
+            <button class="tab" role="tab" data-i18n="tab_interp" data-tab="interp" aria-selected="true">Interpreter</button>
+            <button class="tab" role="tab" data-i18n="tab_tools" data-tab="tools" aria-selected="false">Tool calls</button>
+            <button class="tab" role="tab" data-i18n="tab_flow" data-tab="flow" aria-selected="false">Flow &amp; diffs</button>
+            <button class="tab" role="tab" data-i18n="tab_llm" data-tab="llm" aria-selected="false">LLM output</button>
+            <button class="tab" role="tab" data-i18n="tab_code" data-tab="code" aria-selected="false">Sandbox input</button>
+            <button class="tab" role="tab" data-i18n="tab_obs" data-tab="obs" aria-selected="false">Observation</button>
+            <button class="tab tab-node" role="tab" data-tab="node" id="tab-node" aria-selected="false">Component</button>
+          </div>
+        </div>
+        <div class="metaline" id="detail-meta"></div>
+        <div id="detail-body"></div>
+        <div class="node-info" id="node-info" hidden></div>
+      <details class="sys"><summary data-i18n="sysprompt">System prompt sent to the LLM</summary><pre class="code" id="sysprompt"></pre></details>
+        <div class="drawer-grip insp-grip" id="insp-grip" role="separator" aria-orientation="horizontal" data-i18n-title="split_tip" title="Drag to resize"></div>
+      </section>
     </section>
 
+    <section class="panel dock" id="dock" aria-label="Budget, security, steps, event log">
+      <div class="dock-tabs" role="tablist">
+        <div class="dtab" id="dt-budget" data-dock="budget" role="tab" tabindex="0" aria-expanded="false"><span class="dt-t" data-i18n="budget_short" data-term="budget">Budget</span><span class="dt-s" id="sum-budget"></span><span class="dt-c" aria-hidden="true">▾</span></div>
+        <div class="dtab" id="dt-security" data-dock="security" role="tab" tabindex="0" aria-expanded="false"><span class="dt-t" data-i18n="sec_h" data-term="sandbox">Security</span><span class="dt-s mono" id="sec-count"></span><span class="dt-c" aria-hidden="true">▾</span></div>
+        <div class="dtab" id="dt-steps" data-dock="steps" role="tab" tabindex="0" aria-expanded="false"><span class="dt-t" data-i18n="steps_h" data-term="iteration">Steps</span><span class="dt-s sc-row" id="sum-steps"></span><span class="mono dt-r" id="result"></span><span class="dt-c" aria-hidden="true">▾</span></div>
+        <div class="dtab det" id="dt-log" data-dock="log" role="tab" tabindex="0" aria-expanded="false"><span class="dt-t" data-i18n="log_h">Event log</span><span class="dt-s mono" id="sum-log"></span><span class="dt-c" aria-hidden="true">▾</span></div>
+      </div>
+      <div class="dock-body" id="dock-body" hidden>
+        <div class="dpane" data-pane="budget"><div class="dpane-h"><span data-i18n="budget_h">Budget (limits per task)</span><span class="mono" id="model"></span></div><div class="meters" id="meters"></div><div class="budget-note" data-i18n="budget_note"></div></div>
+        <div class="dpane" data-pane="security"><div class="sec" id="security"></div></div>
+        <div class="dpane" data-pane="steps"><div class="steps" id="steps"></div></div>
+        <div class="dpane" data-pane="log"><div class="dpane-h"><span data-i18n="log_hint">click to jump</span></div><div class="log" id="log"></div></div>
+      </div>
+      <div class="dock-grip" id="dock-grip" role="separator" aria-orientation="horizontal" data-i18n-title="split_tip" title="Drag to resize" hidden></div>
+    </section>
     <section class="panel" id="answer" aria-label="Answer">
       <div class="panel-h"><h2 data-i18n="ans_h" data-term="patch">Answer</h2><span class="muted" id="ans-sub"></span></div>
       <div id="ans-body"></div>
     </section>
     </div>
-
-    <aside class="panel" aria-label="Budget and steps">
-      <div class="panel-h"><h2 data-i18n="budget_h" data-term="budget">Budget (limits per task)</h2><span class="mono muted det" id="model"></span></div>
-      <div class="panel-b meters" id="meters"></div>
-      <div class="budget-note" data-i18n="budget_note"></div>
-      <div class="panel-h" style="border-top:1px solid var(--line)"><h2 data-i18n="sec_h" data-term="sandbox">Security</h2><span class="mono" id="sec-count"></span></div>
-      <div class="panel-b sec" id="security"></div>
-      <div class="panel-h" style="border-top:1px solid var(--line)"><h2 data-i18n="steps_h" data-term="iteration">Steps</h2><span class="mono" id="result"></span></div>
-      <div class="panel-b steps" id="steps"></div>
-      <div class="panel-h det" style="border-top:1px solid var(--line)"><h2 data-i18n="log_h">Event log</h2><span class="mono muted" data-i18n="log_hint">click to jump</span></div>
-      <div class="log det" id="log"></div>
-    </aside>
   </div>
-
-  <div class="lower replay">
-    <section class="panel det" aria-label="Step detail">
-      <div class="panel-h"><h2 id="detail-title" data-i18n="detail_h">Step detail</h2>
-        <div class="tabs" role="tablist" id="tabs">
-          <button class="tab" role="tab" data-i18n="tab_flow" data-tab="flow" aria-selected="true">Flow &amp; diffs</button>
-          <button class="tab" role="tab" data-i18n="tab_interp" data-tab="interp" aria-selected="false">Interpreter</button>
-          <button class="tab" role="tab" data-i18n="tab_tools" data-tab="tools" aria-selected="false">Tool calls</button>
-          <button class="tab" role="tab" data-i18n="tab_llm" data-tab="llm" aria-selected="false">LLM output</button>
-          <button class="tab" role="tab" data-i18n="tab_code" data-tab="code" aria-selected="false">Sandbox input</button>
-          <button class="tab" role="tab" data-i18n="tab_obs" data-tab="obs" aria-selected="false">Observation</button>
-        </div>
-      </div>
-      <div class="metaline" id="detail-meta"></div>
-      <div id="detail-body"></div>
-      <details class="sys"><summary data-i18n="sysprompt">System prompt sent to the LLM</summary><pre class="code" id="sysprompt"></pre></details>
-    </section>
+  <div class="player replay" id="player" role="region" aria-label="Playback">
+    <div class="controls">
+      <button class="ctl" id="b-first" aria-label="Go to start"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
+      <button class="ctl" id="b-prev" aria-label="Previous event"><svg viewBox="0 0 16 16"><path d="M12 2v12L4 8z"/></svg></button>
+      <button class="ctl play" id="b-play" aria-label="Play"><svg viewBox="0 0 16 16" id="i-play"><path d="M4 2v12l10-6z"/></svg></button>
+      <button class="ctl" id="b-next" aria-label="Next event"><svg viewBox="0 0 16 16"><path d="M4 2v12l8-6z"/></svg></button>
+      <button class="ctl" id="b-last" aria-label="Go to end"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
+    </div>
+    <div class="pnow story" id="story">
+      <span class="ico" id="story-ico" aria-hidden="true"></span>
+      <span class="say" id="story-say"></span>
+      <div class="caption" id="caption"><span class="kind">ready</span><span class="txt" data-i18n="caption_ready">Press play to replay the run.</span></div>
+    </div>
+    <div class="pscrub">
+      <input type="range" class="scrub" id="scrub" min="0" max="0" value="0" aria-label="Event position">
+      <span class="pos" id="pos">0 / 0</span><span class="where" id="story-where"></span>
+    </div>
+    <div class="pextra">
+      <select class="speed" id="speed" aria-label="Playback speed">
+        <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option><option value="real" data-i18n="speed_real">Real time</option>
+      </select>
+      <span class="rtwait" id="rtwait" hidden></span>
+      <label class="toggle det" data-i18n-title="opt_lines" title="code lines in timeline"><input type="checkbox" id="opt-lines" checked> <span data-i18n="opt_lines_s">lines</span></label>
+      <button class="bigplay" id="s-play">Play</button>
+    </div>
   </div>
 </div>
-<dialog class="modal" id="interp-modal" aria-labelledby="modal-title">
-  <div class="modal-h">
-    <h2 id="modal-title">Python interpreter</h2>
-    <span class="now" id="modal-now"></span>
-    <button class="ctl" id="m-prev" aria-label="Previous event"><svg viewBox="0 0 16 16"><path d="M12 2v12L4 8z"/></svg></button>
-    <button class="ctl play" id="m-play" aria-label="Play"><svg viewBox="0 0 16 16" id="mi-play"><path d="M4 2v12l10-6z"/></svg></button>
-    <button class="ctl" id="m-next" aria-label="Next event"><svg viewBox="0 0 16 16"><path d="M4 2v12l8-6z"/></svg></button>
-    <button class="ctl" id="m-close" aria-label="Close"><svg viewBox="0 0 16 16"><path d="M3.5 2.1 8 6.6l4.5-4.5 1.4 1.4L9.4 8l4.5 4.5-1.4 1.4L8 9.4l-4.5 4.5-1.4-1.4L6.6 8 2.1 3.5z"/></svg></button>
-  </div>
-  <div class="modal-steps" id="modal-steps" role="group" aria-label="Step"></div>
-  <div class="modal-body" id="modal-body"></div>
-</dialog>
+
 <div class="drop" id="drop" hidden data-i18n="drop">Drop events.jsonl or solution.json</div>
 <div class="tip" id="tip" role="tooltip" hidden></div>
 <dialog class="modal" id="gloss-modal" aria-labelledby="gloss-title">
@@ -847,7 +1120,15 @@ en: {
   rec_loaded: "Recorded run {name}",
   live_job: "Run launched from this page: {dir}",
   sub_interp: "click: watch the code run", sub_mcps: "click: list of tools",
-  p_step: "step {n}", p_calls: "{n} call(s)", p_tools: "{n} tools", p_ok: "success", p_bad: "no success", p_running: "running…", p_status: "status: {s}",
+  p_step: "step {n}", p_calls: "{n} call(s)", p_tools: "{n} tools", p_ok: "success", p_bad: "no success", p_running: "running…", p_status: "status: {s}", p_paused: "⏸ paused · timer off", p_waiting: "waits for {t}", p_back: "{t} → worker",
+  follow_on: "⟳ Auto tab", follow_off: "📌 Tab pinned", follow_on_tip: "The tab follows the playback (interpreter, tool calls…). Click to pin the current tab.", follow_off_tip: "The tab stays where you put it. Click to follow the playback again.",
+  tab_node: "Component: {n}", opt_lines_s: "lines",
+  budget_short: "Budget", sb_steps: "steps", sb_in: "in", sb_out: "out", sb_time: "⏱", collapse_tip: "Collapse / expand",
+  split_tip: "Drag to resize · double-click to reset", nb_now: "this step",
+  hc_env: "env", hc_install: "pip", hc_reset: "reset", hc_patch: "+test", hc_run: "tests", hc_restore: "undo",
+  hn_title: "SWE-bench harness (what run_tests runs)", hn_short: "harness:", hn_mbpp: "MBPP harness (what run_tests runs)", hn_src: "The eval_script of task.json (moulinette), copied to /tmp/agent_eval.sh in the container and run with bash. The moulinette runs the same script on a fresh container to grade the patch.", hn_running: "◌ running the eval script in the container…", hn_moul: "Final grade by the moulinette: FAIL_TO_PASS tests must now pass, PASS_TO_PASS tests must still pass.", hs_env: "env", hs_install: "install", hs_reset: "reset tests", hs_patch: "test patch", hs_run: "run tests", hs_restore: "restore", hd_env: "conda env «testbed», cd /testbed", hd_install: "install the project with the agent's changes", hd_reset: "test files back to the base commit", hd_patch: "adds the test that catches the bug (+{add} −{del}) in {files}", hd_run: "the test command, between the Start/End Test Output markers", hd_restore: "test files restored: the patch never contains the tests",
+  z_fit: "Fit", z_reset: "Reset layout", z_full: "Full screen", z_hint: "Drag boxes · drag the background to move · Ctrl/⌘ + wheel or pinch to zoom", d_grip: "Drag to resize", st_paused: "⏸ paused · waits for {t}", st_run: "▶ running", st_done: "✓ {s}",
+  env_src: "📄 tests from task.json (moulinette) → MCP server → code + asserts → new worker", env_hidden: "+ 1 hidden test: only the moulinette runs it", env_local: "local git repository · no Docker in this demo", env_img: "image", env_ctr: "container, no network", env_rm: "removed", env_none: "no command yet", env_eval: "▶ eval script from task.json: adds the test for the bug, runs the test file", ph_search: "search", ph_read: "read", ph_run: "run", ph_edit: "edit", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker paused on line {l}: it waits for {t}. Its timer is stopped until the result comes back.", i_paused_tag: "⏸ waits for {t} · {hop}", hp_call: "worker → host", hp_req: "host → MCP server", hp_srv: "server runs the tool", hp_tests: "tests run in a new sandbox", hp_repo: "command in the repository", hp_resp: "result → host",
   empty_trace: "No events in this trace.", empty_steps: "Steps appear here as the agent runs.",
   io_input: "Input", io_output: "Output", io_step: "step {n}", unchanged: "unchanged", nothing: "(nothing recorded)",
   tl_notconn: "Not connected yet: the tool list appears when the agent connects to the server.",
@@ -1066,7 +1347,8 @@ ru: {
   ni_interp: ["Отдельный процесс с пустым окружением (API-ключей нет); каждая выполненная строка трассируется (вкладка «Интерпретатор»).", "AST-политика, урезанные builtins, прокси модулей, allowlist импортов, audit hook.", "Таймаут SIGALRM (на паузе во время вызова инструментов); инструменты здесь — обёртки, которые только отправляют JSON хосту."],
   ni_mcpc: ["Живёт в процессе агента рядом с хостом: находит инструменты через list_tools и превращает их в обёртки для воркера.", "Отправляет JSON-RPC tools/call по stdio или HTTP и ждёт результат."],
   ni_mcps: ["FastMCP проверяет аргументы и вызывает Python-обработчик.", "Результат несёт отчёт о выполнении (_meta): команды, коды выхода, время, размеры."],
-  ni_repo: ["SWE-bench: команды выполняются через docker exec в контейнере задачи (--network none).", "Локально (тесты, демо): те же команды в TESTBED_PATH. MBPP: изолированная песочница для тестов."],
+  ni_repo: ["SWE-bench: команды выполняются через docker exec в контейнере задачи (--network none); контейнер запускает и удаляет CLI SWE-bench.", "Локально (тесты, демо): те же команды в git-репозитории TESTBED_PATH."],
+  ni_repo_mbpp: ["В MBPP нет репозитория: run_tests запускает НОВЫЙ воркер песочницы (без MCP, без сети, 10 с) с кодом-кандидатом и отдельным try/except на каждый assert.", "Тесты берутся из task.json moulinette, а не от модели; отчёт — PASS/FAIL с полученным и ожидаемым значением.", "Это вторая песочница, отдельная от воркера, в котором выполняется код модели."],
   ni_final: ["success, solution (код или патч), итерации, запросы, токены, время.", "Каждый шаг хранит llm_output, sandbox_input, sandbox_output, retries."],
   docker_off: "Docker Desktop не запущен. Moulinette проверяет ответы в Docker, поэтому последний шаг упадёт: сначала запустите Docker Desktop.",
   file_mode_cmds: "Страница открыта как файл, поэтому запускать прогоны она не может. Ниже команды для модели и задачи по умолчанию, их можно скопировать в терминал. Чтобы запускать кнопкой, выполните uv run agent-ui и откройте",
@@ -1167,7 +1449,15 @@ ru: {
   rec_loaded: "Записанный прогон {name}",
   live_job: "Прогон запущен с этой страницы: {dir}",
   sub_interp: "нажмите: ход выполнения", sub_mcps: "нажмите: список тулов",
-  p_step: "шаг {n}", p_calls: "вызовов: {n}", p_tools: "тулов: {n}", p_ok: "успех", p_bad: "без успеха", p_running: "выполняется…", p_status: "статус: {s}",
+  p_step: "шаг {n}", p_calls: "вызовов: {n}", p_tools: "тулов: {n}", p_ok: "успех", p_bad: "без успеха", p_running: "выполняется…", p_status: "статус: {s}", p_paused: "⏸ пауза · таймер стоп", p_waiting: "ждёт {t}", p_back: "{t} → воркер",
+  follow_on: "⟳ Авто-вкладка", follow_off: "📌 Вкладка закреплена", follow_on_tip: "Вкладка переключается за воспроизведением (интерпретатор, вызовы тулов…). Нажмите, чтобы закрепить текущую.", follow_off_tip: "Вкладка остаётся той, что вы выбрали. Нажмите, чтобы снова следовать за воспроизведением.",
+  tab_node: "Компонент: {n}", opt_lines_s: "строки",
+  budget_short: "Бюджет", sb_steps: "шаги", sb_in: "вх", sb_out: "вых", sb_time: "⏱", collapse_tip: "Свернуть / развернуть",
+  split_tip: "Потяните, чтобы изменить размер · двойной клик — сброс", nb_now: "текущий шаг",
+  hc_env: "окр.", hc_install: "pip", hc_reset: "сброс", hc_patch: "+тест", hc_run: "тесты", hc_restore: "откат",
+  hn_title: "Harness SWE-bench (что запускает run_tests)", hn_short: "harness:", hn_mbpp: "Harness MBPP (что запускает run_tests)", hn_src: "eval_script из task.json (moulinette): копируется в контейнер как /tmp/agent_eval.sh и запускается через bash. Moulinette запускает тот же скрипт в чистом контейнере, чтобы оценить патч.", hn_running: "◌ eval-скрипт выполняется в контейнере…", hn_moul: "Итоговая оценка moulinette: тесты FAIL_TO_PASS должны начать проходить, PASS_TO_PASS — проходить по-прежнему.", hs_env: "окружение", hs_install: "установка", hs_reset: "сброс тестов", hs_patch: "тест-патч", hs_run: "запуск тестов", hs_restore: "откат", hd_env: "conda-окружение «testbed», cd /testbed", hd_install: "установка проекта с правками агента", hd_reset: "тестовые файлы возвращаются к исходному коммиту", hd_patch: "добавляет тест, ловящий баг (+{add} −{del}) в {files}", hd_run: "команда тестов между маркерами Start/End Test Output", hd_restore: "тестовые файлы возвращаются: тесты никогда не попадают в патч",
+  z_fit: "Вписать", z_reset: "Сбросить раскладку", z_full: "На весь экран", z_hint: "Блоки можно перетаскивать · фон — сдвиг · Ctrl/⌘ + колесо или щипок — масштаб", d_grip: "Потяните, чтобы изменить высоту", st_paused: "⏸ пауза · ждёт {t}", st_run: "▶ выполняется", st_done: "✓ {s}",
+  env_src: "📄 тесты из task.json (moulinette) → MCP-сервер → код + assert → новый воркер", env_hidden: "+ 1 скрытый тест: его запускает только moulinette", env_local: "локальный git-репозиторий (демо без Docker)", env_img: "образ", env_ctr: "контейнер без сети", env_rm: "удалён", env_none: "команд пока нет", env_eval: "▶ eval-скрипт из task.json: добавляет тест на баг и запускает тестовый файл", ph_search: "поиск", ph_read: "чтение", ph_run: "запуск", ph_edit: "правка", ph_tests: "тесты", ph_patch: "патч", i_paused: "⏸ Воркер на паузе на строке {l}: ждёт {t}. Его таймер остановлен, пока не вернётся результат.", i_paused_tag: "⏸ ждёт {t} · {hop}", hp_call: "воркер → хост", hp_req: "хост → MCP-сервер", hp_srv: "сервер выполняет инструмент", hp_tests: "тесты идут в новой песочнице", hp_repo: "команда в репозитории", hp_resp: "результат → хост",
   empty_trace: "В этой трассе нет событий.", empty_steps: "Шаги появятся здесь по мере работы агента.",
   io_input: "Вход", io_output: "Выход", io_step: "шаг {n}", unchanged: "без изменений", nothing: "(ничего не записано)",
   tl_notconn: "Ещё не подключено: список тулов появится, когда агент подключится к серверу.",
@@ -1386,7 +1676,8 @@ fr: {
   ni_interp: ["Processus séparé à environnement vide (pas de clés API) ; chaque ligne exécutée est tracée (onglet « Interpréteur »).", "Politique AST, builtins restreints, proxys de modules, liste d'imports autorisés, audit hook.", "Délai SIGALRM (en pause pendant les appels d'outils) ; les outils y sont des enveloppes qui envoient seulement du JSON à l'hôte."],
   ni_mcpc: ["Vit dans le processus de l'agent à côté de l'hôte : découvre les outils avec list_tools et les transforme en enveloppes pour le worker.", "Envoie un tools/call JSON-RPC via stdio ou HTTP et attend le résultat."],
   ni_mcps: ["FastMCP valide les arguments et appelle le gestionnaire Python.", "Le résultat contient un rapport d'exécution (_meta) : commandes, codes de sortie, durées, tailles."],
-  ni_repo: ["SWE-bench : commandes exécutées via docker exec dans le conteneur de la tâche (--network none).", "En local (tests, démo) : mêmes commandes dans TESTBED_PATH. MBPP : bac à sable de test isolé."],
+  ni_repo: ["SWE-bench : commandes exécutées via docker exec dans le conteneur de la tâche (--network none) ; le conteneur est lancé et supprimé par le CLI SWE-bench.", "En local (tests, démo) : mêmes commandes dans un dépôt git à TESTBED_PATH."],
+  ni_repo_mbpp: ["MBPP n'a pas de dépôt : run_tests lance un NOUVEAU worker de bac à sable (sans MCP, sans réseau, 10 s) avec le code candidat et un try/except par assert.", "Les tests viennent du task.json de la moulinette, jamais du modèle ; le rapport donne PASS/FAIL avec valeurs obtenues et attendues.", "C'est un second bac à sable, distinct du worker qui exécute le code du modèle."],
   ni_final: ["success, solution (code ou patch), itérations, requêtes, jetons, temps.", "Chaque étape garde llm_output, sandbox_input, sandbox_output, retries."],
   docker_off: "Docker Desktop n'est pas lancé. La moulinette vérifie les réponses dans Docker, donc la dernière étape échouera : lancez d'abord Docker Desktop.",
   file_mode_cmds: "Cette page est ouverte comme fichier, elle ne peut donc pas lancer d'exécution. Ci-dessous, les commandes pour le modèle et la tâche par défaut, prêtes à copier dans un terminal. Pour lancer avec le bouton, démarrez uv run agent-ui et ouvrez",
@@ -1487,7 +1778,15 @@ fr: {
   rec_loaded: "Exécution enregistrée {name}",
   live_job: "Exécution lancée depuis cette page : {dir}",
   sub_interp: "cliquez : voir le code", sub_mcps: "cliquez : les outils",
-  p_step: "étape {n}", p_calls: "{n} appel(s)", p_tools: "{n} outils", p_ok: "succès", p_bad: "échec", p_running: "en cours…", p_status: "statut : {s}",
+  p_step: "étape {n}", p_calls: "{n} appel(s)", p_tools: "{n} outils", p_ok: "succès", p_bad: "échec", p_running: "en cours…", p_status: "statut : {s}", p_paused: "⏸ pause · minuteur arrêté", p_waiting: "attend {t}", p_back: "{t} → worker",
+  follow_on: "⟳ Onglet auto", follow_off: "📌 Onglet épinglé", follow_on_tip: "L'onglet suit la lecture (interpréteur, appels d'outils…). Cliquez pour épingler l'onglet actuel.", follow_off_tip: "L'onglet reste celui que vous avez choisi. Cliquez pour suivre de nouveau la lecture.",
+  tab_node: "Composant : {n}", opt_lines_s: "lignes",
+  budget_short: "Budget", sb_steps: "étapes", sb_in: "ent", sb_out: "sor", sb_time: "⏱", collapse_tip: "Replier / déplier",
+  split_tip: "Tirer pour redimensionner · double-clic pour réinitialiser", nb_now: "cette étape",
+  hc_env: "env", hc_install: "pip", hc_reset: "reset", hc_patch: "+test", hc_run: "tests", hc_restore: "undo",
+  hn_title: "Harness SWE-bench (ce que lance run_tests)", hn_short: "harness :", hn_mbpp: "Harness MBPP (ce que lance run_tests)", hn_src: "L'eval_script du task.json (moulinette), copié dans le conteneur en /tmp/agent_eval.sh et lancé avec bash. La moulinette lance le même script dans un conteneur neuf pour noter le patch.", hn_running: "◌ le script d'évaluation tourne dans le conteneur…", hn_moul: "Note finale de la moulinette : les tests FAIL_TO_PASS doivent passer, les PASS_TO_PASS doivent toujours passer.", hs_env: "env", hs_install: "installation", hs_reset: "reset tests", hs_patch: "patch de test", hs_run: "tests", hs_restore: "restauration", hd_env: "environnement conda « testbed », cd /testbed", hd_install: "installe le projet avec les modifications de l'agent", hd_reset: "fichiers de test ramenés au commit de base", hd_patch: "ajoute le test qui détecte le bug (+{add} −{del}) dans {files}", hd_run: "la commande de tests, entre les marqueurs Start/End Test Output", hd_restore: "fichiers de test restaurés : le patch ne contient jamais les tests",
+  z_fit: "Ajuster", z_reset: "Réinitialiser", z_full: "Plein écran", z_hint: "Glissez les blocs · glissez le fond pour déplacer · Ctrl/⌘ + molette ou pincement pour zoomer", d_grip: "Tirer pour redimensionner", st_paused: "⏸ en pause · attend {t}", st_run: "▶ en cours", st_done: "✓ {s}",
+  env_src: "📄 tests depuis task.json (moulinette) → serveur MCP → code + asserts → nouveau worker", env_hidden: "+ 1 test caché : seule la moulinette l'exécute", env_local: "dépôt git local · pas de Docker dans cette démo", env_img: "image", env_ctr: "conteneur sans réseau", env_rm: "supprimé", env_none: "aucune commande", env_eval: "▶ script d'évaluation de task.json : ajoute le test du bug, lance le fichier de tests", ph_search: "recherche", ph_read: "lecture", ph_run: "exécution", ph_edit: "édition", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker en pause à la ligne {l} : il attend {t}. Son minuteur est arrêté jusqu'au retour du résultat.", i_paused_tag: "⏸ attend {t} · {hop}", hp_call: "worker → hôte", hp_req: "hôte → serveur MCP", hp_srv: "le serveur exécute l'outil", hp_tests: "tests dans un nouveau bac à sable", hp_repo: "commande dans le dépôt", hp_resp: "résultat → hôte",
   empty_trace: "Aucun événement dans cette trace.", empty_steps: "Les étapes apparaissent ici pendant que l'agent travaille.",
   io_input: "Entrée", io_output: "Sortie", io_step: "étape {n}", unchanged: "inchangé", nothing: "(rien d'enregistré)",
   tl_notconn: "Pas encore connecté : la liste des outils apparaît quand l'agent se connecte au serveur.",
@@ -1561,41 +1860,43 @@ const NODES = {
   extract: {x: 270, y: 170, w: 210, h: 84, c: "--c-extract", title: "Code extraction", sub: "python · XML · JSON · ReAct",
             info: ["Keeps only executable Python: the Thought and fences are dropped (Δ).", "XML invoke, Hermes <tool_call> and ReAct are converted to Python calls; repairs are reported to the LLM."],
             path: "src/agent_smith/extraction/extractor.py"},
-  host:    {x: 216, y: 330, w: 190, h: 84, c: "--c-sandbox", title: "Sandbox host", sub: "limits · tool proxy",
+  host:    {x: 220, y: 330, w: 190, h: 84, c: "--c-sandbox", title: "Sandbox host", sub: "limits · tool proxy",
             info: ["Runs in the agent process: starts the worker, sends it the code, collects the result for the orchestrator.", "Enforces what the worker cannot: kills and restarts it after timeout + 2 s or above the memory limit; time spent in tools is not counted.", "Receives tool_call messages from the worker and forwards them to the MCP client: the worker itself never reaches MCP, files or the network."],
             path: "src/agent_smith/sandbox/host.py (Sandbox)"},
-  interp:  {x: 216, y: 470, w: 190, h: 84, c: "--c-sandbox", title: "Worker process", sub: "click: watch the code run",
+  interp:  {x: 220, y: 486, w: 190, h: 84, c: "--c-sandbox", title: "Worker process", sub: "click: watch the code run",
             info: ["Separate process with an empty environment (no API keys); every executed line is traced (Interpreter tab).", "AST policy, restricted builtins, module proxies, import allowlist, audit hook.", "SIGALRM timeout (paused during tool calls); tools are wrappers that only send JSON to the host."],
             path: "src/agent_smith/sandbox/worker.py"},
-  mcpc:    {x: 432, y: 330, w: 196, h: 84, c: "--c-mcp", title: "MCP client", sub: "tools/call · stdio / HTTP",
+  mcpc:    {x: 450, y: 330, w: 190, h: 84, c: "--c-mcp", title: "MCP client", sub: "tools/call · stdio / HTTP",
             info: ["Lives in the agent process next to the host: discovers the tools with list_tools and turns them into wrappers for the worker.", "Sends a JSON-RPC tools/call over stdio or HTTP and waits for the result."],
             path: "src/agent_smith/mcp_client/client.py"},
-  mcps:    {x: 690, y: 330, w: 180, h: 84, c: "--c-mcp", title: "MCP server", sub: "click: list of tools",
+  mcps:    {x: 680, y: 330, w: 190, h: 84, c: "--c-mcp", title: "MCP server", sub: "click: list of tools",
             info: ["FastMCP validates arguments and calls the Python handler.", "The result carries an execution report (_meta): commands run, exit codes, timings, sizes."],
             path: "mcp_tools_*.py · src/agent_smith/tools/ (instrument.py)"},
-  repo:    {x: 690, y: 478, w: 180, h: 84, c: "--c-repo", title: "Repository", sub: "/testbed · docker exec",
-            info: ["SWE-bench: commands run via docker exec in the task container (--network none).", "Locally (tests, demo): the same commands run in TESTBED_PATH. MBPP: an isolated test sandbox."],
+  repo:    {x: 450, y: 456, w: 420, h: 160, c: "--c-repo", title: "Repository", sub: "/testbed · docker exec",
+            info: ["SWE-bench: commands run via docker exec in the task container (--network none); the container is started and removed by the SWE-bench CLI.", "Locally (tests, demo): the same commands run in a git repository at TESTBED_PATH."],
             path: "src/agent_smith/tools/executor.py · docker_env.py"},
   final:   {x: 20, y: 330, w: 160, h: 84, c: "--c-final", title: "SolutionOutput", sub: "solution.json",
             info: ["success, solution (code or patch), iterations, requests, tokens, time.", "Every step keeps llm_output, sandbox_input, sandbox_output, retries."],
             path: "src/agent_smith/models.py"},
 };
+/* Edges are routed from box to box (boxes can be dragged): a straight line when the boxes face each other,
+   otherwise a curve. lane: offset of a two-way pair; ls: label side; fa/ta: fixed anchors (side, fraction). */
 const EDGES = {
-  task_orch:   {d: "M180 72 L268 72", c: "--c-task", label: "task prompt", lx: 186, ly: 62},
-  orch_llm:    {d: "M480 58 L648 58", c: "--c-llm", label: "messages", lx: 535, ly: 50, mid: [600, 58]},
-  llm_orch:    {d: "M650 92 L482 92", c: "--c-llm", label: "Thought + code", lx: 516, ly: 108},
-  orch_ext:    {d: "M375 114 L375 168", c: "--c-extract", label: "raw text", lx: 383, ly: 146},
-  ext_host:    {d: "M330 254 L330 328", c: "--c-sandbox", label: "python", lx: 342, ly: 288, mid: [330, 274]},
-  host_interp: {d: "M280 414 L280 468", c: "--c-sandbox", label: "code, tool results", lx: 136, ly: 433},
-  interp_host: {d: "M350 468 L350 416", c: "--c-sandbox", label: "tool_call, output", lx: 358, ly: 433, mid: [350, 456]},
-  host_mcpc:   {d: "M406 358 L430 358", c: "--c-mcp"},
-  mcpc_host:   {d: "M430 388 L408 388", c: "--c-mcp"},
-  mcpc_mcps:   {d: "M628 358 L688 358", c: "--c-mcp", label: "JSON-RPC", lx: 652, ly: 323},
-  mcps_mcpc:   {d: "M690 390 L630 390", c: "--c-mcp", mid: [660, 405]},
-  mcps_repo:   {d: "M765 414 L765 476", c: "--c-repo", label: "commands", lx: 700, ly: 449},
-  repo_mcps:   {d: "M800 476 L800 416", c: "--c-repo", label: "stdout", lx: 818, ly: 449, mid: [800, 446]},
-  host_orch:   {d: "M250 330 C 250 270, 230 200, 292 116", c: "--c-sandbox", label: "observation", lx: 156, ly: 240, mid: [249, 268]},
-  orch_final:  {d: "M290 114 C 200 140, 100 200, 100 328", c: "--c-final", label: "final_answer", lx: 24, ly: 200},
+  task_orch:   {from: "task", to: "orch", c: "--c-task", label: "task prompt"},
+  orch_llm:    {from: "orch", to: "llm", lane: -1, c: "--c-llm", label: "messages", delta: true},
+  llm_orch:    {from: "llm", to: "orch", lane: 1, c: "--c-llm", label: "Thought + code", ls: "b"},
+  orch_ext:    {from: "orch", to: "extract", c: "--c-extract", label: "raw text"},
+  ext_host:    {from: "extract", to: "host", c: "--c-sandbox", label: "python", delta: true},
+  host_interp: {from: "host", to: "interp", lane: -1, c: "--c-sandbox", label: "code, tool results", ls: "l"},
+  interp_host: {from: "interp", to: "host", lane: 1, c: "--c-sandbox", label: "tool_call, output", delta: true},
+  host_mcpc:   {from: "host", to: "mcpc", lane: -1, c: "--c-mcp"},
+  mcpc_host:   {from: "mcpc", to: "host", lane: 1, c: "--c-mcp"},
+  mcpc_mcps:   {from: "mcpc", to: "mcps", lane: -1, c: "--c-mcp", label: "JSON-RPC"},
+  mcps_mcpc:   {from: "mcps", to: "mcpc", lane: 1, c: "--c-mcp", delta: true},
+  mcps_repo:   {from: "mcps", to: "repo", lane: -1, c: "--c-repo", label: "commands", ls: "l"},
+  repo_mcps:   {from: "repo", to: "mcps", lane: 1, c: "--c-repo", label: "stdout", delta: true},
+  host_orch:   {from: "host", to: "orch", c: "--c-sandbox", label: "observation", ls: "l", delta: true, fa: ["t", 0.16], ta: ["b", 0.1], c1: [0, -68], c2: [-62, 84]},
+  orch_final:  {from: "orch", to: "final", c: "--c-final", label: "final_answer", ls: "l", fa: ["l", 0.8], ta: ["t", 0.5]},
 };
 const KIND_COLOR = {
   run_start: "--c-task", mcp_connected: "--c-mcp", llm_request: "--c-llm", llm_response: "--c-llm", llm_retry: "--c-error",
@@ -1617,9 +1918,9 @@ function activity(e) {
   switch (e.type) {
     case "run_start": return {nodes: ["task", "orch"], edges: ["task_orch"], text: `Run started: ${e.benchmark} task ${e.task_id} with ${e.model}`};
     case "mcp_connected": return {nodes: ["mcpc", "mcps"], edges: ["mcpc_mcps", "mcps_mcpc"], text: `MCP server "${e.server}" connected: ${(e.tools || []).length} tools discovered (${(e.tools || []).join(", ")})`};
-    case "docker_pull": return {nodes: ["repo"], edges: [], text: `Ensuring image ${e.image}`};
-    case "docker_started": return {nodes: ["repo"], edges: [], text: `Container ${e.container} started (network disabled)`};
-    case "docker_removed": return {nodes: ["repo"], edges: [], text: `Container ${e.container} removed`};
+    case "docker_pull": return {nodes: ["task", "repo"], edges: [], text: `Ensuring image ${e.image} (by the SWE-bench CLI)`};
+    case "docker_started": return {nodes: ["task", "repo"], edges: [], text: `Container ${e.container} started (network disabled) (by the SWE-bench CLI)`};
+    case "docker_removed": return {nodes: ["task", "repo"], edges: [], text: `Container ${e.container} removed (by the SWE-bench CLI)`};
     case "llm_request": return {nodes: ["orch", "llm"], edges: ["orch_llm"], text: `Step ${e.step}: ${e.messages} messages sent (~${e.estimated_input_tokens} tokens est., max ${e.max_tokens} out)${(e.compacted_steps || []).length ? ` · observations of steps ${e.compacted_steps.join(", ")} shortened` : ""}`};
     case "llm_retry": return {nodes: ["llm"], edges: [], error: true, text: `Retry: ${e.error || ""}`};
     case "llm_fallback": return {nodes: ["llm"], edges: [], text: `Fallback ${e.from} → ${e.to}`};
@@ -1629,19 +1930,19 @@ function activity(e) {
     case "sandbox_start": return {nodes: ["host", "interp"], edges: ["ext_host", "host_interp"], text: `Host sends ${e.code.split("\n").length} lines to the worker process`};
     case "exec_line": return execActivity(e);
     case "exec_more": return {nodes: ["interp"], edges: [], text: `… ${e.count} more traced events (see Interpreter tab)`};
-    case "tool_call": return {nodes: ["interp", "host", "mcpc"], edges: ["interp_host", "host_mcpc"], text: `line ${e.line ?? "?"}: ${e.written || e.name + "(" + argPreview(e.args) + ")"} → worker sends {"type":"tool_call","name":"${e.name}",…} to the host → MCP client`};
-    case "mcp_request": return {nodes: ["mcpc", "mcps"], edges: ["mcpc_mcps"], text: `JSON-RPC tools/call "${e.name}" over ${short(e.transport || "MCP", 40)}`};
-    case "server_dispatch": return {nodes: ["mcps"], edges: [], text: `${e.server || "server"}: arguments validated → ${e.handler || e.name}(${argPreview(e.received_args)})`};
-    case "repo_op": return {nodes: ["mcps", "repo"], edges: ["mcps_repo", "repo_mcps"], error: e.op.exit_code !== 0, text: `${e.op.op}: ${short(e.op.command, 70)} → exit ${e.op.exit_code}, ${e.op.duration_ms} ms, ${kb(e.op.stdout_bytes)}`};
-    case "mcp_response": return {nodes: ["mcps", "mcpc"], edges: ["mcps_mcpc"], error: e.is_error, text: `CallToolResult: ${e.result_chars} chars, ${e.result_lines} lines${e.truncated ? " (truncated by the tool)" : ""}, isError=${!!e.is_error}`};
-    case "tool_result": return {nodes: ["mcpc", "host", "interp"], edges: ["mcpc_host", "host_interp"], error: e.is_error, text: `${e.name} returns to line ${e.line ?? "?"}: ${firstLine(e.result)} (${Math.round(e.duration_ms)} ms total)`};
+    case "tool_call": return {nodes: ["interp", "host", "mcpc"], edges: ["interp_host", "host_mcpc"], paused: true, text: `line ${e.line ?? "?"}: ${e.written || e.name + "(" + argPreview(e.args) + ")"} → worker sends {"type":"tool_call","name":"${e.name}",…} to the host → MCP client. The worker now WAITS: its timer is stopped until the result comes back`};
+    case "mcp_request": return {nodes: ["mcpc", "mcps"], edges: ["mcpc_mcps"], paused: true, text: `JSON-RPC tools/call "${e.name}" over ${short(e.transport || "MCP", 40)}`};
+    case "server_dispatch": return {nodes: ["mcps"], edges: [], paused: true, text: `${e.server || "server"}: arguments validated → ${e.handler || e.name}(${argPreview(e.received_args)})`};
+    case "repo_op": return {nodes: ["mcps", "repo"], edges: ["mcps_repo", "repo_mcps"], paused: true, error: e.op.exit_code !== 0, text: `${e.op.op}: ${short(e.op.command, 70)} → exit ${e.op.exit_code}, ${e.op.duration_ms} ms, ${kb(e.op.stdout_bytes)}`};
+    case "mcp_response": return {nodes: ["mcps", "mcpc"], edges: ["mcps_mcpc"], paused: true, error: e.is_error, text: `CallToolResult: ${e.result_chars} chars, ${e.result_lines} lines${e.truncated ? " (truncated by the tool)" : ""}, isError=${!!e.is_error}`};
+    case "tool_result": return {nodes: ["mcpc", "host", "interp"], edges: ["mcpc_host", "host_interp"], error: e.is_error, text: `${e.name} returns to line ${e.line ?? "?"}: ${firstLine(e.result)} (${Math.round(e.duration_ms)} ms total) · the worker resumes, its timer continues`};
     case "sandbox_end": return {nodes: ["interp", "host", "orch"], edges: ["interp_host", "host_orch"], error: ["error", "timeout", "memory", "crash", "security_error", "syntax_error"].includes(e.status), text: `Sandbox finished: ${e.status}${e.duration_s != null ? ` in ${e.duration_s}s` : ""} → observation ${String(e.output || "").length} chars`};
     case "observation": return {nodes: ["orch"], edges: [], text: `Observation stored for the next request`};
     case "budget": return {nodes: ["orch"], edges: [], text: `Budget: ${e.input_tokens}/${e.max_input_tokens} in, ${e.output_tokens}/${e.max_output_tokens} out, ${e.elapsed}s`};
-    case "final_answer": return {nodes: ["interp", "host", "orch", "final"], edges: ["interp_host", "host_orch", "orch_final"], text: `final_answer() at step ${e.step}: worker → host → orchestrator → SolutionOutput`};
+    case "final_answer": return {nodes: ["orch", "final"], edges: ["orch_final"], text: `Step ${e.step}: the sandbox result carries final_answer() → the orchestrator stops the loop and builds SolutionOutput`};
     case "fallback_answer": return {nodes: ["orch", "final"], edges: ["orch_final"], text: "No final_answer: best candidate submitted"};
     case "budget_stop": return {nodes: ["orch"], edges: [], error: true, text: `Stopped: ${e.reason}`};
-    case "loop_detected": return {nodes: ["orch", "host"], edges: [], error: true, text: `Loop: step ${e.step} repeats step ${e.repeat_of}, not executed; next temperature ${e.next_temperature}`};
+    case "loop_detected": return {nodes: ["orch"], edges: [], error: true, text: `Loop: step ${e.step} repeats step ${e.repeat_of}, not executed; next temperature ${e.next_temperature}`};
     case "interrupted": return {nodes: ["orch"], edges: [], error: true, text: "Interrupted"};
     case "run_end": return {nodes: ["final"], edges: ["orch_final"], error: !e.success, text: `Run finished: ${e.success ? "success" : "no success"} · ${e.iterations} iterations · ${e.total_time_seconds}s`};
     default: return {nodes: [], edges: [], text: e.type};
@@ -1764,25 +2065,350 @@ const NS = "http://www.w3.org/2000/svg";
 const $ = (id) => document.getElementById(id);
 function el(tag, attrs = {}, parent) { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (parent) parent.appendChild(n); return n; }
 function h(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
-const nodeEls = {}, edgeEls = {};
+const nodeEls = {}, edgeEls = {}, edgeLabelEls = {};
+const LAYOUT_KEY = "as-layout-v1", HOME = Object.fromEntries(Object.entries(NODES).map(([k, n]) => [k, [n.x, n.y]]));
+try {
+  const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || "{}");
+  for (const [k, v] of Object.entries(saved)) if (NODES[k] && Array.isArray(v) && v.every(Number.isFinite)) [NODES[k].x, NODES[k].y] = v;
+} catch (_) { /* storage blocked */ }
 for (const [id, e] of Object.entries(EDGES)) {
-  const p = el("path", {d: e.d, class: "edge", "marker-end": "url(#arr)"}, $("edges"));
+  const p = el("path", {class: "edge", "marker-end": "url(#arr)"}, $("edges"));
   p.style.setProperty("--ec", `var(${e.c})`); edgeEls[id] = p;
-  if (e.label) el("text", {x: e.lx, y: e.ly, class: "edge-label"}, $("edges")).textContent = e.label;
+  if (e.label) { const t = el("text", {class: "edge-label"}, $("edges")); t.textContent = e.label; edgeLabelEls[id] = t; }
 }
 for (const [id, n] of Object.entries(NODES)) {
-  const g = el("g", {class: "node", tabindex: "0", role: "button", "aria-label": n.title}, $("nodes"));
-  g.style.setProperty("--nc", `var(${n.c})`);
-  el("rect", {class: "box", x: n.x, y: n.y, width: n.w, height: n.h, rx: 9}, g);
-  el("rect", {class: "stripe", x: n.x, y: n.y + 10, width: 4, height: n.h - 20, rx: 2}, g);
-  el("text", {x: n.x + 16, y: n.y + 27, class: "title"}, g).textContent = n.title;
-  const sub = el("text", {x: n.x + 16, y: n.y + 46, class: "sub"}, g); sub.textContent = n.sub;
-  const pill = el("text", {x: n.x + 16, y: n.y + n.h - 12, class: "pill"}, g); pill.style.fill = `var(${n.c})`;
-  nodeEls[id] = {g, pill, sub};
-  const open = () => { showNode(id); if (id === "interp") openInterpModal(); };
-  g.addEventListener("click", open);
-  g.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(); } });
+  const g = el("g", {class: "node", tabindex: "0", role: "button", "aria-label": n.title, transform: `translate(${n.x} ${n.y})`}, $("nodes"));
+  g.dataset.id = id; g.style.setProperty("--nc", `var(${n.c})`);
+  if (id === "interp") {  // the isolation boundary belongs to the worker and moves with it
+    el("rect", {class: "boundary", x: -20, y: -30, width: n.w + 40, height: n.h + 76, rx: 14}, g);
+    el("text", {class: "boundary-label", x: -6, y: n.h + 21}, g).textContent = "ISOLATED · audit hook";
+    el("text", {class: "boundary-label", x: -6, y: n.h + 37}, g).textContent = "no network · no API keys";
+  }
+  el("rect", {class: "box", x: 0, y: 0, width: n.w, height: n.h, rx: 9}, g);
+  el("rect", {class: "stripe", x: 0, y: 10, width: 4, height: n.h - 20, rx: 2}, g);
+  const title = el("text", {x: 16, y: 27, class: "title"}, g); title.textContent = n.title;
+  const sub = el("text", {x: 16, y: 46, class: "sub"}, g); sub.textContent = n.sub;
+  const pill = el("text", {x: 16, y: n.h - 12, class: "pill"}, g); pill.style.fill = `var(${n.c})`;
+  nodeEls[id] = {g, pill, sub, title};
+  if (id === "repo") {  // HTML inside the SVG (scales with the diagram): tests, container, work phases
+    const fo = el("foreignObject", {x: 16, y: 54, width: n.w - 30, height: n.h - 54 - 22}, g);
+    const body = document.createElementNS("http://www.w3.org/1999/xhtml", "div"); body.className = "env"; body.id = "env-body"; fo.appendChild(body);
+  }
+  g.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openNode(id); return; }
+    const mv = {ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10]}[ev.key];
+    if (mv) { ev.preventDefault(); moveNode(id, n.x + mv[0], n.y + mv[1]); saveLayout(); }
+  });
 }
+function openNode(id) {  // a box on the canvas opens its tab in the step inspector
+  showNode(id); tabPinned = true; setTab(id === "interp" ? "interp" : "node"); renderState(derive(cursor));
+  const r = $("insp").getBoundingClientRect(); if (r.top > window.innerHeight - 120) $("insp").scrollIntoView({block: "nearest", behavior: "smooth"});
+}
+
+/* ---------- edge routing ---------- */
+const LANE_V = 35, LANE_H = 15, GAP = 2;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function anchor(n, side, f) {
+  if (side === "t") return {x: n.x + n.w * f, y: n.y - GAP, nx: 0, ny: -1};
+  if (side === "b") return {x: n.x + n.w * f, y: n.y + n.h + GAP, nx: 0, ny: 1};
+  if (side === "l") return {x: n.x - GAP, y: n.y + n.h * f, nx: -1, ny: 0};
+  return {x: n.x + n.w + GAP, y: n.y + n.h * f, nx: 1, ny: 0};
+}
+function route(e) {
+  const A = NODES[e.from], B = NODES[e.to], lane = e.lane || 0;
+  if (!e.fa) {
+    const ox0 = Math.max(A.x, B.x), ox1 = Math.min(A.x + A.w, B.x + B.w), oy0 = Math.max(A.y, B.y), oy1 = Math.min(A.y + A.h, B.y + B.h);
+    const below = B.y >= A.y + A.h + 8, above = A.y >= B.y + B.h + 8, right = B.x >= A.x + A.w + 8, left = A.x >= B.x + B.w + 8;
+    if (ox1 - ox0 >= 24 && (below || above)) {
+      const x = clamp((ox0 + ox1) / 2 + lane * LANE_V, ox0 + 8, ox1 - 8);
+      return {kind: "v", d: `M${x} ${below ? A.y + A.h : A.y} L${x} ${below ? B.y - GAP : B.y + B.h + GAP}`};
+    }
+    if (oy1 - oy0 >= 24 && (right || left)) {
+      const y = clamp((oy0 + oy1) / 2 + lane * LANE_H, oy0 + 8, oy1 - 8);
+      return {kind: "h", gap: right ? B.x - A.x - A.w : A.x - B.x - B.w, top: Math.min(A.y, B.y),
+              d: `M${right ? A.x + A.w : A.x} ${y} L${right ? B.x - GAP : B.x + B.w + GAP} ${y}`};
+    }
+  }
+  let fs, ff, ts, tf;
+  if (e.fa) { [fs, ff] = e.fa; [ts, tf] = e.ta; }
+  else {
+    const dx = B.x + B.w / 2 - (A.x + A.w / 2), dy = B.y + B.h / 2 - (A.y + A.h / 2);
+    if (Math.abs(dy) > Math.abs(dx)) { fs = dy > 0 ? "b" : "t"; ts = dy > 0 ? "t" : "b"; } else { fs = dx > 0 ? "r" : "l"; ts = dx > 0 ? "l" : "r"; }
+    ff = tf = 0.5 + lane * 0.15;
+  }
+  const P = anchor(A, fs, ff), Q = anchor(B, ts, tf), k = Math.max(40, Math.hypot(Q.x - P.x, Q.y - P.y) * 0.4);
+  const fixed = e.fa && e.c1 && Math.abs(P.y - Q.y) > 120;  // hand-tuned bend only while the boxes stay roughly in place
+  const c1 = fixed ? [P.x + e.c1[0], P.y + e.c1[1]] : [P.x + P.nx * k, P.y + P.ny * k];
+  const c2 = fixed ? [Q.x + e.c2[0], Q.y + e.c2[1]] : [Q.x + Q.nx * k, Q.y + Q.ny * k];
+  return {kind: "c", d: `M${P.x} ${P.y} C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${Q.x} ${Q.y}`};
+}
+function layoutEdges() {
+  for (const [id, e] of Object.entries(EDGES)) {
+    const r = route(e), path = edgeEls[id]; path.setAttribute("d", r.d);
+    const m = path.getPointAtLength(path.getTotalLength() / 2); e.mid = e.delta ? [m.x, m.y] : null;
+    const t = edgeLabelEls[id]; if (!t) continue;
+    const ls = e.ls || (r.kind === "v" ? "r" : r.kind === "h" ? "t" : "l"), w = t.getComputedTextLength() || 8 * t.textContent.length * 0.66;
+    const o = e.delta ? 16 : 8;  // keep clear of the Δ marker drawn on the middle of the line
+    let [x, y, anc] = {t: [m.x, m.y - 8, "middle"], b: [m.x, m.y + 16, "middle"], l: [m.x - o, m.y + 4, "end"], r: [m.x + o, m.y + 4, "start"]}[ls];
+    if (r.kind === "h" && ls === "t" && r.gap < w + 10) y = r.top - 8;  // no room between the boxes: above them
+    t.setAttribute("x", x); t.setAttribute("y", y); t.setAttribute("text-anchor", anc);
+  }
+  renderDeltas(lastHands);
+}
+function moveNode(id, x, y) {
+  const n = NODES[id]; n.x = Math.round(x / 10) * 10; n.y = Math.round(y / 10) * 10;
+  nodeEls[id].g.setAttribute("transform", `translate(${n.x} ${n.y})`); layoutEdges();
+}
+function saveLayout() { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(Object.fromEntries(Object.entries(NODES).map(([k, n]) => [k, [n.x, n.y]])))); } catch (_) { /* storage blocked */ } }
+
+/* ---------- camera: pan and zoom ---------- */
+const svgEl = $("diagram"), world = $("world"), cam = {k: 1, x: 0, y: 0};
+function applyCam() { world.setAttribute("transform", `translate(${cam.x} ${cam.y}) scale(${cam.k})`); $("z-pct").textContent = `${Math.round(cam.k * 100)}%`; }
+function vbPoint(ev) { const pt = svgEl.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svgEl.getScreenCTM().inverse()); }
+function zoomAt(px, py, f) { const k = clamp(cam.k * f, 0.35, 3); cam.x = px - (px - cam.x) * k / cam.k; cam.y = py - (py - cam.y) * k / cam.k; cam.k = k; applyCam(); }
+function viewCenter() { const vb = svgEl.viewBox.baseVal; return [vb.width / 2, vb.height / 2]; }
+function fitView() {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [id, n] of Object.entries(NODES)) { const pad = id === "interp" ? [20, 30, 46] : [0, 0, 0];
+    x0 = Math.min(x0, n.x - pad[0]); y0 = Math.min(y0, n.y - pad[1]); x1 = Math.max(x1, n.x + n.w + pad[0]); y1 = Math.max(y1, n.y + n.h + pad[2]); }
+  const r = svgEl.getBoundingClientRect(), vb = svgEl.viewBox.baseVal;
+  // visible area in viewBox units (preserveAspectRatio "meet": the larger side gets extra room)
+  const s = Math.min(r.width / vb.width, r.height / vb.height) || 1, vw = r.width / s || vb.width, vh = r.height / s || vb.height;
+  const k = clamp(Math.min((vw - 40) / (x1 - x0), (vh - 72) / (y1 - y0)), 0.35, 1.6);
+  cam.k = k; cam.x = vb.width / 2 - ((x0 + x1) / 2) * k; cam.y = vb.height / 2 - ((y0 + y1) / 2) * k - 18; applyCam();
+}
+let drag = null, lastHands = [];
+const pointers = new Map();
+svgEl.addEventListener("pointerdown", (ev) => {
+  if (ev.pointerType === "mouse" && ev.button !== 0) return;
+  if (ev.target.closest(".delta")) return;  // Δ markers keep their own click
+  pointers.set(ev.pointerId, vbPoint(ev));
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; drag = {mode: "pinch", d: Math.hypot(a.x - b.x, a.y - b.y)}; return; }
+  const g = ev.target.closest(".node"), id = g && g.dataset.id, pt = vbPoint(ev);
+  drag = id ? {mode: "node", id, sx: pt.x, sy: pt.y, ox: NODES[id].x, oy: NODES[id].y, moved: false}
+            : {mode: "pan", sx: pt.x, sy: pt.y, cx: cam.x, cy: cam.y, moved: false};
+  try { svgEl.setPointerCapture(ev.pointerId); } catch (_) { /* pointer already gone */ }
+});
+svgEl.addEventListener("pointermove", (ev) => {
+  if (!pointers.has(ev.pointerId) || !drag) return;
+  const pt = vbPoint(ev); pointers.set(ev.pointerId, pt);
+  if (drag.mode === "pinch") {
+    if (pointers.size < 2) return;
+    const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+    zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, d / (drag.d || d)); drag.d = d; return;
+  }
+  const dx = pt.x - drag.sx, dy = pt.y - drag.sy;
+  if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+  drag.moved = true;
+  if (drag.mode === "pan") { cam.x = drag.cx + dx; cam.y = drag.cy + dy; applyCam(); svgEl.classList.add("panning"); }
+  else { nodeEls[drag.id].g.classList.add("dragging"); moveNode(drag.id, drag.ox + dx / cam.k, drag.oy + dy / cam.k); }
+});
+function endPointer(ev) {
+  pointers.delete(ev.pointerId);
+  if (!drag) return;
+  if (drag.mode === "node") { nodeEls[drag.id].g.classList.remove("dragging"); if (drag.moved) saveLayout(); else if (ev.type === "pointerup") openNode(drag.id); }
+  svgEl.classList.remove("panning");
+  drag = pointers.size ? drag : null;
+  if (drag && drag.mode === "pinch" && pointers.size < 2) drag = null;
+}
+svgEl.addEventListener("pointerup", endPointer);
+svgEl.addEventListener("pointercancel", endPointer);
+svgEl.addEventListener("wheel", (ev) => {  // like embedded maps: plain wheel scrolls the page, Ctrl/⌘ + wheel (or pinch) zooms
+  if (!(ev.ctrlKey || ev.metaKey)) return;
+  ev.preventDefault(); const pt = vbPoint(ev); zoomAt(pt.x, pt.y, Math.exp(-ev.deltaY * 0.0025));
+}, {passive: false});
+let gestureScale = 1;  // Safari trackpad pinch
+svgEl.addEventListener("gesturestart", (ev) => { ev.preventDefault(); gestureScale = 1; });
+svgEl.addEventListener("gesturechange", (ev) => { ev.preventDefault(); const [cx, cy] = viewCenter(); zoomAt(cx, cy, ev.scale / gestureScale); gestureScale = ev.scale; });
+$("z-in").addEventListener("click", () => zoomAt(...viewCenter(), 1.2));
+$("z-out").addEventListener("click", () => zoomAt(...viewCenter(), 1 / 1.2));
+$("z-pct").addEventListener("click", () => zoomAt(...viewCenter(), 1 / cam.k));
+$("z-fit").addEventListener("click", fitView);
+$("z-reset").addEventListener("click", () => {
+  for (const [k, v] of Object.entries(HOME)) { NODES[k].x = v[0]; NODES[k].y = v[1]; nodeEls[k].g.setAttribute("transform", `translate(${v[0]} ${v[1]})`); }
+  try { localStorage.removeItem(LAYOUT_KEY); } catch (_) { /* storage blocked */ }
+  layoutEdges(); fitView();
+});
+$("z-full").addEventListener("click", () => {
+  const panel = $("arch-panel");
+  if (document.fullscreenElement) document.exitFullscreen(); else if (panel.requestFullscreen) panel.requestFullscreen();
+});
+document.addEventListener("fullscreenchange", () => setTimeout(fitView, 60));
+$("diagram-wrap").addEventListener("keydown", (ev) => {
+  if (ev.target.closest(".node") && ev.key.startsWith("Arrow")) return;
+  if (ev.key === "+" || ev.key === "=") zoomAt(...viewCenter(), 1.2);
+  else if (ev.key === "-" || ev.key === "_") zoomAt(...viewCenter(), 1 / 1.2);
+  else if (ev.key === "0") fitView();
+});
+/* The box under the MCP server is what the tools act on: a fresh test sandbox for MBPP,
+   the task repository for SWE-bench (docker exec into /testbed; a local git repo in the demo). */
+const REPO_VIEW = {
+  swe:   {title: "Repository", sub: "Docker container · /testbed · no network", down: "commands", up: "stdout", info: "ni_repo",
+          path: "src/agent_smith/tools/executor.py · docker_env.py"},
+  local: {title: "Repository", sub: "local git repo (demo)", down: "commands", up: "stdout", info: "ni_repo",
+          path: "src/agent_smith/tools/executor.py (LocalExecutor)"},
+  mbpp:  {title: "Test sandbox", sub: "new worker · no MCP · 10 s", down: "code + tests", up: "PASS / FAIL", info: "ni_repo_mbpp",
+          path: "src/agent_smith/tools/mbpp_tools.py (run_tests) · sandbox/host.py"},
+};
+let benchSeen = null;
+function benchKind() {
+  const run = raw.find((x) => x.type === "run_start");
+  if (run && run.benchmark === "mbpp") return "mbpp";
+  const tr0 = raw.find((x) => x.type === "tool_result" && x.server && x.server.executor);
+  return tr0 && tr0.server.executor === "local" ? "local" : "swe";
+}
+function applyBench() {
+  const k = benchKind(); if (k === benchSeen) return; benchSeen = k;
+  const v = REPO_VIEW[k], n = NODES.repo;
+  n.title = v.title; n.sub = v.sub; n.path = v.path; n.infoKey = v.info;
+  n.info = k === "mbpp" ? NODE_INFO_MBPP_EN : NODE_INFO_REPO_EN;
+  nodeEls.repo.title.textContent = v.title; nodeEls.repo.sub.textContent = v.sub; nodeEls.repo.g.setAttribute("aria-label", v.title);
+  edgeLabelEls.mcps_repo.textContent = v.down; edgeLabelEls.repo_mcps.textContent = v.up;
+  NODES.repo.sub = v.sub;
+}
+const NODE_INFO_REPO_EN = NODES.repo.info;
+/* SWE-bench harness = the eval_script of task.json (moulinette), run by run_tests inside the container.
+   Split into its stages so the UI can show what the test run really does. */
+const harnessCache = new Map();
+function parseHarness(script) {
+  if (!script) return null;
+  if (harnessCache.has(script)) return harnessCache.get(script);
+  const lines = script.split("\n"), st = {env: [], state: [], install: [], reset: [], patch: [], run: [], restore: []};
+  let inPatch = false, inRun = false, patchText = [], resetSeen = false;
+  for (const raw of lines) {
+    const l = raw.trim();
+    if (inPatch) { if (/^EOF_\w+$/.test(l)) { inPatch = false; continue; } patchText.push(raw); continue; }
+    if (!l || l.startsWith("#!") || /^set -/.test(l)) continue;
+    if (l.includes(">>>>> Start Test Output")) { inRun = true; continue; }
+    if (l.includes(">>>>> End Test Output")) { inRun = false; continue; }
+    if (inRun) { st.run.push(l); continue; }
+    if (/^git apply/.test(l)) { st.patch.push(l.replace(/<<.*$/, "").trim()); inPatch = /<</.test(l); continue; }
+    if (/^git checkout \S+ /.test(l)) { (resetSeen && st.patch.length ? st.restore : st.reset).push(l); resetSeen = true; continue; }
+    if (/pip install|setup\.py|python -m pip/.test(l)) { st.install.push(l); continue; }
+    if (/^git (status|show|diff|-c)/.test(l)) { st.state.push(l); continue; }
+    st.env.push(l);
+  }
+  const files = [...new Set(patchText.filter((x) => x.startsWith("+++ b/")).map((x) => x.slice(6)))];
+  const res = {stages: st, patch: patchText.join("\n").trim(), files,
+               add: patchText.filter((x) => x.startsWith("+") && !x.startsWith("+++")).length,
+               del: patchText.filter((x) => x.startsWith("-") && !x.startsWith("---")).length};
+  harnessCache.set(script, res); return res;
+}
+const HARNESS_STAGES = ["env", "install", "reset", "patch", "run", "restore"];
+function harnessResult(r) {  // from the run_tests text: "exit_code: 0\nsummary: 45 passed, 0 failed/errored | ..."
+  const t = String((r && r.result) || ""), m = t.match(/summary: (\d+) passed, (\d+) failed/), ex = t.match(/exit_code: (-?\d+)/);
+  const failed = t.split("\n").filter((l) => /^(FAILED|ERROR) |\.\.\. (FAIL|ERROR)$| [FE]$/.test(l.trim())).slice(0, 6);
+  const run = ((r && r.server && r.server.ops) || []).find((o) => o.op === "run");
+  return {passed: m ? +m[1] : null, failed: m ? +m[2] : null, exit: ex ? +ex[1] : null, list: failed, ms: run ? run.duration_ms : null,
+          timeout: /TIMED OUT/.test(t)};
+}
+/* the harness of the run_tests call shown at the cursor (running now, or the last finished one) */
+function harnessAt(upto, e) {
+  const running = e && activity(e).paused && e.name === "run_tests";
+  const done = [...upto].reverse().find((x) => x.type === "tool_result" && x.name === "run_tests");
+  const src = running ? (e.server ? e : null) || done : done;
+  const det = src && src.server && src.server.details, h0 = det && parseHarness(det.script);
+  return h0 ? {h: h0, running, res: running ? null : harnessResult(done), det} : running ? {h: null, running: true} : null;
+}
+function harnessSummaryText(x) {
+  const r = x.res; if (!r) return "";
+  const ok = r.failed === 0 && !r.timeout;
+  return `${ok ? "✓" : "✗"} ${r.passed ?? "?"} passed · ${r.failed ?? "?"} failed${r.ms ? ` · ${(r.ms / 1000).toFixed(1)} s` : ""}${r.timeout ? " · timeout" : ""}`;
+}
+function renderHarnessPanel(x) {  // full view under the diagram (Repository clicked)
+  const wrap = h("div", "harness");
+  wrap.appendChild(h("h4", "", tr("hn_title")));
+  wrap.appendChild(h("div", "muted", tr("hn_src")));
+  const ol = document.createElement("ol");
+  for (const k of HARNESS_STAGES) {
+    const cmds = x.h ? x.h.stages[k] : []; if (k !== "patch" && !cmds.length) continue;
+    const li = h("li", x.running ? "run" : x.res ? (k === "run" && x.res.failed ? "bad" : "ok") : "");
+    li.appendChild(h("b", "", (x.running ? "◌ " : x.res ? (k === "run" && x.res.failed ? "✗ " : "✓ ") : "") + tr("hs_" + k)));
+    li.appendChild(h("span", "muted", " " + tr("hd_" + k, {files: x.h ? x.h.files.join(", ") : "", add: x.h ? x.h.add : 0, del: x.h ? x.h.del : 0})));
+    if (cmds.length) li.appendChild(pre(cmds.join("\n"), "mono hcmd"));
+    if (k === "patch" && x.h && x.h.patch) {
+      const d = h("div", "hdiff");
+      for (const l of x.h.patch.split("\n")) d.appendChild(h("div", l.startsWith("+") && !l.startsWith("+++") ? "a" : l.startsWith("-") && !l.startsWith("---") ? "d" : "", l || " "));
+      li.appendChild(d);
+    }
+    ol.appendChild(li);
+  }
+  wrap.appendChild(ol);
+  if (x.res) {
+    const ok = x.res.failed === 0 && !x.res.timeout;
+    const r = h("div", `hres ${ok ? "ok" : "bad"}`, harnessSummaryText(x) + (x.res.exit != null ? ` · exit ${x.res.exit}` : ""));
+    wrap.appendChild(r);
+    if (x.res.list.length) wrap.appendChild(pre(x.res.list.join("\n"), "mono hcmd"));
+    wrap.appendChild(h("div", "muted", tr("hn_moul")));
+  } else if (x.running) wrap.appendChild(h("div", "hres run", tr("hn_running")));
+  return wrap;
+}
+const PHASES = [["search", /^(search_|find_references|list_files)/], ["read", /^read_file/], ["run", /^run_command/],
+                ["edit", /^edit_file/], ["tests", /^run_tests/], ["patch", /^get_patch/]];
+const phaseOf = (name) => (PHASES.find(([, re]) => re.test(name || "")) || [null])[0];
+function renderEnv(st) {
+  const box = $("env-body"); if (!box) return;
+  box.replaceChildren();
+  const k = benchKind(), upto = events.slice(0, cursor + 1), e = events[cursor] || {}, act = e.type ? activity(e) : {};
+  if (k === "mbpp") {
+    const res = [...upto].reverse().find((x) => x.type === "tool_result" && x.name === "run_tests");
+    const det = res && res.server && res.server.details;
+    let tests = det && Array.isArray(det.tests) ? det.tests : [];
+    if (!tests.length && st.run && st.run.task_prompt) tests = st.run.task_prompt.split("\n").filter((l) => /^\s*assert /.test(l));
+    const running = act.paused && e.name === "run_tests";
+    const status = new Map();
+    if (res && !running) for (const l of String(res.result || "").split("\n")) { const m = l.match(/^(PASS|FAIL|ERROR) (\d+):/); if (m) status.set(+m[2], m[1]); }
+    box.appendChild(h("div", "src", tr("env_src")));
+    tests.slice(0, 4).forEach((t, i) => {
+      const c = running ? "run" : status.get(i + 1) === "PASS" ? "ok" : status.has(i + 1) ? "bad" : "pend";
+      const row = h("div", `t ${c}`); row.append(h("span", "i", {run: "◌", ok: "✓", bad: "✗", pend: "○"}[c]), h("span", "", t.replace(/^\s*assert\s+/, "")));
+      box.appendChild(row);
+    });
+    box.appendChild(h("div", "t lock", "🔒 " + tr("env_hidden")));
+    return;
+  }
+  // SWE-bench: container life cycle, then what the agent did in the repository
+  const life = h("div", "row");
+  const docker = raw.some((x) => x.type === "docker_started");
+  if (!docker) life.appendChild(h("span", "chip done", tr("env_local")));
+  else {
+    const seen = (t) => upto.some((x) => x.type === t);
+    const pull = upto.find((x) => x.type === "docker_pull") || raw.find((x) => x.type === "docker_pull") || {};
+    const img = String(pull.image || "").replace(/^.*sweb\.eval\.x86_64\./, "").replace(/^.*_1776_/, "").replace(/:latest$/, "");
+    [["docker_pull", "⬇ " + tr("env_img") + (img ? " " + short(img, 22) : "")], ["docker_started", "▶ " + tr("env_ctr")], ["docker_removed", "✕ " + tr("env_rm")]].forEach(([t, label], i) => {
+      if (i) life.appendChild(h("span", "arr", "→"));
+      life.appendChild(h("span", `chip${e.type === t ? " now" : seen(t) ? " done" : ""}`, label));
+    });
+  }
+  box.appendChild(life);
+  const counts = new Map(); for (const x of upto) if (x.type === "tool_result") { const ph = phaseOf(x.name); if (ph) counts.set(ph, (counts.get(ph) || 0) + 1); }
+  const nowPh = act.paused || e.type === "tool_result" ? phaseOf(e.name) : null;
+  const phases = h("div", "row");
+  PHASES.forEach(([ph], i) => {
+    const c = h("span", `chip${ph === nowPh ? " now" : counts.get(ph) ? " done" : ""}`, tr("ph_" + ph));
+    if (counts.get(ph)) c.appendChild(h("b", "", String(counts.get(ph)))); phases.appendChild(c);
+  });
+  box.appendChild(phases);
+  const lastOp = [...upto].reverse().find((x) => x.type === "repo_op");
+  const hx = harnessAt(upto, e);
+  if (hx) {  // the SWE-bench harness (eval script of task.json) of the last test run
+    const row = h("div", "row");
+    row.appendChild(h("span", "hl", tr("hn_short")));
+    for (const k of HARNESS_STAGES) {
+      if (hx.h && k !== "patch" && !hx.h.stages[k].length) continue;
+      const bad = hx.res && k === "run" && (hx.res.failed || hx.res.timeout);
+      const c = h("span", `chip${hx.running ? " now" : bad ? " bad" : " done"}`, (hx.running ? "" : bad ? "✗ " : "✓ ") + tr("hc_" + k));
+      c.title = tr("hs_" + k); row.appendChild(c);
+    }
+    box.appendChild(row);
+    box.appendChild(h("div", `last ${hx.running ? "" : hx.res && hx.res.failed === 0 && !hx.res.timeout ? "okt" : "badt"}`, hx.running ? tr("env_eval") : harnessSummaryText(hx)));
+    return;
+  }
+  box.appendChild(h("div", "last", lastOp ? `$ ${short(String(lastOp.op.command).replace(/^docker exec (-\w+ \S+ )*\S+ bash -c /, "").replace(/^\(cd \S+ && bash -c /, "").replace(/^'|'\)?$/g, ""), 70)} · exit ${lastOp.op.exit_code}` : tr("env_none")));
+}
+const NODE_INFO_MBPP_EN = ["MBPP has no repository: run_tests starts a NEW sandbox worker (no MCP, no network, 10 s) with the candidate code plus one try/except per assert.",
+  "The tests come from task.json of the moulinette, never from the model; the report gives PASS/FAIL with got/expected values.",
+  "This is a second sandbox, separate from the worker that runs the model's code."];
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function pulse(edgeId) {
   if (reduceMotion || speed() > 4) return;
@@ -1795,13 +2421,14 @@ function pulse(edgeId) {
 
 /* ======================= state ======================= */
 let raw = [], events = [], cursor = -1, playing = false, timer = null, sourceKind = "demo";
-let selectedStep = null, activeTab = "flow", tabPinned = false, selectedNode = "interp";
+let selectedStep = null, activeTab = "interp", tabPinned = false, selectedNode = "interp";
 /* "real": the recorded pace (event field t, seconds since start); animations then run at 1x. */
 const realTime = () => $("speed").value === "real";
 const speed = () => realTime() ? 1 : parseFloat($("speed").value);
 const withLines = () => $("opt-lines").checked;
 
 function setRaw(list, kind) {
+  if (typeof launcher !== "undefined" && !RUN_ACTION[choice] && kind !== "live") menuOpen(false);
   if (kind !== "live" && es) { es.close(); es = null; }
   stop(); raw = list; sourceKind = kind; selectedStep = null; tabPinned = false;
   events = expandAll(raw, withLines()); $("scrub").max = Math.max(0, events.length - 1);
@@ -1873,14 +2500,17 @@ function go(i) {
   const e = events[cursor], act = activity(e);
   for (const [k, v] of Object.entries(nodeEls)) { v.g.classList.toggle("active", act.nodes.includes(k)); v.g.classList.toggle("error", !!act.error && act.nodes.includes(k)); }
   for (const [k, p] of Object.entries(edgeEls)) p.classList.toggle("active", act.edges.includes(k));
+  nodeEls.interp.g.classList.toggle("paused", !!act.paused);
+  applyBench();
   if (cursor === prev + 1) act.edges.forEach((id, j) => setTimeout(() => pulse(id), j * 140 / speed()));
   const color = `var(${KIND_COLOR[e.type] || "--c-orch"})`;
   $("caption").querySelector(".kind").textContent = e.type; $("caption").querySelector(".kind").style.background = color;
   $("caption").querySelector(".txt").textContent = act.text;
+  $("sum-log").textContent = `${Number(e.t ?? 0).toFixed(2)}  ${e.type} · ${short(act.text, 90)}`;
   $("scrub").value = cursor; $("pos").textContent = `${cursor + 1} / ${events.length}`;
   const st = derive(cursor);
   if (e.step != null && (playing || sourceKind === "live" || prev !== cursor)) selectedStep = e.step;
-  if (!tabPinned) {
+  if (followTabs !== false && !tabPinned) {
     if (e.type === "exec_line" || e.type === "exec_more" || e.type === "sandbox_start") setTab("interp");
     else if (["tool_call", "mcp_request", "server_dispatch", "repo_op", "mcp_response", "tool_result"].includes(e.type)) setTab("tools");
     else if (["llm_request", "llm_response", "extraction", "sandbox_end", "observation"].includes(e.type)) setTab("flow");
@@ -1895,14 +2525,16 @@ function updatePills(e, st) {
   const set = (id, t) => { const max = Math.floor((NODES[id].w - 26) / 6.4); t = t || ""; nodeEls[id].pill.textContent = t.length > max ? t.slice(0, max - 1) + "…" : t; };
   set("llm", s && s.outTok != null ? `${s.inTok} in · ${s.outTok} out` : "");
   set("extract", s && s.format ? s.format : "");
-  set("interp", e.type === "exec_line" ? short(`line ${e.entry.l}${e.entry.v ? " · " + vars(e.entry.v) : ""}`, 26) : s && s.running ? tr("p_running") : "");
-  set("host", s && s.sbStatus ? tr("p_status", {s: s.sbStatus}) : ["tool_call", "tool_result"].includes(e.type) ? "proxy " + short(e.name, 18) : "");
+  const waiting = activity(e).paused, tool = e.name || (e.op && e.op.op) || "";
+  set("interp", waiting ? tr("p_paused") : e.type === "exec_line" ? short(`line ${e.entry.l}${e.entry.v ? " · " + vars(e.entry.v) : ""}`, 26) : s && s.running ? tr("p_running") : "");
+  set("host", waiting ? tr("p_waiting", {t: short(tool, 14)}) : e.type === "tool_result" ? tr("p_back", {t: short(e.name, 14)}) : s && s.sbStatus ? tr("p_status", {s: s.sbStatus}) : "");
   set("mcpc", ["tool_call", "mcp_request", "mcp_response", "tool_result"].includes(e.type) ? short(e.name, 24) : s && s.tools.length ? tr("p_calls", {n: s.tools.length}) : "");
   set("mcps", e.type === "server_dispatch" ? short(e.handler, 24) : st.mcp ? tr("p_tools", {n: (st.mcp.tools || []).length}) : "");
   set("repo", e.type === "repo_op" ? `exit ${e.op.exit_code} · ${e.op.duration_ms} ms` : "");
   set("orch", st.run ? tr("p_step", {n: selectedStep ?? "–"}) : "");
   set("final", st.end ? tr(st.end.success ? "p_ok" : "p_bad") : "");
   set("task", st.run ? `${st.run.benchmark} · ${short(st.run.task_id, 14)}` : "");
+  renderEnv(st);
 }
 
 /* ======================= rendering ======================= */
@@ -1934,6 +2566,16 @@ function renderState(st) {
     meter(tr("m_out"), outTok, lim.max_output_tokens || 0, num, tr("mx_out", {w: words(outTok)}), "token"),
     meter(tr("m_time"), t, lim.timeout_seconds || 0, (v) => `${Number(v).toFixed(1)} s`, tr("mx_time")));
   $("model").textContent = run.model || "";
+  const kfmt = (n) => n >= 10000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n));
+  const sb = $("sum-budget"); sb.replaceChildren();
+  for (const [lab, v, m, f, full] of [[tr("sb_steps"), steps.filter((x) => x.llm !== undefined).length, lim.max_iterations, String, tr("m_iter")],
+      [tr("sb_in"), inTok, lim.max_input_tokens, kfmt, tr("m_in")], [tr("sb_out"), outTok, lim.max_output_tokens, kfmt, tr("m_out")],
+      [tr("sb_time"), t, lim.timeout_seconds, (x) => `${Math.round(x)}s`, tr("m_time")]]) {
+    const r = m ? v / m : 0, g = h("span", "mb"), bar = h("span", `mbar${r > 1 ? " over" : r > 0.8 ? " hi" : ""}`), i = document.createElement("i");
+    i.style.width = `${Math.min(100, r * 100)}%`; bar.appendChild(i);
+    g.append(h("span", "l", lab), `${f(v)}/${m ? f(m) : "–"}`, bar); g.title = `${full}: ${num(Math.round(v))} / ${m ? num(m) : "–"}`; sb.appendChild(g);
+  }
+  $("sum-steps").replaceChildren();
   $("result").textContent = st.end ? tr(st.end.success ? "chip_ok" : "chip_bad") : (st.run ? tr("chip_run") : "");
   $("result").style.color = st.end ? `var(${st.end.success ? "--c-final" : "--c-error"})` : "var(--muted)";
   $("sysprompt").textContent = run.system_prompt || "(not available in this trace)";
@@ -1950,7 +2592,12 @@ function renderState(st) {
     b.append(h("span", "n", String(s.n).padStart(2, "0")), mid, h("span", `st ${cls}`, label));
     b.addEventListener("click", () => { selectedStep = s.n; tabPinned = false; renderState(derive(cursor)); updatePills(events[cursor], derive(cursor)); });
     list.appendChild(b);
+    const chip = h("button", `sc ${cls}${s.n === selectedStep ? " cur" : ""}`, String(s.n).padStart(2, "0")); chip.type = "button";
+    chip.title = `${tr("m_step", {n: s.n})}: ${label} · ${stepSummary(s)}`; chip.addEventListener("click", (ev) => { ev.stopPropagation(); b.click(); });
+    $("sum-steps").appendChild(chip);
   }
+  { const row = $("sum-steps"), extra = row.children.length - 10;  // the summary keeps the 10 latest steps
+    if (extra > 0) { for (let i = 0; i < extra; i++) row.firstChild.remove(); row.prepend(h("span", "sc more", `…+${extra}`)); } }
   const cur = list.querySelector('[aria-current="true"]'); if (cur && (playing || sourceKind === "live")) scrollWithin(list, cur);
   const s = st.steps.get(selectedStep);
   const hands = s ? handoffs(s, st) : [];
@@ -1960,7 +2607,8 @@ function renderState(st) {
   renderModal(st);
 }
 function renderDeltas(hands) {
-  const g = $("deltas"); g.replaceChildren();
+  lastHands = hands || [];
+  const g = $("deltas"); g.replaceChildren(); hands = lastHands;
   for (const p of Object.values(edgeEls)) p.classList.remove("changed");
   const changed = new Map();
   for (const x of hands) if (x.changed) changed.set(x.id, (changed.get(x.id) || []).concat(x));
@@ -2025,13 +2673,23 @@ function renderToolList(st, s) {
   return wrap;
 }
 function showNode(id, st, s, hands) {
-  selectedNode = id;
+  selectedNode = id; { const tn = $("tab-node"); if (tn) tn.textContent = tr("tab_node", {n: NODES[id].title}); }
   st = st || derive(cursor); s = s || st.steps.get(selectedStep); hands = hands || (s ? handoffs(s, st) : []);
   for (const [k, v] of Object.entries(nodeEls)) v.g.classList.toggle("selected", k === id);
   const n = NODES[id], box = $("node-info"); box.replaceChildren();
   const head = h("h3", "", n.title); head.style.color = `var(${n.c})`;
-  const ul = document.createElement("ul"); ((I18N[LANG] && I18N[LANG]["ni_" + id]) || n.info).forEach((line) => ul.appendChild(h("li", "", line)));
+  const ul = document.createElement("ul"); ((I18N[LANG] && I18N[LANG][n.infoKey || "ni_" + id]) || n.info).forEach((line) => ul.appendChild(h("li", "", line)));
   box.append(head, ul, h("div", "path mono", n.path));
+  { const nb = h("button", "ptoggle", "▾"); nb.type = "button"; nb.title = tr("collapse_tip"); head.appendChild(nb);
+    box.classList.toggle("collapsed", stored("as-col-node") === "1");
+    nb.addEventListener("click", () => { const c = !box.classList.contains("collapsed"); box.classList.toggle("collapsed", c); store("as-col-node", c ? "1" : ""); }); }
+  if (id === "repo") {
+    const upto = events.slice(0, cursor + 1);
+    if (benchKind() === "mbpp") {  // MBPP harness: candidate code + one try/except per assert, run in a new sandbox
+      const r = [...upto].reverse().find((x) => x.type === "tool_result" && x.name === "run_tests"), d = r && r.server && r.server.details;
+      if (d && d.harness) { const w = h("div", "harness"); w.append(h("h4", "", tr("hn_mbpp")), h("div", "muted", d.generated || ""), pre(d.harness, "mono hcmd")); box.appendChild(w); }
+    } else { const hx = harnessAt(upto, events[cursor]); if (hx && hx.h) box.appendChild(renderHarnessPanel(hx)); }
+  }
   if (id === "mcps") box.appendChild(renderToolList(st, s));
   const io = nodeIO(id, s, st);
   if (io && (io.in != null || io.out != null)) {
@@ -2051,12 +2709,29 @@ $("nodes").addEventListener("click", () => {});
 /* ---------- step detail tabs ---------- */
 function renderDetail(s, st, hands) {
   const body = $("detail-body"), meta = $("detail-meta");
-  body.replaceChildren(); meta.replaceChildren();
-  if (!s) { $("detail-title").textContent = tr("detail_h"); body.appendChild(pre(st.end && st.end.solution ? `${tr("d_solution")}\n\n${st.end.solution}` : tr("d_select"))); return; }
+  body.replaceChildren(); meta.replaceChildren(); body.classList.remove("nbmode");
+  const nodeTab = activeTab === "node"; body.hidden = nodeTab; meta.hidden = nodeTab; $("node-info").hidden = !nodeTab;
+  const all = [...st.steps.values()].filter((x) => x.n > 0).sort((a, b) => a.n - b.n), idx = s ? all.findIndex((x) => x.n === s.n) : -1;
+  $("st-pos").textContent = all.length && idx >= 0 ? `${idx + 1} / ${all.length}` : "– / –";
+  $("st-prev").disabled = idx <= 0; $("st-next").disabled = idx < 0 || idx >= all.length - 1;
+  const stat = $("insp-stat"), ev = events[cursor], act = ev ? activity(ev) : {};
+  stat.hidden = !s;
+  if (s) {
+    const paused = act.paused && (ev.step == null || ev.step === s.n);
+    stat.className = `dstat ${paused ? "paused" : s.running ? "run" : "done"}`;
+    stat.textContent = paused ? tr("st_paused", {t: ev.name}) : s.running ? tr("st_run") : tr("st_done", {s: s.sbStatus ? statusName(s.sbStatus) : "ok"});
+  }
+  if (!s) { $("detail-title").textContent = tr("step_n", {n: "–"}); body.appendChild(pre(st.end && st.end.solution ? `${tr("d_solution")}\n\n${st.end.solution}` : tr("d_select"))); return; }
   $("detail-title").textContent = tr("step_n", {n: s.n});
   [s.inTok != null && `${s.inTok} in`, s.outTok != null && `${s.outTok} out`, s.ms != null && `${Math.round(s.ms)} ms`, s.retries ? `${s.retries} retries` : null, s.format && `format: ${s.format}`, s.sbStatus && `sandbox: ${s.sbStatus}`].filter(Boolean).forEach((b) => meta.appendChild(h("span", "", b)));
   if (activeTab === "flow") body.appendChild(renderFlow(s, hands));
-  else if (activeTab === "interp") body.appendChild(renderInterp(s));
+  else if (activeTab === "interp") {
+    body.classList.add("nbmode");
+    body.appendChild(renderInterp(s, {drawer: true, history: all.filter((x) => x.code && x.n < s.n)}));
+    const cur = body.querySelector(".xl.paused") || body.querySelector(".xl.cur") || body.querySelector(".nb-in.cur"), sbox = body.querySelector(".interp-code") || body;
+    if (cur && cur.classList.contains("nb-in")) sbox.scrollTop = Math.max(0, cur.getBoundingClientRect().top - sbox.getBoundingClientRect().top + sbox.scrollTop - 6);
+    else if (cur) scrollWithin(sbox, cur);
+  }
   else if (activeTab === "tools") body.appendChild(renderTools(s));
   else if (activeTab === "llm") body.appendChild(s.llm == null ? pre(tr("d_wait")) : markedText(s.llm, s.code, "-", tr("d_red")));
   else if (activeTab === "code") body.appendChild(s.code ? markedText(s.code, s.llm, "+", tr("d_green"), true) : pre(tr("d_nocode")));
@@ -2095,7 +2770,13 @@ function renderFlow(s, hands) {
   }
   return flow;
 }
-function renderInterp(s) {
+function unrepr(v) {  // the REPL value of a str is its Python repr: show the text itself, with real line breaks
+  const t = String(v), m = t.match(/^(['"])([\s\S]*)\1$/);
+  return m ? m[2].replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\(['"\\])/g, "$1") : t;
+}
+function outText(x) { return [x.stdout, x.value != null ? unrepr(x.value) : "", x.error || ""].filter(Boolean).join("\n") || x.obs || ""; }
+function clipLines(t, n) { const l = String(t || "").split("\n"); return l.length > n ? l.slice(0, n).join("\n") + `\n… (+${l.length - n})` : l.join("\n"); }
+function renderInterp(s, opts = {}) {
   const trace = s.trace || s.fullTrace;
   const box = document.createElement("div");
   if (!s.code) { box.appendChild(pre(tr("i_nocode"))); return box; }
@@ -2113,18 +2794,38 @@ function renderInterp(s) {
   }
   const cur = upto.length ? upto[upto.length - 1] : null;
   const finished = s.done && pos >= entries.length - 1;
+  // the worker is blocked in call_host_tool: show the line it waits on and where the request is now
+  const ev = events[cursor], evAct = ev ? activity(ev) : {};
+  const pausedLine = evAct.paused && (ev.step == null || ev.step === s.n) ? (cur && cur.l) || Number(ev.line) || null : null;
+  const hop = !pausedLine ? "" : tr({tool_call: "hp_call", mcp_request: "hp_req", server_dispatch: "hp_srv", repo_op: benchKind() === "mbpp" ? "hp_tests" : "hp_repo", mcp_response: "hp_resp"}[ev.type] || "hp_call");
   const grid = h("div", "interp"), codeBox = h("div", "interp-code"), lines = h("div", "lines");
   s.code.split("\n").forEach((src, i) => {
     const ln = i + 1, n = hits.get(ln) || 0;
     const skipped = entries.length && finished && !fullHits.get(ln) && src.trim() && !/^\s*(#|"""|'''|else:|try:|finally:)/.test(src) && !isInsideString(s.code, ln);
-    const r = h("div", `xl${n ? " ran" : ""}${skipped ? " skip" : ""}${cur && cur.l === ln && !finished ? " cur" : ""}`);
+    const isPaused = ln === pausedLine;
+    const r = h("div", `xl${n ? " ran" : ""}${skipped ? " skip" : ""}${cur && cur.l === ln && !finished ? " cur" : ""}${isPaused ? " paused" : ""}`);
     const code = h("code", "", src || " ");
-    const tg = tags.get(ln); if (tg) code.appendChild(h("span", `tag ${tg[0]}`, tg[1]));
+    const tg = isPaused ? ["pause", tr("i_paused_tag", {t: ev.name, hop})] : tags.get(ln); if (tg) code.appendChild(h("span", `tag ${tg[0]}`, tg[1]));
     if (skipped) code.title = tr("i_never");
-    r.append(h("span", "h", n ? `${n}×` : ""), h("span", "g", ln), code);
+    r.append(h("span", "h", isPaused ? "⏸" : n ? `${n}×` : ""), h("span", "g", ln), code);
     lines.appendChild(r);
   });
+  if (pausedLine) codeBox.appendChild(h("div", "pausebar", tr("i_paused", {l: pausedLine, t: ev.name})));
+  if (opts.history && opts.history.length) {  // previous steps as compact notebook cells (SWE-bench steps are often one call each)
+    const hist = h("div", "nb-hist");
+    for (const x of opts.history.slice(-12)) {
+      const c = h("div", "nb-cell"); c.append(h("div", "nb-in", `In [${x.n}]`), pre(clipLines(x.code, 8), "nb-code"));
+      const o = outText(x); if (o) c.append(h("div", `nb-out${x.error ? " err" : ""}`, `Out [${x.n}]`), pre(clipLines(o, 6), "nb-outp"));
+      hist.appendChild(c);
+    }
+    codeBox.appendChild(hist);
+    codeBox.appendChild(h("div", "nb-in cur", `In [${s.n}] · ${tr("nb_now")}`));
+  }
   codeBox.appendChild(lines);
+  if (opts.drawer) {
+    const o = s.done || s.stdout ? outText(s) : "";
+    if (o) { const c = h("div", "nb-curout"); c.append(h("div", `nb-out${s.error ? " err" : ""}`, `Out [${s.n}]`), pre(o, "nb-outp")); codeBox.appendChild(c); }
+  }
   const legend = h("div", "note", entries.length ? (finished ? tr("i_done", {n: entries.filter((x) => x.e === "line").length, dropped: trace.dropped ? tr("i_dropped", {n: trace.dropped}) : ""}) : tr("i_running", {i: pos + 1, n: entries.length})) : "");
   codeBox.prepend(legend);
   // variables (module scope + current function frame)
@@ -2143,8 +2844,11 @@ function renderInterp(s) {
   varsBox.appendChild(table(tr("i_vars"), module));
   if (frames.length) varsBox.appendChild(table(tr("i_frame", {f: frames[frames.length - 1].f}), frames[frames.length - 1].v));
   if (cur && cur.e === "return" && cur.r != null) varsBox.appendChild(h("div", "mono", tr("i_ret", {f: cur.f, r: cur.r})));
-  if (s.stdout) { varsBox.appendChild(h("h4", "", "stdout")); varsBox.appendChild(pre(short(s.stdout, 600), "mono")); }
-  grid.append(codeBox, varsBox); box.appendChild(grid);
+  if (s.stdout && !opts.drawer) { varsBox.appendChild(h("h4", "", "stdout")); varsBox.appendChild(pre(short(s.stdout, 600), "mono")); }
+  const split = h("div", "vsplit"); split.setAttribute("role", "separator"); split.title = tr("split_tip");
+  if (opts.drawer) resizer(split, "col", () => varsBox.getBoundingClientRect().width,
+    (w0, d) => $("insp").style.setProperty("--vw", `${Math.round(clamp(w0 - d, 180, grid.getBoundingClientRect().width - 260))}px`), "as-vars-w", $("insp"), "--vw");
+  grid.append(codeBox, split, varsBox); box.appendChild(grid);
   // execution path chips
   if (entries.length) {
     const path = h("div", "path"); path.appendChild(h("b", "muted", tr("i_path")));
@@ -2241,12 +2945,102 @@ function renderCall(t) {
 }
 /* Interpreter modal: the executing code of the selected step, kept in sync with playback. */
 const modal = $("interp-modal");
-function openInterpModal() {
-  if (!modal.open) { try { modal.showModal(); } catch (_) { modal.setAttribute("open", ""); } }
-  renderModal();
+const dockOpen = () => !modal.hidden;
+function openInterpModal() { tabPinned = true; setTab("interp"); renderState(derive(cursor)); }
+/* IDE-like splitters: drag a handle, the size goes to a CSS variable and is remembered per viewer */
+function resizer(handle, axis, getSize, apply, key, target, cssVar) {
+  let st = null;
+  handle.addEventListener("pointerdown", (ev) => {
+    ev.preventDefault(); st = {p: axis === "col" ? ev.clientX : ev.clientY, s: getSize()};
+    handle.classList.add("active"); document.body.classList.add("resizing", axis === "col" ? "resizing-col" : "resizing-row");
+    try { handle.setPointerCapture(ev.pointerId); } catch (_) { /* pointer already gone */ }
+  });
+  handle.addEventListener("pointermove", (ev) => { if (st) apply(st.s, (axis === "col" ? ev.clientX : ev.clientY) - st.p); });
+  const end = () => {
+    if (!st) return; st = null; handle.classList.remove("active"); document.body.classList.remove("resizing", "resizing-col", "resizing-row");
+    try { localStorage.setItem(key, parseInt(target.style.getPropertyValue(cssVar), 10)); } catch (_) { /* storage blocked */ }
+  };
+  handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
 }
+function restoreSize(key, target, cssVar, extraClass) {
+  try { const v = +localStorage.getItem(key); if (v > 0) { target.style.setProperty(cssVar, `${v}px`); if (extraClass) target.classList.add(extraClass); } } catch (_) { /* storage blocked */ }
+}
+restoreSize("as-vars-w", $("insp"), "--vw");
+restoreSize("as-insp-h", $("insp"), "--ih");
+resizer($("insp-grip"), "row", () => (activeTab === "node" ? $("node-info") : $("detail-body")).getBoundingClientRect().height,
+  (h0, d) => $("insp").style.setProperty("--ih", `${Math.round(clamp(h0 + d, 160, window.innerHeight * 0.85))}px`), "as-insp-h", $("insp"), "--ih");
+$("insp-grip").addEventListener("dblclick", () => { $("insp").style.removeProperty("--ih"); try { localStorage.removeItem("as-insp-h"); } catch (_) { /* storage blocked */ } });
+restoreSize("as-canvas-h", $("diagram-wrap"), "--ch", "sized");
+resizer($("canvas-grip"), "row", () => $("diagram-wrap").getBoundingClientRect().height,
+  (h0, d) => { const w = $("diagram-wrap"); w.classList.add("sized"); w.style.setProperty("--ch", `${Math.round(clamp(h0 + d, 280, window.innerHeight * 1.5))}px`); }, "as-canvas-h", $("diagram-wrap"), "--ch");
+$("canvas-grip").addEventListener("dblclick", () => { const w = $("diagram-wrap"); w.classList.remove("sized"); w.style.removeProperty("--ch"); try { localStorage.removeItem("as-canvas-h"); } catch (_) { /* storage blocked */ } fitView(); });
+
+/* ---------- bottom dock: hover peeks, click pins, click again folds ---------- */
+let dockKey = stored("as-dock-open") || null, dockPeek = null, peekTimer = null;
+function renderDock() {
+  const key = dockKey || dockPeek, body = $("dock-body");
+  body.hidden = !key; body.classList.toggle("peek", !dockKey && !!dockPeek);
+  for (const p of body.querySelectorAll(".dpane")) p.classList.toggle("on", p.dataset.pane === key);
+  for (const t of document.querySelectorAll(".dtab")) { t.setAttribute("aria-expanded", String(t.dataset.dock === dockKey)); t.classList.toggle("peeking", t.dataset.dock === dockPeek && !dockKey); }
+  $("dock-grip").hidden = !dockKey;
+  if (key === "log") { const c = $("log").children[cursor]; if (c) scrollWithin(body, c); }
+}
+for (const t of document.querySelectorAll(".dtab")) {
+  const k = t.dataset.dock, toggle = () => { clearTimeout(peekTimer); dockKey = dockKey === k ? null : k; dockPeek = null; store("as-dock-open", dockKey || ""); renderDock(); };
+  t.addEventListener("click", (ev) => { if (!ev.target.closest(".sc")) toggle(); });
+  t.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } });
+  t.addEventListener("pointerenter", (ev) => {
+    if (ev.pointerType !== "mouse" || dockKey) return;
+    clearTimeout(peekTimer); peekTimer = setTimeout(() => { dockPeek = k; renderDock(); }, dockPeek ? 0 : 260);
+  });
+}
+$("dock").addEventListener("pointerleave", () => { clearTimeout(peekTimer); if (dockPeek) { dockPeek = null; renderDock(); } });
+restoreSize("as-dock-h", $("dock-body"), "--dkh");
+resizer($("dock-grip"), "row", () => $("dock-body").getBoundingClientRect().height,
+  (h0, d) => $("dock-body").style.setProperty("--dkh", `${Math.round(clamp(h0 + d, 120, window.innerHeight * 0.8))}px`), "as-dock-h", $("dock-body"), "--dkh");
+$("dock-grip").addEventListener("dblclick", () => { $("dock-body").style.removeProperty("--dkh"); try { localStorage.removeItem("as-dock-h"); } catch (_) { /* storage blocked */ } });
+renderDock();
+function makeCollapsible(panel, header, key) {
+  const b = h("button", "ptoggle", "▾"); b.type = "button"; b.dataset.i18nTitle = "collapse_tip"; b.title = tr("collapse_tip");
+  header.appendChild(b);
+  const set = (c) => { panel.classList.toggle("collapsed", c); b.setAttribute("aria-expanded", String(!c)); store("as-col-" + key, c ? "1" : ""); };
+  b.addEventListener("click", (ev) => { ev.stopPropagation(); set(!panel.classList.contains("collapsed")); });
+  if (stored("as-col-" + key) === "1") set(true);
+}
+makeCollapsible($("taskcard"), $("taskcard").querySelector(".tc-h"), "task");
+makeCollapsible($("answer"), $("answer").querySelector(".panel-h"), "answer");
+makeCollapsible($("insp"), $("insp").querySelector(".panel-h"), "detail");
+
+/* ---------- "What to show" menu (burger + popover) ---------- */
+var launcher = $("launcher"), menuBtn = $("b-menu");
+function menuOpen(open) {
+  if (open) {
+    const hd = document.querySelector(".wrap > header") || menuBtn.closest("header");
+    launcher.style.top = `${(hd ? hd.offsetTop + hd.offsetHeight : 60) + 6}px`;
+  }
+  launcher.hidden = !open; menuBtn.setAttribute("aria-expanded", String(open));
+}
+function menuLabel() {
+  const k = CHOICE_KEY[choice]; $("menu-cur").textContent = k ? tr(k + "_t") : "";
+  $("menu-state").textContent = JOB && JOB.status === "running" ? "● " + tr("job_running", {s: JOB.elapsed}) : "";
+}
+menuBtn.addEventListener("click", () => menuOpen(launcher.hidden));
+$("menu-close").addEventListener("click", () => menuOpen(false));
+document.addEventListener("pointerdown", (ev) => {  // outside click closes (checked before any re-render of the menu)
+  if (!launcher.hidden && !launcher.contains(ev.target) && !menuBtn.contains(ev.target) && !$("tour").contains(ev.target)) menuOpen(false);
+}, true);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !launcher.hidden && $("tour").hidden) menuOpen(false); });
+function closeInterpDock() { modal.hidden = true; }
+/* the drawer height is dragged from its grip, like the DevTools drawer */
+(function () {
+  try { const h0 = +localStorage.getItem("as-drawer-h"); if (h0 > 0) modal.style.setProperty("--dh", `${h0}px`); } catch (_) { /* storage blocked */ }
+  const grip = $("drawer-grip"); let start = null;
+  grip.addEventListener("pointerdown", (ev) => { start = {y: ev.clientY, h: modal.getBoundingClientRect().height}; try { grip.setPointerCapture(ev.pointerId); } catch (_) { /* pointer already gone */ } });
+  grip.addEventListener("pointermove", (ev) => { if (!start) return; const hh = clamp(start.h + (start.y - ev.clientY), 180, window.innerHeight * 0.85); modal.style.setProperty("--dh", `${Math.round(hh)}px`); });
+  grip.addEventListener("pointerup", () => { if (!start) return; start = null; try { localStorage.setItem("as-drawer-h", parseInt(modal.style.getPropertyValue("--dh"), 10)); } catch (_) { /* storage blocked */ } });
+})();
 function renderModal(st) {
-  if (!modal.open) return;
+  if (!dockOpen()) return;
   st = st || derive(cursor);
   const steps = [...st.steps.values()].filter((x) => x.n > 0 && x.code).sort((a, b) => a.n - b.n);
   if (selectedStep == null && steps.length) selectedStep = steps[steps.length - 1].n;
@@ -2262,19 +3056,42 @@ function renderModal(st) {
     b.addEventListener("click", () => { selectedStep = x.n; renderState(derive(cursor)); });
     bar.appendChild(b);
   }
+  const stat = $("modal-stat"), ev = events[cursor], act = ev ? activity(ev) : {};
+  const paused = s && act.paused && (ev.step == null || ev.step === s.n);
+  stat.hidden = !s;
+  if (s) {
+    stat.className = `dstat ${paused ? "paused" : s.running ? "run" : "done"}`;
+    stat.textContent = paused ? tr("st_paused", {t: ev.name}) : s.running ? tr("st_run") : tr("st_done", {s: s.sbStatus ? statusName(s.sbStatus) : "ok"});
+  }
   const body = $("modal-body");
-  body.replaceChildren(s ? renderInterp(s) : h("div", "empty", tr("m_pick")));
-  const cur = body.querySelector(".xl.cur"); if (cur) scrollWithin(body, cur);
+  body.replaceChildren(s ? renderInterp(s, {drawer: true, history: steps.filter((x) => x.n < s.n)}) : h("div", "empty", tr("m_pick")));
+  const cur = body.querySelector(".xl.paused") || body.querySelector(".xl.cur") || body.querySelector(".nb-in.cur");
+  const sbox = body.querySelector(".interp-code") || body;
+  if (cur && cur.classList.contains("nb-in")) sbox.scrollTop = Math.max(0, cur.getBoundingClientRect().top - sbox.getBoundingClientRect().top + sbox.scrollTop - 6);
+  else if (cur) scrollWithin(sbox, cur);
   $("mi-play").innerHTML = playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M4 2v12l10-6z"/>';
 }
-$("m-close").addEventListener("click", () => modal.close());
-modal.addEventListener("click", (ev) => { if (ev.target === modal) modal.close(); });
+$("m-close").addEventListener("click", closeInterpDock);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && dockOpen() && $("tour").hidden) closeInterpDock(); });
 $("m-prev").addEventListener("click", () => { stop(); go(cursor - 1); });
 $("m-next").addEventListener("click", () => { stop(); go(cursor + 1); });
 $("m-play").addEventListener("click", () => { playing ? stop() : play(); renderModal(); });
 
 function setTab(t) { activeTab = t; for (const b of $("tabs").querySelectorAll(".tab")) b.setAttribute("aria-selected", String(b.dataset.tab === t)); }
-$("tabs").addEventListener("click", (ev) => { const b = ev.target.closest(".tab"); if (!b) return; tabPinned = true; setTab(b.dataset.tab); renderState(derive(cursor)); });
+for (const [id, dir] of [["st-prev", -1], ["st-next", 1]]) $(id).addEventListener("click", () => {
+  const st = derive(cursor), all = [...st.steps.values()].filter((x) => x.n > 0).sort((a, b) => a.n - b.n), i = all.findIndex((x) => x.n === selectedStep);
+  const nx = all[i + dir]; if (nx) { selectedStep = nx.n; renderState(st); updatePills(events[cursor], st); }
+});
+/* auto tab (follows the playback) or pinned tab: a manual click pins, the toggle goes back to auto */
+var followTabs = stored("as-follow") !== "0";
+function setFollow(on) {
+  followTabs = on; store("as-follow", on ? "1" : "0");
+  const b = $("tab-follow"); b.setAttribute("aria-pressed", String(on));
+  b.textContent = on ? tr("follow_on") : tr("follow_off"); b.title = tr(on ? "follow_on_tip" : "follow_off_tip");
+}
+$("tab-follow").addEventListener("click", () => { setFollow(!followTabs); if (followTabs) { tabPinned = false; go(cursor); } });
+setFollow(followTabs);
+$("tabs").addEventListener("click", (ev) => { const b = ev.target.closest(".tab"); if (!b) return; tabPinned = true; setFollow(false); setTab(b.dataset.tab); renderState(derive(cursor)); });
 
 function renderLog() {
   const log = $("log"); log.replaceChildren();
@@ -2469,13 +3286,14 @@ async function api(path, body) {
   return data;
 }
 function selectChoice(id) {
-  choice = id;
+  choice = id; if (typeof menuLabel === "function") menuLabel();
   queueMicrotask(updateView);
   if (RUN_ACTION[id]) ACTIONS = null;  // re-read keys and Docker state each time a run is chosen
   if (RUN_ACTION[id] || id === "src-rec" || (id === "src-live" && !SERVER)) pressed(id);
   renderChoice();
 }
 function renderLaunchState() {
+  if (typeof menuLabel === "function") menuLabel();
   const el = $("ln-state"); if (!el) return; el.replaceChildren();
   if (JOB && JOB.status === "running") { el.append(icon("loader"), " " + tr("ln_busy", {a: tr(CHOICE_KEY[Object.keys(RUN_ACTION).find((k) => RUN_ACTION[k] === JOB.action)] + "_t"), s: JOB.elapsed})); el.className = "ln-state busy"; return; }
   el.className = "muted ln-state"; el.textContent = tr(SERVER && SERVER.runs ? "ln_srv_on" : "ln_srv_off");
@@ -2944,7 +3762,7 @@ function stepIcons(s) {
 function stepsSoFar(st) { return Math.max(0, ...[...st.steps.keys()].filter((k) => k > 0)); }
 function renderStory(e, st) {
   const n = narrate(e);
-  $("story").className = `panel story replay ${n.tone}`;
+  $("story").className = `pnow story ${n.tone}`;
   $("story-ico").replaceChildren(icon(n.ico));
   const say = $("story-say"); say.replaceChildren(n.text);
   if (n.quote) { say.append(" "); say.appendChild(h("q", "", n.quote)); }
@@ -3093,7 +3911,7 @@ $("gloss-close").addEventListener("click", () => gloss.close());
 gloss.addEventListener("click", (ev) => { if (ev.target === gloss) gloss.close(); });
 
 /* ---------- guided tour ---------- */
-const TOUR_TARGETS = [".viewctl", "#launcher", "#taskcard", "#story", "#simple-panel, #arch-panel", "#steps", "#meters", "#security", "#answer", "#b-gloss"];
+const TOUR_TARGETS = [".viewctl", "#launcher:not([hidden]), #b-menu", "#taskcard", "#player", "#simple-panel, #arch-panel", "#dt-steps", "#dt-budget", "#dt-security", "#answer", "#b-gloss"];
 let tourI = -1;
 function tourTarget(i) { return [...document.querySelectorAll(TOUR_TARGETS[i])].find((x) => x.getClientRects().length); }
 function tourStart() {
@@ -3140,6 +3958,8 @@ function store(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* storag
 function stored(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
 function applyStatic() {
   document.querySelectorAll("[data-i18n]").forEach((x) => { x.textContent = tr(x.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-title]").forEach((x) => { x.title = tr(x.dataset.i18nTitle); });
+  if (followTabs !== undefined && $("tab-follow")) setFollow(followTabs);
   nodeEls.interp.sub.textContent = tr("sub_interp"); nodeEls.mcps.sub.textContent = tr("sub_mcps");
 }
 function setLang(l) {
@@ -3155,7 +3975,8 @@ function setLang(l) {
 function setMode(m) {
   MODE = m === "detailed" ? "detailed" : "simple"; document.body.dataset.mode = MODE; store("as-mode", MODE);
   for (const b of $("mode-seg").children) b.setAttribute("aria-pressed", String(b.dataset.mode === MODE));
-  if (MODE === "simple" && modal.open) modal.close();
+  if (MODE === "simple" && dockOpen()) closeInterpDock();
+  if (MODE === "detailed") requestAnimationFrame(layoutEdges);
 }
 $("lang-seg").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-lang]"); if (b) setLang(b.dataset.lang); });
 $("mode-seg").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-mode]"); if (b) setMode(b.dataset.mode); });
@@ -3171,6 +3992,7 @@ applyStatic();
 initSimple();
 for (const b of document.querySelectorAll(".choice[data-ic]")) b.prepend(icon(b.dataset.ic));
 for (const b of document.querySelectorAll(".choice")) b.addEventListener("click", () => selectChoice(b.id));
+layoutEdges(); applyCam(); requestAnimationFrame(fitView);
 showNode("interp");
 loadDemo("mbpp");
 renderChoice();
