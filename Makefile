@@ -14,7 +14,7 @@ EXAM := $(SH) ./scripts/mock_exam.sh
 ARGS  = --student-path . --moulinette-path $(MOULINETTE) --env-file $(ENV) $(if $(T),--tasks "$(T)",)
 
 .DEFAULT_GOAL := help
-.PHONY: help check install up down test sandbox mbpp swe exam exam-or clean clean-logs clean-all school purge
+.PHONY: help check install up down test sandbox mbpp swe exam exam-or clean clean-logs clean-all school purge rm-env
 
 help: ## this list
 	@echo "Agent Smith"
@@ -79,3 +79,8 @@ school: ## set up here, heavy data in sgoinfre  (M=moulinette folder/archive if 
 
 purge: ## after the defense: remove images, sgoinfre data (keeps .env)
 	./scripts/school_setup.sh --uninstall
+
+rm-env: ## delete the API keys: ./.env and ~/.agent_smith.env (asks first)
+	@ls -l $(ENV) $(HOME)/.agent_smith.env 2>/dev/null | awk '{print "  " $$NF}' || true
+	@printf "Delete the API keys above? [y/N] "; read a; \
+	if [ "$$a" = y ]; then rm -f $(ENV) $(HOME)/.agent_smith.env && echo "keys deleted"; else echo "cancelled"; fi
