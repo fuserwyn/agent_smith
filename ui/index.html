@@ -499,8 +499,10 @@ dl.gl dt { font-weight: 700; } dl.gl dd { margin: 0; color: var(--ink); }
             <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
           </defs>
           <g id="edges"></g>
-          <rect class="boundary" x="196" y="300" width="452" height="152" rx="14"/>
-          <text class="boundary-label" x="372" y="320">SANDBOX · worker process · audit hook</text>
+          <rect class="boundary" x="196" y="442" width="404" height="124" rx="14"/>
+          <text class="boundary-label" x="436" y="520">ISOLATED PROCESS</text>
+          <text class="boundary-label" x="436" y="536">no network · no keys</text>
+          <text class="boundary-label" x="436" y="552">audit hook · limits</text>
           <g id="nodes"></g>
           <g id="deltas"></g>
           <g id="pulses"></g>
@@ -1060,8 +1062,9 @@ ru: {
   ni_orch: ["Мысль → Код → Наблюдение, пока не вызван final_answer().", "Перед каждым вызовом LLM проверяет суммарные токены, итерации и время.", "Сокращает старые наблюдения перед повторной отправкой (показано как Δ)."],
   ni_llm: ["Несколько ключей на провайдера, ротация при 429/401/402; повторы с паузой; опциональный запасной провайдер.", "Стоп-последовательности (<end_code>, Observation:) не дают модели выдумать результат выполнения."],
   ni_extract: ["Оставляет только исполняемый Python: Thought и обрамление отбрасываются (Δ).", "XML invoke, Hermes <tool_call> и ReAct превращаются в вызовы Python; об исправлениях сообщается LLM."],
-  ni_interp: ["Отдельный процесс с пустым окружением; каждая выполненная строка трассируется (вкладка «Интерпретатор»).", "AST-политика, урезанные builtins, прокси модулей, allowlist импортов, audit hook.", "Таймаут SIGALRM (на паузе во время вызовов тулов), лимит памяти, потоковый вывод."],
-  ni_mcpc: ["Обёртка сопоставляет позиционные аргументы с именами параметров и отправляет JSON хосту.", "Хост пересылает JSON-RPC tools/call по stdio или HTTP и ждёт результат."],
+  ni_host: ["Работает в процессе агента: запускает воркер, отправляет ему код и собирает результат для оркестратора.", "Делает то, что воркер не может сам: убивает и перезапускает его после таймаута + 2 с или при превышении памяти; время инструментов не считается.", "Получает от воркера сообщения tool_call и пересылает их MCP-клиенту: сам воркер не имеет доступа ни к MCP, ни к файлам, ни к сети."],
+  ni_interp: ["Отдельный процесс с пустым окружением (API-ключей нет); каждая выполненная строка трассируется (вкладка «Интерпретатор»).", "AST-политика, урезанные builtins, прокси модулей, allowlist импортов, audit hook.", "Таймаут SIGALRM (на паузе во время вызова инструментов); инструменты здесь — обёртки, которые только отправляют JSON хосту."],
+  ni_mcpc: ["Живёт в процессе агента рядом с хостом: находит инструменты через list_tools и превращает их в обёртки для воркера.", "Отправляет JSON-RPC tools/call по stdio или HTTP и ждёт результат."],
   ni_mcps: ["FastMCP проверяет аргументы и вызывает Python-обработчик.", "Результат несёт отчёт о выполнении (_meta): команды, коды выхода, время, размеры."],
   ni_repo: ["SWE-bench: команды выполняются через docker exec в контейнере задачи (--network none).", "Локально (тесты, демо): те же команды в TESTBED_PATH. MBPP: изолированная песочница для тестов."],
   ni_final: ["success, solution (код или патч), итерации, запросы, токены, время.", "Каждый шаг хранит llm_output, sandbox_input, sandbox_output, retries."],
@@ -1379,8 +1382,9 @@ fr: {
   ni_orch: ["Pensée → Code → Observation jusqu'à final_answer().", "Vérifie les jetons cumulés, les itérations et le temps avant chaque appel au LLM.", "Raccourcit les anciennes observations avant de les renvoyer (affiché comme Δ)."],
   ni_llm: ["Plusieurs clés par fournisseur, rotation sur 429/401/402 ; nouvelles tentatives avec délai ; secours optionnel.", "Les séquences d'arrêt (<end_code>, Observation:) empêchent le modèle d'inventer des observations."],
   ni_extract: ["Ne garde que le Python exécutable : la Pensée et les balises sont retirées (Δ).", "XML invoke, Hermes <tool_call> et ReAct sont convertis en appels Python ; les corrections sont signalées au LLM."],
-  ni_interp: ["Processus séparé, environnement vide ; chaque ligne exécutée est tracée (onglet « Interpréteur »).", "Politique AST, builtins restreints, proxys de modules, liste d'imports autorisés, audit hook.", "Délai SIGALRM (suspendu pendant les appels d'outils), limite de mémoire, sortie en continu."],
-  ni_mcpc: ["L'enveloppe associe les arguments positionnels aux noms de paramètres et envoie du JSON à l'hôte.", "L'hôte transmet un tools/call JSON-RPC via stdio ou HTTP et attend le résultat."],
+  ni_host: ["Tourne dans le processus de l'agent : lance le worker, lui envoie le code et rassemble le résultat pour l'orchestrateur.", "Fait ce que le worker ne peut pas faire lui-même : le tue et le relance après le délai + 2 s ou au-delà de la limite mémoire ; le temps des outils n'est pas compté.", "Reçoit les messages tool_call du worker et les transmet au client MCP : le worker n'accède lui-même ni à MCP, ni aux fichiers, ni au réseau."],
+  ni_interp: ["Processus séparé à environnement vide (pas de clés API) ; chaque ligne exécutée est tracée (onglet « Interpréteur »).", "Politique AST, builtins restreints, proxys de modules, liste d'imports autorisés, audit hook.", "Délai SIGALRM (en pause pendant les appels d'outils) ; les outils y sont des enveloppes qui envoient seulement du JSON à l'hôte."],
+  ni_mcpc: ["Vit dans le processus de l'agent à côté de l'hôte : découvre les outils avec list_tools et les transforme en enveloppes pour le worker.", "Envoie un tools/call JSON-RPC via stdio ou HTTP et attend le résultat."],
   ni_mcps: ["FastMCP valide les arguments et appelle le gestionnaire Python.", "Le résultat contient un rapport d'exécution (_meta) : commandes, codes de sortie, durées, tailles."],
   ni_repo: ["SWE-bench : commandes exécutées via docker exec dans le conteneur de la tâche (--network none).", "En local (tests, démo) : mêmes commandes dans TESTBED_PATH. MBPP : bac à sable de test isolé."],
   ni_final: ["success, solution (code ou patch), itérations, requêtes, jetons, temps.", "Chaque étape garde llm_output, sandbox_input, sandbox_output, retries."],
@@ -1557,19 +1561,22 @@ const NODES = {
   extract: {x: 270, y: 170, w: 210, h: 84, c: "--c-extract", title: "Code extraction", sub: "python · XML · JSON · ReAct",
             info: ["Keeps only executable Python: the Thought and fences are dropped (Δ).", "XML invoke, Hermes <tool_call> and ReAct are converted to Python calls; repairs are reported to the LLM."],
             path: "src/agent_smith/extraction/extractor.py"},
-  interp:  {x: 216, y: 338, w: 190, h: 96, c: "--c-sandbox", title: "Python interpreter", sub: "click: watch the code run",
-            info: ["Separate process, empty environment; every executed line is traced (Interpreter tab).", "AST policy, restricted builtins, module proxies, import allowlist, audit hook.", "SIGALRM timeout (paused during tool calls), memory limit, streamed output."],
+  host:    {x: 216, y: 330, w: 190, h: 84, c: "--c-sandbox", title: "Sandbox host", sub: "limits · tool proxy",
+            info: ["Runs in the agent process: starts the worker, sends it the code, collects the result for the orchestrator.", "Enforces what the worker cannot: kills and restarts it after timeout + 2 s or above the memory limit; time spent in tools is not counted.", "Receives tool_call messages from the worker and forwards them to the MCP client: the worker itself never reaches MCP, files or the network."],
+            path: "src/agent_smith/sandbox/host.py (Sandbox)"},
+  interp:  {x: 216, y: 470, w: 190, h: 84, c: "--c-sandbox", title: "Worker process", sub: "click: watch the code run",
+            info: ["Separate process with an empty environment (no API keys); every executed line is traced (Interpreter tab).", "AST policy, restricted builtins, module proxies, import allowlist, audit hook.", "SIGALRM timeout (paused during tool calls); tools are wrappers that only send JSON to the host."],
             path: "src/agent_smith/sandbox/worker.py"},
-  mcpc:    {x: 432, y: 338, w: 196, h: 96, c: "--c-mcp", title: "MCP client", sub: "tool wrappers · proxy",
-            info: ["The wrapper maps positional arguments to parameter names and sends JSON to the host.", "The host forwards a JSON-RPC tools/call over stdio or HTTP and waits for the result."],
-            path: "src/agent_smith/sandbox/host.py · mcp_client/client.py"},
-  mcps:    {x: 690, y: 338, w: 180, h: 96, c: "--c-mcp", title: "MCP server", sub: "click: list of tools",
+  mcpc:    {x: 432, y: 330, w: 196, h: 84, c: "--c-mcp", title: "MCP client", sub: "tools/call · stdio / HTTP",
+            info: ["Lives in the agent process next to the host: discovers the tools with list_tools and turns them into wrappers for the worker.", "Sends a JSON-RPC tools/call over stdio or HTTP and waits for the result."],
+            path: "src/agent_smith/mcp_client/client.py"},
+  mcps:    {x: 690, y: 330, w: 180, h: 84, c: "--c-mcp", title: "MCP server", sub: "click: list of tools",
             info: ["FastMCP validates arguments and calls the Python handler.", "The result carries an execution report (_meta): commands run, exit codes, timings, sizes."],
             path: "mcp_tools_*.py · src/agent_smith/tools/ (instrument.py)"},
   repo:    {x: 690, y: 478, w: 180, h: 84, c: "--c-repo", title: "Repository", sub: "/testbed · docker exec",
             info: ["SWE-bench: commands run via docker exec in the task container (--network none).", "Locally (tests, demo): the same commands run in TESTBED_PATH. MBPP: an isolated test sandbox."],
             path: "src/agent_smith/tools/executor.py · docker_env.py"},
-  final:   {x: 20, y: 346, w: 160, h: 84, c: "--c-final", title: "SolutionOutput", sub: "solution.json",
+  final:   {x: 20, y: 330, w: 160, h: 84, c: "--c-final", title: "SolutionOutput", sub: "solution.json",
             info: ["success, solution (code or patch), iterations, requests, tokens, time.", "Every step keeps llm_output, sandbox_input, sandbox_output, retries."],
             path: "src/agent_smith/models.py"},
 };
@@ -1578,16 +1585,17 @@ const EDGES = {
   orch_llm:    {d: "M480 58 L648 58", c: "--c-llm", label: "messages", lx: 535, ly: 50, mid: [600, 58]},
   llm_orch:    {d: "M650 92 L482 92", c: "--c-llm", label: "Thought + code", lx: 516, ly: 108},
   orch_ext:    {d: "M375 114 L375 168", c: "--c-extract", label: "raw text", lx: 383, ly: 146},
-  ext_interp:  {d: "M330 254 L330 336", c: "--c-sandbox", label: "python", lx: 342, ly: 288, mid: [330, 274]},
-  interp_mcpc: {d: "M406 374 L430 374", c: "--c-mcp", mid: [418, 360]},
-  mcpc_interp: {d: "M430 402 L408 402", c: "--c-mcp"},
-  mcpc_mcps:   {d: "M628 374 L688 374", c: "--c-mcp", label: "JSON-RPC", lx: 652, ly: 331},
-  mcps_mcpc:   {d: "M690 406 L630 406", c: "--c-mcp", mid: [660, 421]},
-  mcps_repo:   {d: "M765 434 L765 476", c: "--c-repo", label: "commands", lx: 700, ly: 459},
-  repo_mcps:   {d: "M800 476 L800 436", c: "--c-repo", label: "stdout", lx: 818, ly: 459, mid: [800, 456]},
-  interp_orch: {d: "M250 338 C 250 270, 230 200, 292 116", c: "--c-sandbox", label: "observation", lx: 156, ly: 240, mid: [249, 268]},
-  interp_final:{d: "M216 392 L182 390", c: "--c-final", label: "final_answer", lx: 56, ly: 448},
-  orch_final:  {d: "M290 114 C 200 140, 100 200, 100 344", c: "--c-final"},
+  ext_host:    {d: "M330 254 L330 328", c: "--c-sandbox", label: "python", lx: 342, ly: 288, mid: [330, 274]},
+  host_interp: {d: "M280 414 L280 468", c: "--c-sandbox", label: "code, tool results", lx: 136, ly: 433},
+  interp_host: {d: "M350 468 L350 416", c: "--c-sandbox", label: "tool_call, output", lx: 358, ly: 433, mid: [350, 456]},
+  host_mcpc:   {d: "M406 358 L430 358", c: "--c-mcp"},
+  mcpc_host:   {d: "M430 388 L408 388", c: "--c-mcp"},
+  mcpc_mcps:   {d: "M628 358 L688 358", c: "--c-mcp", label: "JSON-RPC", lx: 652, ly: 323},
+  mcps_mcpc:   {d: "M690 390 L630 390", c: "--c-mcp", mid: [660, 405]},
+  mcps_repo:   {d: "M765 414 L765 476", c: "--c-repo", label: "commands", lx: 700, ly: 449},
+  repo_mcps:   {d: "M800 476 L800 416", c: "--c-repo", label: "stdout", lx: 818, ly: 449, mid: [800, 446]},
+  host_orch:   {d: "M250 330 C 250 270, 230 200, 292 116", c: "--c-sandbox", label: "observation", lx: 156, ly: 240, mid: [249, 268]},
+  orch_final:  {d: "M290 114 C 200 140, 100 200, 100 328", c: "--c-final", label: "final_answer", lx: 24, ly: 200},
 };
 const KIND_COLOR = {
   run_start: "--c-task", mcp_connected: "--c-mcp", llm_request: "--c-llm", llm_response: "--c-llm", llm_retry: "--c-error",
@@ -1618,22 +1626,22 @@ function activity(e) {
     case "llm_error": return {nodes: ["llm", "orch"], edges: [], error: true, text: `LLM failure: ${e.error}`};
     case "llm_response": return {nodes: ["llm", "orch"], edges: ["llm_orch"], text: `Step ${e.step}: ${e.input_tokens} in / ${e.output_tokens} out tokens, ${Math.round(e.request_time_ms)} ms${e.retries ? `, ${e.retries} retries` : ""}`};
     case "extraction": return {nodes: ["extract"], edges: ["orch_ext"], error: !e.code, text: e.code ? `Extracted ${e.format}: ${e.code.split("\n").length} lines kept${(e.notes || []).length ? " · " + e.notes[0] : ""}` : "No code found: feedback goes back to the LLM"};
-    case "sandbox_start": return {nodes: ["interp"], edges: ["ext_interp"], text: `Interpreter receives ${e.code.split("\n").length} lines`};
+    case "sandbox_start": return {nodes: ["host", "interp"], edges: ["ext_host", "host_interp"], text: `Host sends ${e.code.split("\n").length} lines to the worker process`};
     case "exec_line": return execActivity(e);
     case "exec_more": return {nodes: ["interp"], edges: [], text: `… ${e.count} more traced events (see Interpreter tab)`};
-    case "tool_call": return {nodes: ["interp", "mcpc"], edges: ["interp_mcpc"], text: `line ${e.line ?? "?"}: ${e.written || e.name + "(" + argPreview(e.args) + ")"} → wrapper sends {"type":"tool_call","name":"${e.name}",…} to the host`};
+    case "tool_call": return {nodes: ["interp", "host", "mcpc"], edges: ["interp_host", "host_mcpc"], text: `line ${e.line ?? "?"}: ${e.written || e.name + "(" + argPreview(e.args) + ")"} → worker sends {"type":"tool_call","name":"${e.name}",…} to the host → MCP client`};
     case "mcp_request": return {nodes: ["mcpc", "mcps"], edges: ["mcpc_mcps"], text: `JSON-RPC tools/call "${e.name}" over ${short(e.transport || "MCP", 40)}`};
     case "server_dispatch": return {nodes: ["mcps"], edges: [], text: `${e.server || "server"}: arguments validated → ${e.handler || e.name}(${argPreview(e.received_args)})`};
     case "repo_op": return {nodes: ["mcps", "repo"], edges: ["mcps_repo", "repo_mcps"], error: e.op.exit_code !== 0, text: `${e.op.op}: ${short(e.op.command, 70)} → exit ${e.op.exit_code}, ${e.op.duration_ms} ms, ${kb(e.op.stdout_bytes)}`};
     case "mcp_response": return {nodes: ["mcps", "mcpc"], edges: ["mcps_mcpc"], error: e.is_error, text: `CallToolResult: ${e.result_chars} chars, ${e.result_lines} lines${e.truncated ? " (truncated by the tool)" : ""}, isError=${!!e.is_error}`};
-    case "tool_result": return {nodes: ["mcpc", "interp"], edges: ["mcpc_interp"], error: e.is_error, text: `${e.name} returns to line ${e.line ?? "?"}: ${firstLine(e.result)} (${Math.round(e.duration_ms)} ms total)`};
-    case "sandbox_end": return {nodes: ["interp", "orch"], edges: ["interp_orch"], error: ["error", "timeout", "memory", "crash", "security_error", "syntax_error"].includes(e.status), text: `Sandbox finished: ${e.status}${e.duration_s != null ? ` in ${e.duration_s}s` : ""} → observation ${String(e.output || "").length} chars`};
+    case "tool_result": return {nodes: ["mcpc", "host", "interp"], edges: ["mcpc_host", "host_interp"], error: e.is_error, text: `${e.name} returns to line ${e.line ?? "?"}: ${firstLine(e.result)} (${Math.round(e.duration_ms)} ms total)`};
+    case "sandbox_end": return {nodes: ["interp", "host", "orch"], edges: ["interp_host", "host_orch"], error: ["error", "timeout", "memory", "crash", "security_error", "syntax_error"].includes(e.status), text: `Sandbox finished: ${e.status}${e.duration_s != null ? ` in ${e.duration_s}s` : ""} → observation ${String(e.output || "").length} chars`};
     case "observation": return {nodes: ["orch"], edges: [], text: `Observation stored for the next request`};
     case "budget": return {nodes: ["orch"], edges: [], text: `Budget: ${e.input_tokens}/${e.max_input_tokens} in, ${e.output_tokens}/${e.max_output_tokens} out, ${e.elapsed}s`};
-    case "final_answer": return {nodes: ["interp", "final"], edges: ["interp_final"], text: `final_answer() at step ${e.step}`};
+    case "final_answer": return {nodes: ["interp", "host", "orch", "final"], edges: ["interp_host", "host_orch", "orch_final"], text: `final_answer() at step ${e.step}: worker → host → orchestrator → SolutionOutput`};
     case "fallback_answer": return {nodes: ["orch", "final"], edges: ["orch_final"], text: "No final_answer: best candidate submitted"};
     case "budget_stop": return {nodes: ["orch"], edges: [], error: true, text: `Stopped: ${e.reason}`};
-    case "loop_detected": return {nodes: ["orch", "interp"], edges: [], error: true, text: `Loop: step ${e.step} repeats step ${e.repeat_of}, not executed; next temperature ${e.next_temperature}`};
+    case "loop_detected": return {nodes: ["orch", "host"], edges: [], error: true, text: `Loop: step ${e.step} repeats step ${e.repeat_of}, not executed; next temperature ${e.next_temperature}`};
     case "interrupted": return {nodes: ["orch"], edges: [], error: true, text: "Interrupted"};
     case "run_end": return {nodes: ["final"], edges: ["orch_final"], error: !e.success, text: `Run finished: ${e.success ? "success" : "no success"} · ${e.iterations} iterations · ${e.total_time_seconds}s`};
     default: return {nodes: [], edges: [], text: e.type};
@@ -1835,14 +1843,14 @@ function handoffs(s, st) {
   const prev = st.steps.get(s.n - 1);
   if (s.delivered != null) {
     if (s.n === 1) list.push({id: "orch_llm", title: tr("h_task"), route: "Orchestrator → LLM API", sent: st.run && st.run.task_prompt, recv: s.delivered, sentLabel: tr("l_task_sent"), recvLabel: tr("l_task_recv")});
-    else if (prev && prev.obs != null) list.push({id: "orch_llm", title: tr("h_obs", {n: s.n - 1}), route: "Interpreter → Orchestrator → LLM API", sent: "Observation:\n" + prev.obs, recv: s.delivered, sentLabel: tr("l_obs_sent", {n: s.n - 1}), recvLabel: tr("l_obs_recv", {n: s.n}), note: (s.compacted || []).length ? tr("note_short", {list: s.compacted.join(", ")}) : ""});
+    else if (prev && prev.obs != null) list.push({id: "orch_llm", title: tr("h_obs", {n: s.n - 1}), route: "Sandbox host → Orchestrator → LLM API", sent: "Observation:\n" + prev.obs, recv: s.delivered, sentLabel: tr("l_obs_sent", {n: s.n - 1}), recvLabel: tr("l_obs_recv", {n: s.n}), note: (s.compacted || []).length ? tr("note_short", {list: s.compacted.join(", ")}) : ""});
   }
-  if (s.llm != null && s.code != null) list.push({id: "ext_interp", title: tr("h_out"), route: "LLM API → Code extraction → Python interpreter", sent: s.llm, recv: s.code || "", sentLabel: tr("l_raw"), recvLabel: tr("l_sbin"), note: [s.format && tr("note_format", {f: s.format}), ...(s.notes || [])].filter(Boolean).join(" · ")});
+  if (s.llm != null && s.code != null) list.push({id: "ext_host", title: tr("h_out"), route: "LLM API → Code extraction → Sandbox host → Worker", sent: s.llm, recv: s.code || "", sentLabel: tr("l_raw"), recvLabel: tr("l_sbin"), note: [s.format && tr("note_format", {f: s.format}), ...(s.notes || [])].filter(Boolean).join(" · ")});
   for (const t of s.tools) {
     const named = `${t.name}(${Object.entries(t.args || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")})`;
     // Only positional calls are transformed (mapped to parameter names); keyword calls pass through as written.
     const positional = t.written && /^\w+\(\s*[^)\s]/.test(t.written) && !/^\w+\(\s*\w+=/.test(t.written);
-    if (positional) list.push({id: "interp_mcpc", title: tr("h_call", {name: t.name}), route: "Python interpreter → tool wrapper → MCP client", sent: t.written, recv: named, sentLabel: tr("l_written", {l: t.line ?? "?"}), recvLabel: tr("l_named")});
+    if (positional) list.push({id: "interp_host", title: tr("h_call", {name: t.name}), route: "Worker (tool wrapper) → Sandbox host → MCP client", sent: t.written, recv: named, sentLabel: tr("l_written", {l: t.line ?? "?"}), recvLabel: tr("l_named")});
     const m = t.res && t.res.server;
     if (m && m.ops && m.ops.length) {
       const rawOut = m.ops.map((o) => o.stdout_head || "").join("\n");
@@ -1851,7 +1859,7 @@ function handoffs(s, st) {
   }
   if (s.obs != null && s.stdout != null) {
     const parts = [s.stdout, s.value != null ? `Out: ${s.value}` : "", s.error || ""].filter(Boolean).join("\n");
-    list.push({id: "interp_orch", title: tr("h_prog"), route: "Python interpreter → Orchestrator", sent: parts, recv: s.obs, sentLabel: tr("l_prog_sent"), recvLabel: tr("l_prog_recv")});
+    list.push({id: "host_orch", title: tr("h_prog"), route: "Worker → Sandbox host → Orchestrator", sent: parts, recv: s.obs, sentLabel: tr("l_prog_sent"), recvLabel: tr("l_prog_recv")});
   }
   for (const x of list) { x.ops = diffLines(x.sent, x.recv); x.stats = diffStats(x.ops); x.changed = x.stats.add + x.stats.del > 0; }
   return list;
@@ -1887,7 +1895,8 @@ function updatePills(e, st) {
   const set = (id, t) => { const max = Math.floor((NODES[id].w - 26) / 6.4); t = t || ""; nodeEls[id].pill.textContent = t.length > max ? t.slice(0, max - 1) + "…" : t; };
   set("llm", s && s.outTok != null ? `${s.inTok} in · ${s.outTok} out` : "");
   set("extract", s && s.format ? s.format : "");
-  set("interp", e.type === "exec_line" ? short(`line ${e.entry.l}${e.entry.v ? " · " + vars(e.entry.v) : ""}`, 26) : s && s.sbStatus ? tr("p_status", {s: s.sbStatus}) : s && s.running ? tr("p_running") : "");
+  set("interp", e.type === "exec_line" ? short(`line ${e.entry.l}${e.entry.v ? " · " + vars(e.entry.v) : ""}`, 26) : s && s.running ? tr("p_running") : "");
+  set("host", s && s.sbStatus ? tr("p_status", {s: s.sbStatus}) : ["tool_call", "tool_result"].includes(e.type) ? "proxy " + short(e.name, 18) : "");
   set("mcpc", ["tool_call", "mcp_request", "mcp_response", "tool_result"].includes(e.type) ? short(e.name, 24) : s && s.tools.length ? tr("p_calls", {n: s.tools.length}) : "");
   set("mcps", e.type === "server_dispatch" ? short(e.handler, 24) : st.mcp ? tr("p_tools", {n: (st.mcp.tools || []).length}) : "");
   set("repo", e.type === "repo_op" ? `exit ${e.op.exit_code} · ${e.op.duration_ms} ms` : "");
@@ -1976,8 +1985,9 @@ function nodeIO(id, s, st) {
     case "task": return st.run && {in: `task ${st.run.task_id} (${st.run.benchmark})`, out: st.run.task_prompt};
     case "orch": return {in: s.n > 1 && st.steps.get(s.n - 1) ? "Observation:\n" + (st.steps.get(s.n - 1).obs || "") : st.run && st.run.task_prompt, out: s.delivered, edge: "orch_llm"};
     case "llm": return {in: s.delivered, out: s.llm};
-    case "extract": return {in: s.llm, out: s.code, edge: "ext_interp"};
-    case "interp": return {in: s.code, out: s.obs, noDiff: true};
+    case "extract": return {in: s.llm, out: s.code, edge: "ext_host"};
+    case "host": return {in: s.code, out: s.obs, edge: "host_orch"};
+    case "interp": return {in: s.code, out: [s.stdout, s.value != null ? `Out: ${s.value}` : "", s.error || ""].filter(Boolean).join("\n") || s.obs, noDiff: true};
     case "mcpc": return t.length ? {in: t.map((x) => x.written || x.name).join("\n"), out: t.map((x) => x.res ? firstLine(x.res.result) : "(pending)").join("\n"), noDiff: true} : null;
     case "mcps": return lastRes && lastRes.res.server ? {in: JSON.stringify(lastRes.res.server.received_args, null, 1), out: lastRes.res.result, noDiff: true} : null;
     case "repo": { const ops = t.flatMap((x) => (x.res && x.res.server && x.res.server.ops) || []); return ops.length ? {in: ops.map((o) => "$ " + o.command).join("\n"), out: ops.map((o) => `exit ${o.exit_code} · ${kb(o.stdout_bytes)}\n${o.stdout_head || ""}`).join("\n—\n"), noDiff: true} : null; }
