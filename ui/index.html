@@ -2116,7 +2116,10 @@ function anchor(n, side, f) {
 }
 function route(e) {
   const A = NODES[e.from], B = NODES[e.to], lane = e.lane || 0;
-  if (!e.fa) {
+  // hand-tuned anchors only fit the default layout: once either box is moved, route like every other edge
+  const atHome = (id) => HOME[id] && NODES[id].x === HOME[id][0] && NODES[id].y === HOME[id][1];
+  const fixedAnchors = e.fa && atHome(e.from) && atHome(e.to);
+  if (!fixedAnchors) {
     const ox0 = Math.max(A.x, B.x), ox1 = Math.min(A.x + A.w, B.x + B.w), oy0 = Math.max(A.y, B.y), oy1 = Math.min(A.y + A.h, B.y + B.h);
     const below = B.y >= A.y + A.h + 8, above = A.y >= B.y + B.h + 8, right = B.x >= A.x + A.w + 8, left = A.x >= B.x + B.w + 8;
     if (ox1 - ox0 >= 24 && (below || above)) {
@@ -2130,14 +2133,14 @@ function route(e) {
     }
   }
   let fs, ff, ts, tf;
-  if (e.fa) { [fs, ff] = e.fa; [ts, tf] = e.ta; }
+  if (fixedAnchors) { [fs, ff] = e.fa; [ts, tf] = e.ta; }
   else {
     const dx = B.x + B.w / 2 - (A.x + A.w / 2), dy = B.y + B.h / 2 - (A.y + A.h / 2);
     if (Math.abs(dy) > Math.abs(dx)) { fs = dy > 0 ? "b" : "t"; ts = dy > 0 ? "t" : "b"; } else { fs = dx > 0 ? "r" : "l"; ts = dx > 0 ? "l" : "r"; }
     ff = tf = 0.5 + lane * 0.15;
   }
   const P = anchor(A, fs, ff), Q = anchor(B, ts, tf), k = Math.max(40, Math.hypot(Q.x - P.x, Q.y - P.y) * 0.4);
-  const fixed = e.fa && e.c1 && Math.abs(P.y - Q.y) > 120;  // hand-tuned bend only while the boxes stay roughly in place
+  const fixed = fixedAnchors && e.c1;  // hand-tuned bend only in the default layout
   const c1 = fixed ? [P.x + e.c1[0], P.y + e.c1[1]] : [P.x + P.nx * k, P.y + P.ny * k];
   const c2 = fixed ? [Q.x + e.c2[0], Q.y + e.c2[1]] : [Q.x + Q.nx * k, Q.y + Q.ny * k];
   return {kind: "c", d: `M${P.x} ${P.y} C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${Q.x} ${Q.y}`};
