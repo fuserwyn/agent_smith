@@ -29,16 +29,16 @@ cp .env.example .env             # add your free-tier API keys (several per prov
 uv run pytest                    # offline test-suite (no API key, no Docker needed)
 ```
 
-Shortcuts: `make` lists them all (`make doctor`, `make ui`, `make test`, `make exam`, `make swe TASKS="id id"`,
-`make clean`, `make school-setup`, ...).
+Short commands: `make` lists them all: `make check`, `make up` (UI), `make down`, `make test`, `make exam`,
+`make swe T="id id"`, `make clean`, `make school`, `make purge`.
 
 **42 school computers** (small home quota, large `/sgoinfre/goinfre/Perso/$USER`): one script installs everything.
 
 ```bash
 git clone <repo> agent_smith && cd agent_smith
-./scripts/school_setup.sh --moulinette /path/to/moulinette --env /path/to/.env   # ~1 min
-source .school.env
-./scripts/school_setup.sh --uninstall           # before leaving: removes keys, images and sgoinfre data
+make school M=/path/to/moulinette    # = ./scripts/school_setup.sh; ~1 min, keys taken from ./.env
+make up                               # UI (make loads .school.env itself)
+make purge                            # after the defense: images, sgoinfre data, caches; ./.env is kept
 ```
 
 The clone and the API keys (`~/.agent_smith.env`, mode 600) stay in home (~10 MB). Python 3.10, the uv cache, both

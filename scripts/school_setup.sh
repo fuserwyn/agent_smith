@@ -5,7 +5,7 @@
 #   ./scripts/school_setup.sh --moulinette /path/to/moulinette[.tar.gz|.zip] --env /path/to/.env
 #   source .school.env            # same shell: PATH to uv, caches in sgoinfre, DOCKER_HOST
 #
-#   ./scripts/school_setup.sh --uninstall    # remove everything this script created (keys included)
+#   ./scripts/school_setup.sh --uninstall    # remove everything this script created (./.env is kept)
 #
 # What goes where
 #   home ($HOME)            the clone itself (~15 MB), ~/.agent_smith.env (API keys, chmod 600), uv binary
@@ -77,8 +77,13 @@ if [[ $UNINSTALL == 1 ]]; then
     ok "Podman registries config restored"
   fi
   did uv-installed && rm -f "$HOME/.local/bin/uv" "$HOME/.local/bin/uvx" && ok "uv binary"
-  for p in "${HEAVY[@]}" .env; do [[ -L "$p" ]] && rm -f "$p"; done
-  rm -f .school.env "$KEYS" && ok "API keys (~/.agent_smith.env) and links"
+  for p in "${HEAVY[@]}"; do [[ -L "$p" ]] && rm -f "$p"; done
+  # ./.env stays: the link to ~/.agent_smith.env becomes a real file (chmod 600) in the project
+  if [[ -L .env ]]; then
+    if [[ -f "$KEYS" ]]; then cp --remove-destination "$KEYS" .env 2>/dev/null || { rm -f .env; cp "$KEYS" .env; }; chmod 600 .env
+    else rm -f .env; fi
+  fi
+  rm -f .school.env "$KEYS" && ok "links removed; API keys kept in ./.env only (~/.agent_smith.env removed)"
   chmod -R u+w "$SGO" 2>/dev/null; rm -rf "$SGO" && ok "$SGO"
   echo; echo "Left: the clone itself. Remove it with:  rm -rf \"$ROOT\""
   exit 0
@@ -135,7 +140,8 @@ ok "moulinette sources in ./moulinette"
 say "3. API keys"
 if [[ -n "$ENV_SRC" ]]; then
   [[ -f "$ENV_SRC" ]] || die "no such file: $ENV_SRC"
-  install -m 600 "$ENV_SRC" "$KEYS"
+  # re-run with --env .env while .env already links to the keys: nothing to copy
+  [[ "$(readlink -f "$ENV_SRC")" == "$(readlink -f "$KEYS" 2>/dev/null)" ]] || install -m 600 "$ENV_SRC" "$KEYS"
 elif [[ -f .env && ! -L .env ]]; then
   install -m 600 .env "$KEYS" && rm -f .env
 elif [[ ! -f "$KEYS" ]]; then
@@ -264,9 +270,8 @@ echo
 say "Ready in $((SECONDS - T0)) s.  Home: $(du -sh "$ROOT" 2>/dev/null | cut -f1) clone + keys;  sgoinfre: $(du -sh "$SGO" 2>/dev/null | cut -f1) so far"
 cat <<EOF
 
-  ${B}source .school.env${N}                       # in every new terminal
-  uv run agent-ui                          # UI on http://127.0.0.1:8765
-  ./scripts/mock_exam.sh mbpp --student-path . --moulinette-path ./moulinette --env-file .env
-  tail -f $LOGS/pull.log         # background Docker pulls
-  ./scripts/school_setup.sh --uninstall    # when you leave: removes keys, images, sgoinfre data
+  ${B}make up${N}        # UI on http://127.0.0.1:8765   (make loads .school.env by itself)
+  make exam      # full mock exam            make   = every command
+  tail -f $LOGS/pull.log    # background Docker pulls
+  make purge     # when you leave: images, sgoinfre data, caches (./.env is kept)
 EOF

@@ -1,83 +1,81 @@
-# Agent Smith: shortcuts for setup, UI, tests and the mock exam.  `make` = this help.
+# Agent Smith: short commands.  `make` = this list.
+# On 42 computers .school.env (written by `make school`) is loaded by every command: no `source` needed.
 #
-# Variables (override on the command line, e.g. `make swe TASKS="sympy__sympy-13480"`):
+# Variables (on the command line, e.g. `make swe T="sympy__sympy-13480"`):
+M          ?=
 ENV        ?= .env
 MOULINETTE ?= ./moulinette
 PORT       ?= 8765
-TASKS      ?=
+T          ?=
 K          ?=
 
-EXAM := ./scripts/mock_exam.sh
-COMMON = --student-path . --moulinette-path $(MOULINETTE) --env-file $(ENV)
-SWE_TASKS = $(if $(TASKS),--tasks "$(TASKS)",)
+SH   := $(if $(wildcard .school.env),. ./.school.env &&,)
+EXAM := $(SH) ./scripts/mock_exam.sh
+ARGS  = --student-path . --moulinette-path $(MOULINETTE) --env-file $(ENV) $(if $(T),--tasks "$(T)",)
 
 .DEFAULT_GOAL := help
-.PHONY: help install doctor ui ui-stop test test-fast sandbox mbpp swe exam exam-openrouter \
-        clean clean-traces clean-all school-setup school-uninstall
+.PHONY: help check install up down test sandbox mbpp swe exam exam-or clean clean-logs clean-all school purge
 
-help: ## Show this list
-	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36mmake %-17s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+help: ## this list
+	@echo "Agent Smith"
+	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  make %-10s %s\n", $$1, $$2} /^# ---- / {sub(/^# ---- /, ""); printf "\n %s\n", $$0}' $(MAKEFILE_LIST)
 	@echo
-	@echo "  Variables: ENV=$(ENV)  MOULINETTE=$(MOULINETTE)  PORT=$(PORT)  TASKS=\"$(TASKS)\"  K=\"$(K)\""
+	@echo " Options: T=\"task ids\" (swe, exam)  K=word (test)  M=moulinette (school)  PORT=$(PORT)  ENV=$(ENV)  MOULINETTE=$(MOULINETTE)"
 
-# ---------------------------------------------------------------- setup
-install: ## Install dependencies (agent + moulinette)
-	uv sync
-	@if [ -f $(MOULINETTE)/pyproject.toml ]; then (cd $(MOULINETTE) && uv sync); \
-	 else echo "note: no moulinette at $(MOULINETTE) (set MOULINETTE=path)"; fi
-
-doctor: ## Check uv, Docker, .env and moulinette before a run
-	@ok=1; \
-	command -v uv >/dev/null && echo "  ok    uv $$(uv --version | cut -d' ' -f2)" || { echo "  FAIL  uv not installed"; ok=0; }; \
+# ---- start
+check: ## is everything ready? (uv, Docker, .env, moulinette)
+	@$(SH) ok=1; \
+	command -v uv >/dev/null && echo "  ok    uv $$(uv --version | cut -d' ' -f2)" || { echo "  FAIL  uv not installed (make school / make install)"; ok=0; }; \
 	docker info >/dev/null 2>&1 && echo "  ok    Docker is running" || { echo "  FAIL  Docker is not running"; ok=0; }; \
-	[ -f $(ENV) ] && echo "  ok    $(ENV) present" || { echo "  FAIL  $(ENV) missing (copy .env.example)"; ok=0; }; \
+	[ -f $(ENV) ] && echo "  ok    $(ENV) present" || { echo "  FAIL  $(ENV) missing (cp .env.example .env)"; ok=0; }; \
 	[ -f $(MOULINETTE)/pyproject.toml ] && echo "  ok    moulinette at $(MOULINETTE)" || { echo "  FAIL  no moulinette at $(MOULINETTE)"; ok=0; }; \
-	[ -d .venv ] && echo "  ok    .venv" || echo "  warn  no .venv yet: run make install"; \
+	[ -e .venv ] && echo "  ok    .venv" || echo "  warn  no .venv yet: make install"; \
 	[ $$ok = 1 ]
 
-# ---------------------------------------------------------------- UI
-ui: ## Start the UI (http://127.0.0.1:PORT, default 8765)
-	uv run agent-ui --port $(PORT)
+install: ## install dependencies (agent + moulinette)
+	$(SH) uv sync
+	@if [ -f $(MOULINETTE)/pyproject.toml ]; then $(SH) cd $(MOULINETTE) && uv sync; \
+	 else echo "note: no moulinette at $(MOULINETTE)"; fi
 
-ui-stop: ## Stop a UI left running on PORT
-	-@lsof -ti tcp:$(PORT) | xargs kill 2>/dev/null && echo "stopped UI on port $(PORT)" || echo "nothing on port $(PORT)"
+up: ## start the UI  ->  http://127.0.0.1:8765
+	$(SH) uv run agent-ui --port $(PORT)
 
-# ---------------------------------------------------------------- tests (offline, no API keys used)
-test: ## Run the whole test suite
-	uv run pytest -q
+down: ## stop the UI
+	-@lsof -ti tcp:$(PORT) | xargs kill 2>/dev/null && echo "UI stopped" || echo "UI not running"
 
-test-fast: ## Run tests matching K (e.g. make test-fast K=ui), stop at first failure
-	uv run pytest -q -x $(if $(K),-k "$(K)",)
+# ---- tests (offline, no API key used)
+test: ## all tests;  make test K=ui  = only matching, stop at 1st failure
+	$(SH) uv run pytest -q $(if $(K),-x -k "$(K)",)
 
-# ---------------------------------------------------------------- mock exam (real LLM calls)
-sandbox: ## Sandbox security checks (no LLM)
-	$(EXAM) sandbox $(COMMON)
+# ---- mock exam (real AI calls)
+sandbox: ## sandbox security checks (no AI)
+	$(EXAM) sandbox $(ARGS)
 
-mbpp: ## Mock exam: 5 MBPP tasks
-	$(EXAM) mbpp $(COMMON)
+mbpp: ## 5 MBPP tasks
+	$(EXAM) mbpp $(ARGS)
 
-swe: ## Mock exam: SWE-bench (random 3, or TASKS="id id ...")
-	$(EXAM) swebench $(COMMON) $(SWE_TASKS)
+swe: ## 3 random SWE-bench tasks  (or T="id id")
+	$(EXAM) swebench $(ARGS)
 
-exam: ## Full mock exam: sandbox + MBPP + SWE-bench (standard models)
-	$(EXAM) all $(COMMON) $(SWE_TASKS)
+exam: ## full mock exam: sandbox + MBPP + SWE-bench
+	$(EXAM) all $(ARGS)
 
-exam-openrouter: ## Full mock exam on the OpenRouter model
-	$(EXAM) all $(COMMON) $(SWE_TASKS) --paid
+exam-or: ## full mock exam on the OpenRouter model
+	$(EXAM) all $(ARGS) --paid
 
-# ---------------------------------------------------------------- cleanup
-clean: ## Remove runs, cache, evaluations, leftover agent containers
+# ---- cleanup
+clean: ## remove runs, cache, evaluations, stray containers
 	./scripts/clean.sh
 
-clean-traces: ## clean + traces/logs next to benchmark results
+clean-logs: ## clean + traces/logs of benchmark results
 	./scripts/clean.sh --traces
 
-clean-all: ## Everything incl. Docker images and .venv (asks first)
+clean-all: ## also Docker images and .venv (asks first)
 	@printf "Remove Docker images and virtualenvs too? [y/N] "; read a; [ "$$a" = y ] && ./scripts/clean.sh --all || echo "cancelled"
 
-# ---------------------------------------------------------------- 42 school computers
-school-setup: ## Set up on a 42 computer (heavy data in sgoinfre)
-	./scripts/school_setup.sh --moulinette $(MOULINETTE) --env $(ENV)
+# ---- 42 school computers
+school: ## set up here, heavy data in sgoinfre  (M=moulinette folder/archive if not found)
+	./scripts/school_setup.sh $(if $(M),--moulinette $(M),)
 
-school-uninstall: ## Remove everything school-setup created (incl. keys)
+purge: ## after the defense: remove images, sgoinfre data (keeps .env)
 	./scripts/school_setup.sh --uninstall
