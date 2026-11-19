@@ -1,5 +1,6 @@
 """Execution trace (interpreter path) and MCP execution reports used by the UI."""
 
+import shlex
 import os
 
 from agent_smith.mcp_client import MCPClient
@@ -32,7 +33,7 @@ def test_trace_disabled_by_default_and_never_runs_user_repr():
 def test_tool_results_carry_hops_and_provenance(tmp_path):
     events = []
     env = dict(os.environ, MBPP_TASK_FILE=str(FIXTURES / "mbpp_task_282.json"))
-    with MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_mbpp.py'}", env=env) as mcp, \
+    with MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_mbpp.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp, event_hook=lambda k, d: events.append((k, d)), trace_execution=True) as sb:
         r = sb.execute("code = 'def sub_list(a, b):\\n    return [x - y for x, y in zip(a, b)]'\nprint(run_tests(code))")
     assert [e["e"] for e in r.trace["entries"]].count("tool") == 1
@@ -48,7 +49,7 @@ def test_tool_results_carry_hops_and_provenance(tmp_path):
 
 def test_swebench_ops_report_commands(git_repo):
     env = dict(os.environ, TESTBED_PATH=str(git_repo))
-    with MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp:
+    with MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp:
         out = mcp.call_tool("search_code", {"pattern": "def add"})
     assert out.meta["executor"] == "local" and out.meta["ops"][0]["command"].count("grep") == 1
     assert out.meta["ops"][0]["exit_code"] == 0 and out.rtt_ms >= out.meta["duration_ms"]

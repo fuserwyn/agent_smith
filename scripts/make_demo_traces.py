@@ -10,6 +10,7 @@ such in the UI and are never used as benchmark data.
 
 from __future__ import annotations
 
+import shlex
 import json
 import os
 import re
@@ -96,7 +97,7 @@ def run_swe(tmp: Path) -> list:
     repo = Path("/tmp/agent_smith_demo/testbed")
     make_repo(repo)
     eval_script = tmp / "eval.sh"
-    eval_script.write_text(f"cd {repo}\necho '>>>>> Start Test Output'\n{sys.executable} -m pytest -rA -q tests 2>&1\n"
+    eval_script.write_text(f"cd {shlex.quote(str(repo))}\necho '>>>>> Start Test Output'\n{shlex.quote(sys.executable)} -m pytest -rA -q tests 2>&1\n"
                            "echo '>>>>> End Test Output'\n")
     trace = tmp / "swe.jsonl"
     events = EventSink(str(trace))
@@ -104,7 +105,7 @@ def run_swe(tmp: Path) -> list:
     with FakeLLMServer(SWE_SCRIPT, model="scripted-demo") as srv:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "scripted-demo"), KeyPool(["demo"]))],
                         on_event=events.emit)
-        with MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp:
+        with MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp:
             events.emit("mcp_connected", mcp.describe())
             with Sandbox(SandboxConfig(), mcp, event_hook=events.emit, trace_execution=True) as sb:
                 agent = CodeAgent(llm, sb, swebench_system_prompt(SandboxConfig(), mcp, str(repo)), SWEBENCH_LIMITS,

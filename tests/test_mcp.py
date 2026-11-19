@@ -1,5 +1,6 @@
 """MCP integration: discovery, tool calls from inside the sandbox, stdio and streamable HTTP."""
 
+import shlex
 import os
 import socket
 import subprocess
@@ -20,7 +21,7 @@ MANDATORY = {"read_file", "edit_file", "list_files", "search_code", "search_func
 def swe_client(repo):
     env = dict(os.environ, TESTBED_PATH=str(repo))
     env.pop("SWEBENCH_CONTAINER", None)
-    return MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env)
+    return MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env)
 
 
 def test_swebench_server_exposes_mandatory_tools_and_manual(git_repo):
@@ -82,7 +83,7 @@ def test_unknown_server_tools_are_discovered_dynamically(tmp_path):
         "from mcp.server.fastmcp import FastMCP\nmcp = FastMCP('other', log_level='WARNING')\n"
         "@mcp.tool()\ndef shout(text: str, times: int = 2) -> str:\n    '''Upper-case text.'''\n"
         "    return (text.upper() + ' ') * times\nmcp.run()\n")
-    with MCPClient(stdio_command=f"python {server}") as mcp, Sandbox(SandboxConfig(), mcp) as sb:
+    with MCPClient(stdio_command=f"python {shlex.quote(str(server))}") as mcp, Sandbox(SandboxConfig(), mcp) as sb:
         assert "shout(text: str, times: int = 2)" in build_manual(SandboxConfig(), mcp)
         assert sb.execute("print(shout('hi', 3))").stdout.strip() == "HI HI HI"
         assert "read_file" not in sb.execute("print(sorted(n for n in dir() if not n.startswith('_')))").stdout

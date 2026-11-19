@@ -1,5 +1,6 @@
 """End-to-end agent runs with a fake OpenAI-compatible server (no real LLM, no Docker)."""
 
+import shlex
 import json
 import os
 import subprocess
@@ -63,7 +64,7 @@ def test_budget_stops_before_exceeding_input_tokens(git_repo):
     script = ['Thought: look\n```python\nprint(read_file("pkg/mathutil.py"))\n```'] * 10
     env = dict(os.environ, TESTBED_PATH=str(git_repo))
     with FakeLLMServer(script) as srv, \
-            MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp, \
+            MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp) as sb:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
         agent = CodeAgent(llm, sb, "system", limits, "swebench", "t", settings=AgentSettings())
@@ -80,10 +81,10 @@ def test_swebench_loop_on_local_repo(git_repo, tmp_path):
         'Thought: tests pass, submit.\n```python\nfinal_answer(get_patch())\n```<end_code>',
     ]
     eval_script = tmp_path / "eval.sh"
-    eval_script.write_text(f"cd {git_repo} && {sys.executable} -m pytest -q tests 2>&1\n")
+    eval_script.write_text(f"cd {shlex.quote(str(git_repo))} && {shlex.quote(sys.executable)} -m pytest -q tests 2>&1\n")
     env = dict(os.environ, TESTBED_PATH=str(git_repo), SWEBENCH_EVAL_SCRIPT_FILE=str(eval_script))
     with FakeLLMServer(script) as srv, \
-            MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp, \
+            MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp) as sb:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
         agent = CodeAgent(llm, sb, swebench_system_prompt(SandboxConfig(), mcp, str(git_repo)), SWEBENCH_LIMITS,
@@ -101,7 +102,7 @@ def test_exact_repeat_is_not_executed_and_gets_a_navigation_hint(git_repo):
            'final_answer(get_patch())\n```<end_code>')
     env = dict(os.environ, TESTBED_PATH=str(git_repo))
     with FakeLLMServer([step, step, fix]) as srv, \
-            MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp, \
+            MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp) as sb:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
         out = CodeAgent(llm, sb, "system", SWEBENCH_LIMITS, "swebench", "t").run("task")
@@ -117,7 +118,7 @@ def test_rejected_final_answer_and_empty_response(git_repo):
            'final_answer(get_patch())\n```<end_code>')
     env = dict(os.environ, TESTBED_PATH=str(git_repo))
     with FakeLLMServer(["", describe, fix]) as srv, \
-            MCPClient(stdio_command=f"python {ROOT / 'mcp_tools_swebench.py'}", env=env) as mcp, \
+            MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp) as sb:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
         out = CodeAgent(llm, sb, "system", SWEBENCH_LIMITS, "swebench", "t",
