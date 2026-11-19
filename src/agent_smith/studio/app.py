@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import platform
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from agent_smith.config import PROJECT_ROOT
-from agent_smith.studio import __version__
+from agent_smith.studio import __version__, git
+from agent_smith.studio.events import EventHub
 from agent_smith.studio.security import GuardMiddleware
+from agent_smith.studio.workspace import Workspace, WorkspaceError
 
 WEB_DIST = PROJECT_ROOT / "web" / "dist"
 
@@ -23,6 +28,27 @@ NOT_BUILT = """<!doctype html><html lang="en"><head><meta charset="utf-8"><title
 main{max-width:560px;padding:24px}code{background:#161b22;padding:2px 6px;border-radius:6px}</style></head>
 <body><main><h1>Agent Smith Studio</h1><p>The server is running, but the web app is not built yet.</p>
 <p>Build it once with <code>make studio-build</code>, or develop with hot reload: <code>make studio-dev</code>.</p></main></body></html>"""
+
+
+class WriteBody(BaseModel):
+    path: str
+    content: str
+    base_hash: Optional[str] = Field(None, description="hash the editor loaded; a different file on disk is a conflict")
+
+
+class CreateBody(BaseModel):
+    path: str
+    kind: str = Field("file", pattern="^(file|dir)$")
+    content: str = ""
+
+
+class RenameBody(BaseModel):
+    src: str = Field(alias="from")
+    dst: str = Field(alias="to")
+
+
+class PathBody(BaseModel):
+    path: str
 
 
 def _docker_state() -> Dict[str, Any]:
@@ -36,22 +62,110 @@ def _docker_state() -> Dict[str, Any]:
 
 
 def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST) -> FastAPI:
-    workspace = Path(workspace).resolve()
-    app = FastAPI(title="Agent Smith Studio", version=__version__, docs_url=None, redoc_url=None, openapi_url=None)
-    app.state.workspace = workspace
+    ws = Workspace(Path(workspace))
+    hub = EventHub(ws)
 
+    @contextlib.asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        yield
+        await hub.close()
+
+    app = FastAPI(title="Agent Smith Studio", version=__version__, docs_url=None, redoc_url=None, openapi_url=None,
+                  lifespan=lifespan)
+    app.state.workspace, app.state.hub = ws, hub
+
+    @app.exception_handler(WorkspaceError)
+    async def workspace_error(_request: Request, exc: WorkspaceError) -> JSONResponse:
+        return JSONResponse({"error": str(exc)}, status_code=exc.status)
+
+    # ---------------------------------------------------------------- session
     @app.get("/api/health")
     def health() -> Dict[str, Any]:
-        return {"app": "agent-smith-studio", "version": __version__, "workspace": workspace.name}
+        return {"app": "agent-smith-studio", "version": __version__, "workspace": ws.root.name}
 
     @app.get("/api/session")
     def session() -> Dict[str, Any]:
         return {
-            "workspace": {"name": workspace.name, "path": str(workspace), "git": (workspace / ".git").exists()},
+            "workspace": {"name": ws.root.name, "path": str(ws.root), "git": git.is_repo(ws.root)},
             "docker": _docker_state(),
             "platform": {"system": platform.system(), "python": platform.python_version()},
         }
 
+    # ---------------------------------------------------------------- files
+    @app.get("/api/fs/list")
+    def fs_list(path: str = "") -> Dict[str, Any]:
+        return {"path": path, "entries": ws.list_dir(path)}
+
+    @app.get("/api/fs/read")
+    def fs_read(path: str) -> Dict[str, Any]:
+        return ws.read(path)
+
+    @app.put("/api/fs/write")
+    def fs_write(body: WriteBody) -> Dict[str, Any]:
+        return ws.write(body.path, body.content, body.base_hash)
+
+    @app.post("/api/fs/create")
+    def fs_create(body: CreateBody) -> Dict[str, Any]:
+        return ws.mkdir(body.path) if body.kind == "dir" else ws.write(body.path, body.content, create=True)
+
+    @app.post("/api/fs/rename")
+    def fs_rename(body: RenameBody) -> Dict[str, Any]:
+        return ws.rename(body.src, body.dst)
+
+    @app.post("/api/fs/delete")
+    def fs_delete(body: PathBody) -> Dict[str, Any]:
+        ws.delete(body.path)
+        return {"ok": True}
+
+    @app.get("/api/fs/search")
+    def fs_search(q: str = Query(..., max_length=500), regex: bool = False, case: bool = False) -> Dict[str, Any]:
+        return ws.search(q, regex=regex, case=case)
+
+    @app.get("/api/fs/files")
+    def fs_files() -> Dict[str, Any]:
+        return ws.files()
+
+    # ---------------------------------------------------------------- git
+    @app.get("/api/git/status")
+    def git_status() -> Dict[str, Any]:
+        return git.status(ws)
+
+    @app.get("/api/git/diff")
+    def git_diff(path: str) -> Dict[str, Any]:
+        return git.diff(ws, path)
+
+    # ---------------------------------------------------------------- live events
+    @app.websocket("/ws/events")
+    async def events(socket: WebSocket) -> None:
+        await socket.accept()
+        q = hub.subscribe()
+
+        async def reader() -> None:  # only watches for the disconnect; the client sends nothing yet
+            with contextlib.suppress(WebSocketDisconnect, RuntimeError):
+                while (await socket.receive())["type"] != "websocket.disconnect":
+                    pass
+
+        gone = asyncio.create_task(reader())
+        try:
+            await socket.send_json({"type": "hello", "workspace": ws.root.name})
+            while True:
+                getter = asyncio.ensure_future(q.get())
+                done, _ = await asyncio.wait({getter, gone}, timeout=25, return_when=asyncio.FIRST_COMPLETED)
+                if gone in done:
+                    getter.cancel()
+                    break
+                if getter in done:
+                    await socket.send_json(getter.result())
+                else:
+                    getter.cancel()
+                    await socket.send_json({"type": "ping"})  # keeps proxies from closing an idle socket
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+        finally:
+            gone.cancel()
+            hub.unsubscribe(q)
+
+    # ---------------------------------------------------------------- web app
     if web_dist is not None and (web_dist / "index.html").is_file():
         app.mount("/", StaticFiles(directory=web_dist, html=True), name="web")
     else:

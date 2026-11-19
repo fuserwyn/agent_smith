@@ -16,5 +16,6 @@ export default defineConfig({
       "/ws": { target: backend.replace(/^http/, "ws"), ws: true },
     },
   },
-  build: { outDir: "dist", emptyOutDir: true, sourcemap: true, chunkSizeWarningLimit: 1500 },
+  // Monaco is a large chunk by nature; it is loaded lazily when the first file opens.
+  build: { outDir: "dist", emptyOutDir: true, sourcemap: true, chunkSizeWarningLimit: 3000 },
 });

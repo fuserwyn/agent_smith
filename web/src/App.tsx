@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { KeyRound, RefreshCw, ServerOff } from "lucide-react";
+import { KeyRound, LoaderCircle, RefreshCw, ServerOff } from "lucide-react";
 import { Workbench } from "./components/Workbench";
 import { StatusBar, type Conn } from "./components/StatusBar";
 import { EmptyState } from "./components/ui";
@@ -59,7 +59,8 @@ export default function App() {
         <button type="button" className="btn" onClick={() => { setConn("connecting"); void load(); }}><RefreshCw size={14} />{t("retry")}</button>
       </div>
     );
-  } else body = <Workbench />;
+  } else if (!session) body = <div className="gate"><LoaderCircle className="spin muted" size={20} /></div>;
+  else body = <Workbench workspace={session.workspace.path} />;
 
   return (
     <LangContext.Provider value={lang}>

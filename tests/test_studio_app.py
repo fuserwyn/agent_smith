@@ -69,3 +69,17 @@ def test_cli_refuses_remote_binding_and_missing_folder(tmp_path, capsys):
     assert cli.main([str(tmp_path), "--host", "0.0.0.0", "--no-browser"]) == 2
     assert "only serves on this machine" in capsys.readouterr().err
     assert cli.main([str(tmp_path / "nope"), "--no-browser"]) == 2
+
+
+def test_port_probe_tells_listening_from_recently_closed():
+    import socket
+    srv = socket.socket()
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(("127.0.0.1", 0))
+    srv.listen()
+    port = srv.getsockname()[1]
+    assert cli._port_free("127.0.0.1", port) is False  # a studio is running there
+    c = socket.create_connection(("127.0.0.1", port))
+    a, _ = srv.accept()
+    a.close(); c.close(); srv.close()
+    assert cli._port_free("127.0.0.1", port) is True  # TIME_WAIT after a quick restart must not block

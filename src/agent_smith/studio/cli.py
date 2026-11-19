@@ -20,6 +20,8 @@ from agent_smith.studio.security import LOOPBACK, new_token
 def _port_free(host: str, port: int) -> bool:
     family = socket.AF_INET6 if ":" in host else socket.AF_INET
     with socket.socket(family, socket.SOCK_STREAM) as s:
+        # same option as uvicorn: a port in TIME_WAIT after a quick restart is free, a listening one is not
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             s.bind((host, port))
             return True

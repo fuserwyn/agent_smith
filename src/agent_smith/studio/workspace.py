@@ -1,0 +1,258 @@
+"""Project folder access for the studio, confined to one root ("jail").
+
+Every path from the browser is relative to the project root. ``Workspace.resolve`` refuses absolute
+paths, ``..`` escapes, NUL bytes and symlinks whose target is outside the root, so no API call can read
+or write anything else on the machine. Writes are atomic (temp file + rename) and use optimistic
+concurrency: the client sends the hash it last saw, and a changed file (edited by the agent, the
+terminal or another program) is reported as a conflict instead of being overwritten.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import os
+import re
+import shutil
+import stat
+import tempfile
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
+from typing import Any, Dict, Iterator, List, Optional
+
+# folders the explorer shows but never descends into for search / quick open / watching
+HEAVY_DIRS = frozenset({".git", "node_modules", ".venv", "venv", "__pycache__", ".mypy_cache", ".pytest_cache",
+                        ".ruff_cache", ".tox", ".idea", "dist", "build", ".next", ".cache", "target", ".gradle"})
+SENSITIVE = re.compile(r"(^|/)(\.env(\..*)?|.*\.(pem|key|p12|pfx)|id_(rsa|ed25519|ecdsa)(\.pub)?|\.netrc|\.npmrc|\.pypirc)$", re.I)
+HIDDEN = frozenset({".git", ".DS_Store", "Thumbs.db"})  # never listed (like VS Code's default files.exclude)
+MAX_EDIT_BYTES = 2 * 1024 * 1024        # larger files open read-only (first part only)
+PREVIEW_BYTES = 256 * 1024
+MAX_LIST = 5000                          # entries per folder
+MAX_FILES = 20000                        # quick-open index
+
+
+class WorkspaceError(Exception):
+    def __init__(self, status: int, message: str):
+        super().__init__(message)
+        self.status = status
+
+
+@dataclass
+class Workspace:
+    root: Path
+
+    def __post_init__(self) -> None:
+        self.root = Path(self.root).resolve()
+
+    # ------------------------------------------------------------------ jail
+    def resolve(self, rel: str, *, must_exist: bool = True) -> Path:
+        """Project-relative POSIX path -> absolute path inside the root (raises WorkspaceError otherwise)."""
+        rel = (rel or "").strip()
+        if "\x00" in rel:
+            raise WorkspaceError(400, "invalid path")
+        if rel.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", rel):
+            raise WorkspaceError(400, "path must be relative to the project")
+        parts = [p for p in PurePosixPath(rel.replace("\\", "/")).parts if p not in ("", ".")]
+        if any(p == ".." for p in parts):
+            raise WorkspaceError(400, "path escapes the project")
+        target = self.root.joinpath(*parts)
+        # symlinks: the real location (of the file, or of its nearest existing parent) must stay inside
+        probe = target
+        while not probe.exists() and probe != self.root:
+            probe = probe.parent
+        real = probe.resolve()
+        if real != self.root and self.root not in real.parents:
+            raise WorkspaceError(403, "path leaves the project (symlink)")
+        if must_exist and not target.exists():
+            raise WorkspaceError(404, "no such file or folder")
+        return target
+
+    def rel(self, path: Path) -> str:
+        return path.relative_to(self.root).as_posix()
+
+    # ------------------------------------------------------------------ listing
+    def list_dir(self, rel: str = "") -> List[Dict[str, Any]]:
+        folder = self.resolve(rel)
+        if not folder.is_dir():
+            raise WorkspaceError(400, "not a folder")
+        out = []
+        try:
+            with os.scandir(folder) as it:
+                for entry in it:
+                    if entry.name in HIDDEN:
+                        continue
+                    out.append(self._entry(folder / entry.name, entry))
+                    if len(out) >= MAX_LIST:
+                        break
+        except PermissionError:
+            raise WorkspaceError(403, "permission denied")
+        out.sort(key=lambda e: (e["type"] != "dir", e["name"].lower()))
+        return out
+
+    def _entry(self, path: Path, entry: Optional[os.DirEntry] = None) -> Dict[str, Any]:
+        rel = self.rel(path)
+        link = path.is_symlink()
+        try:
+            st = path.stat()
+            kind = "dir" if stat.S_ISDIR(st.st_mode) else "file"
+            size = st.st_size if kind == "file" else None
+        except OSError:  # broken symlink
+            kind, size = "file", None
+        outside = False
+        if link:
+            try:
+                real = path.resolve()
+                outside = real != self.root and self.root not in real.parents
+            except OSError:
+                outside = True
+        return {"name": path.name, "path": rel, "type": kind, "size": size, "symlink": link,
+                "outside": outside, "heavy": kind == "dir" and path.name in HEAVY_DIRS,
+                "sensitive": bool(SENSITIVE.search(rel))}
+
+    def walk_files(self, limit: int = MAX_FILES) -> Iterator[Path]:
+        """Files of the project (no heavy folders, no symlinked folders), breadth-first."""
+        stack = [self.root]
+        n = 0
+        while stack:
+            folder = stack.pop(0)
+            try:
+                entries = sorted(os.scandir(folder), key=lambda e: e.name)
+            except OSError:
+                continue
+            for e in entries:
+                if e.is_dir(follow_symlinks=False):
+                    if e.name not in HEAVY_DIRS:
+                        stack.append(Path(e.path))
+                elif e.is_file(follow_symlinks=False):
+                    yield Path(e.path)
+                    n += 1
+                    if n >= limit:
+                        return
+
+    # ------------------------------------------------------------------ read / write
+    @staticmethod
+    def digest(data: bytes) -> str:
+        return hashlib.sha256(data).hexdigest()[:32]
+
+    def read(self, rel: str) -> Dict[str, Any]:
+        path = self.resolve(rel)
+        if path.is_dir():
+            raise WorkspaceError(400, "is a folder")
+        try:
+            size = path.stat().st_size
+            with path.open("rb") as fh:
+                data = fh.read(MAX_EDIT_BYTES + 1)
+        except PermissionError:
+            raise WorkspaceError(403, "permission denied")
+        except OSError as exc:
+            raise WorkspaceError(400, f"cannot read: {exc.strerror or exc}")
+        too_large = size > MAX_EDIT_BYTES
+        binary = b"\x00" in data[:8192]
+        text = None
+        if not binary:
+            try:
+                text = (data[:PREVIEW_BYTES] if too_large else data).decode("utf-8")
+            except UnicodeDecodeError as exc:  # a large file may be cut inside a character
+                if too_large and exc.start >= PREVIEW_BYTES - 4:
+                    text = data[:exc.start].decode("utf-8")
+                else:
+                    binary = True
+        return {"path": self.rel(path), "size": size, "binary": binary, "too_large": too_large,
+                "readonly": binary or too_large or not os.access(path, os.W_OK),
+                "content": text, "hash": self.digest(data) if not too_large else None,
+                "eol": "crlf" if text and "\r\n" in text else "lf",
+                "sensitive": bool(SENSITIVE.search(self.rel(path)))}
+
+    def write(self, rel: str, content: str, base_hash: Optional[str] = None, *, create: bool = False) -> Dict[str, Any]:
+        path = self.resolve(rel, must_exist=not create)
+        if path.exists():
+            if create:
+                raise WorkspaceError(409, "already exists")
+            if path.is_dir():
+                raise WorkspaceError(400, "is a folder")
+            current = path.read_bytes()
+            if base_hash is not None and self.digest(current) != base_hash:
+                raise WorkspaceError(409, "changed on disk")
+            mode = stat.S_IMODE(path.stat().st_mode)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            mode = 0o644
+        data = content.encode("utf-8")
+        if len(data) > MAX_EDIT_BYTES:
+            raise WorkspaceError(413, "file too large to save from the editor")
+        fd, tmp = tempfile.mkstemp(prefix=".studio-", dir=path.parent)
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(data)
+            os.chmod(tmp, mode)
+            os.replace(tmp, path)  # atomic: readers never see a half-written file
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+        return {"path": self.rel(path), "hash": self.digest(data), "size": len(data)}
+
+    def mkdir(self, rel: str) -> Dict[str, Any]:
+        path = self.resolve(rel, must_exist=False)
+        if path.exists():
+            raise WorkspaceError(409, "already exists")
+        path.mkdir(parents=True)
+        return self._entry(path)
+
+    def rename(self, src: str, dst: str) -> Dict[str, Any]:
+        a, b = self.resolve(src), self.resolve(dst, must_exist=False)
+        if a == self.root:
+            raise WorkspaceError(400, "cannot rename the project root")
+        if b.exists():
+            raise WorkspaceError(409, "target already exists")
+        b.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(a, b)
+        return self._entry(b)
+
+    def delete(self, rel: str) -> None:
+        path = self.resolve(rel)
+        if path == self.root:
+            raise WorkspaceError(400, "cannot delete the project root")
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+
+    # ------------------------------------------------------------------ search
+    def search(self, query: str, *, regex: bool = False, case: bool = False, limit: int = 500) -> Dict[str, Any]:
+        if not query:
+            return {"results": [], "truncated": False, "files": 0}
+        try:
+            pattern = re.compile(query if regex else re.escape(query), 0 if case else re.IGNORECASE)
+        except re.error as exc:
+            raise WorkspaceError(400, f"invalid regular expression: {exc}")
+        results: List[Dict[str, Any]] = []
+        files = 0
+        for path in self.walk_files():
+            try:
+                if path.stat().st_size > MAX_EDIT_BYTES:
+                    continue
+                data = path.read_bytes()
+            except OSError:
+                continue
+            if b"\x00" in data[:8192]:
+                continue
+            text = data.decode("utf-8", errors="replace")
+            hit = False
+            for no, line in enumerate(text.splitlines(), 1):
+                m = pattern.search(line)
+                if not m:
+                    continue
+                hit = True
+                start = max(0, m.start() - 60)
+                results.append({"path": self.rel(path), "line": no, "col": m.start() + 1, "len": max(1, m.end() - m.start()),
+                                "text": line[start:start + 240], "offset": m.start() - start})
+                if len(results) >= limit:
+                    return {"results": results, "truncated": True, "files": files + 1}
+            files += hit
+        return {"results": results, "truncated": False, "files": files}
+
+    def files(self) -> Dict[str, Any]:
+        paths = [self.rel(p) for p in self.walk_files(MAX_FILES + 1)]
+        return {"files": paths[:MAX_FILES], "truncated": len(paths) > MAX_FILES}

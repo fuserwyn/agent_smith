@@ -60,3 +60,28 @@ export interface Session {
   docker: { installed: boolean; running: boolean };
   platform: { system: string; python: string };
 }
+
+/* ---------- project files ---------- */
+export interface Entry { name: string; path: string; type: "dir" | "file"; size: number | null; symlink: boolean; outside: boolean; heavy: boolean; sensitive: boolean }
+export interface FileData { path: string; size: number; binary: boolean; too_large: boolean; readonly: boolean; content: string | null; hash: string | null; eol: "lf" | "crlf"; sensitive: boolean }
+export interface SearchHit { path: string; line: number; col: number; len: number; text: string; offset: number }
+export interface GitFile { path: string; code: string; status: "modified" | "added" | "deleted" | "renamed" | "copied" | "conflict" | "untracked"; staged: boolean; old: string | null }
+export interface GitStatus { repo: boolean; branch: string | null; ahead?: number; behind?: number; files: GitFile[] }
+export interface GitDiff { path: string; original: string; modified: string; added: boolean; deleted: boolean }
+
+const q = (params: Record<string, string | boolean>) => "?" + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString();
+export const fs = {
+  list: (path = "") => api<{ path: string; entries: Entry[] }>("/api/fs/list" + q({ path })),
+  read: (path: string) => api<FileData>("/api/fs/read" + q({ path })),
+  write: (path: string, content: string, base_hash: string | null) =>
+    api<{ path: string; hash: string; size: number }>("/api/fs/write", { method: "PUT", body: JSON.stringify({ path, content, base_hash }) }),
+  create: (path: string, kind: "file" | "dir", content = "") => api<Entry>("/api/fs/create", { method: "POST", body: JSON.stringify({ path, kind, content }) }),
+  rename: (from: string, to: string) => api<Entry>("/api/fs/rename", { method: "POST", body: JSON.stringify({ from, to }) }),
+  remove: (path: string) => api<{ ok: boolean }>("/api/fs/delete", { method: "POST", body: JSON.stringify({ path }) }),
+  search: (qs: string, regex: boolean, cased: boolean) => api<{ results: SearchHit[]; truncated: boolean; files: number }>("/api/fs/search" + q({ q: qs, regex, case: cased })),
+  files: () => api<{ files: string[]; truncated: boolean }>("/api/fs/files"),
+};
+export const gitApi = {
+  status: () => api<GitStatus>("/api/git/status"),
+  diff: (path: string) => api<GitDiff>("/api/git/diff" + q({ path })),
+};
