@@ -29,18 +29,18 @@ cp .env.example .env             # add your free-tier API keys (several per prov
 uv run pytest                    # offline test-suite (no API key, no Docker needed)
 ```
 
-**42 school computers** (small home quota, large local `/sgoinfree`): one script installs everything.
+**42 school computers** (small home quota, large `/sgoinfre/goinfre/Perso/$USER`): one script installs everything.
 
 ```bash
 git clone <repo> agent_smith && cd agent_smith
 ./scripts/school_setup.sh --moulinette /path/to/moulinette --env /path/to/.env   # ~1 min
 source .school.env
-./scripts/school_setup.sh --uninstall           # before leaving: removes keys, images and sgoinfree data
+./scripts/school_setup.sh --uninstall           # before leaving: removes keys, images and sgoinfre data
 ```
 
 The clone and the API keys (`~/.agent_smith.env`, mode 600) stay in home (~10 MB). Python 3.10, the uv cache, both
 virtualenvs, `runs/`, `evaluations/`, `cache/` and, when Docker keeps them in home, the Docker images go to
-`/sgoinfree/$USER/agent_smith` (symlinks, so every command is unchanged). Dependencies install in parallel, the
+`/sgoinfre/goinfre/Perso/$USER/agent_smith` (symlinks, so every command is unchanged). Dependencies install in parallel, the
 Docker images (MBPP validation image and the six SWE-bench exam tasks) are pulled in the background, and the sandbox
 security tests run at the end. `--help` lists the options.
 

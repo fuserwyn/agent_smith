@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# One-shot setup on a 42 school computer (Linux, small home quota, big local /sgoinfree).
+# One-shot setup on a 42 school computer (Linux, small home quota, big shared /sgoinfre/goinfre/Perso/$USER).
 #
 #   git clone <repo> agent_smith && cd agent_smith
 #   ./scripts/school_setup.sh --moulinette /path/to/moulinette[.tar.gz|.zip] --env /path/to/.env
-#   source .school.env            # same shell: PATH to uv, caches in sgoinfree, DOCKER_HOST
+#   source .school.env            # same shell: PATH to uv, caches in sgoinfre, DOCKER_HOST
 #
 #   ./scripts/school_setup.sh --uninstall    # remove everything this script created (keys included)
 #
 # What goes where
 #   home ($HOME)            the clone itself (~15 MB), ~/.agent_smith.env (API keys, chmod 600), uv binary
-#   sgoinfree ($SGO)        Python 3.10, uv cache, both virtualenvs, HuggingFace cache, runs/, evaluations/,
+#   sgoinfre ($SGO)        Python 3.10, uv cache, both virtualenvs, HuggingFace cache, runs/, evaluations/,
 #                           cache/, Docker images (if Docker stored them in home), logs
 #   The heavy folders of the clone are symlinks into $SGO, so every command keeps working unchanged.
 #
@@ -17,7 +17,7 @@
 # validation, then the SWE-bench exam pool) are pulled in the background while you start working.
 #
 # Options
-#   --sgo DIR              data folder (default /sgoinfree/$USER/agent_smith)
+#   --sgo DIR              data folder (default /sgoinfre/goinfre/Perso/$USER/agent_smith)
 #   --moulinette PATH      moulinette folder or archive (default: ./moulinette, then ~/moulinette, ~/Downloads, $SGO)
 #   --env FILE             .env with the API keys (copied to ~/.agent_smith.env; default: keep ./.env if present)
 #   --prefetch all|none|ID[,ID]   SWE-bench images to pull in the background (default all = the 6 exam tasks)
@@ -26,7 +26,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
-SGO_BASE="/sgoinfree/$USER"; SGO=""; MOUL_SRC=""; ENV_SRC=""; PREFETCH="all"; CHECK=1; YES=0; UNINSTALL=0
+SGO_BASE="/sgoinfre/goinfre/Perso/$USER"; SGO=""; MOUL_SRC=""; ENV_SRC=""; PREFETCH="all"; CHECK=1; YES=0; UNINSTALL=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --sgo) SGO="$2"; shift 2 ;;
@@ -83,7 +83,7 @@ fi
 say "1. Folders"
 [[ "$(uname -s)" == Linux ]] || warn "not Linux: fine for a dry run, the script targets the school computers"
 if [[ ! -d "$(dirname "$SGO")" ]]; then
-  mkdir -p "$(dirname "$SGO")" 2>/dev/null || die "cannot create $(dirname "$SGO") — is /sgoinfree mounted? use --sgo DIR"
+  mkdir -p "$(dirname "$SGO")" 2>/dev/null || die "cannot create $(dirname "$SGO") — is /sgoinfre mounted? use --sgo DIR"
   chmod 700 "$(dirname "$SGO")"
 fi
 mkdir -p "$SGO" "$LOGS" "$STATE" && chmod 700 "$SGO" || die "cannot write $SGO"
@@ -98,7 +98,7 @@ for p in "${HEAVY[@]}"; do
   if [[ -e "$p" ]]; then cp -a "$p/." "$dst/" 2>/dev/null; rm -rf "$p"; fi
   ln -s "$dst" "$p"
 done
-[[ $IN_SGO == 1 ]] && ok "clone already in sgoinfree: no links needed" || ok "linked ${HEAVY[*]} -> $SGO/data/"
+[[ $IN_SGO == 1 ]] && ok "clone already in sgoinfre: no links needed" || ok "linked ${HEAVY[*]} -> $SGO/data/"
 
 # ------------------------------------------------------------------ 2. moulinette
 say "2. Moulinette"
@@ -119,7 +119,7 @@ if ! is_moul moulinette; then
     [[ -z "$src" || "$src" == . ]] && src=$(dirname "$(find "$tmp" -maxdepth 3 -name pyproject.toml | head -1)")
   fi
   is_moul "$src" || die "$MOUL_SRC does not look like the moulinette (no pyproject.toml + moulinette/)"
-  # sources only: its .venv is rebuilt below (into sgoinfree)
+  # sources only: its .venv is rebuilt below (into sgoinfre)
   mkdir -p moulinette && (cd "$src" && tar --exclude=.venv --exclude=__pycache__ -cf - .) | (cd moulinette && tar -xf -)
   [[ -n "${tmp:-}" ]] && rm -rf "$tmp"
 fi
@@ -248,12 +248,12 @@ fi
 
 # ------------------------------------------------------------------ summary
 echo
-say "Ready in $((SECONDS - T0)) s.  Home: $(du -sh "$ROOT" 2>/dev/null | cut -f1) clone + keys;  sgoinfree: $(du -sh "$SGO" 2>/dev/null | cut -f1) so far"
+say "Ready in $((SECONDS - T0)) s.  Home: $(du -sh "$ROOT" 2>/dev/null | cut -f1) clone + keys;  sgoinfre: $(du -sh "$SGO" 2>/dev/null | cut -f1) so far"
 cat <<EOF
 
   ${B}source .school.env${N}                       # in every new terminal
   uv run agent-ui                          # UI on http://127.0.0.1:8765
   ./scripts/mock_exam.sh mbpp --student-path . --moulinette-path ./moulinette --env-file .env
   tail -f $LOGS/pull.log         # background Docker pulls
-  ./scripts/school_setup.sh --uninstall    # when you leave: removes keys, images, sgoinfree data
+  ./scripts/school_setup.sh --uninstall    # when you leave: removes keys, images, sgoinfre data
 EOF
