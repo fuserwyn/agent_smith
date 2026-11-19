@@ -185,6 +185,102 @@ it also accepts a function object (its source is recovered). Everything is confi
 C-level loop) and keep the agent's secrets in reach. A child process gives a hard kill, OS limits and an empty
 environment; the cost is the tool-call proxy, which is also what lets MCP tools stay outside the security boundary.
 
+### How a code block runs inside the worker
+
+The agent process is the parent: `Sandbox` (`sandbox/host.py`) starts the worker, and `MCPClient` starts the MCP
+server; both are children of the agent and only talk to each other through it. Example: the MBPP block
+`code = r"""def dog_age…"""; result = run_tests(code); print(result); if …: final_answer(code)`.
+
+**Start-up (once per task).** The worker builds its restricted namespace, including one proxy function per MCP tool:
+
+```
+main()                                             worker.py  main
+│  signal(SIGINT, SIG_IGN)       ← Ctrl+C reaches the host only
+└─ Worker().loop()                                 worker.py  Worker.loop
+   │
+   ├─ channel.recv()             ← wait for init       ◀── host.start(): _send({"type":"init",
+   │                                                         config, tools:[run_tests], extras})
+   ├─ setup(init)                                  worker.py  Worker.setup
+   │   ├─ allowlist, allowed_dirs, chdir into an allowed directory
+   │   ├─ pre-import the allowlisted modules (before the audit hook)
+   │   ├─ apply_memory_limit()   ← RLIMIT_AS on Linux
+   │   ├─ sys.stdout = sys.stderr = StreamingStdout(channel)   ← print() goes to the pipe
+   │   ├─ self.namespace = build_namespace(tools, extras)       worker.py  Worker.build_namespace
+   │   │     ns = {"__builtins__": safe_builtins,               ← no eval/exec/open…
+   │   │           "final_answer": make_final_answer(),         ← sandbox built-in
+   │   │           "run_tests":    make_tool("run_tests", …)}   ← the PROXY is created here
+   │   ├─ signal(SIGALRM, _on_alarm) ← the timeout raises SandboxTimeout
+   │   └─ sys.addaudithook(...)      ← from now on files/network/subprocess are checked
+   │
+   ├─ channel.send({"type":"ready"})                   ──▶ host: start() returns
+   │
+   └─ while True:                ← main worker loop, lives for the whole task
+        msg = channel.recv()     ← wait for a command  ◀── host.execute(code):
+                                                            _send({"type":"exec","code":…})
+```
+
+**One agent step.** The whole block is parsed and checked first, then executed line by line by a single `exec()`.
+A tool call is an ordinary (blocking) function call in the middle of that `exec()`: the worker pauses, the host
+forwards the call to MCP, and execution resumes on the next line with the result:
+
+```
+        if msg.type == "exec":
+          result = self.run(code)                     worker.py  Worker.run
+          │
+          ├─ tree = ast.parse(code)              ← whole block at once; SyntaxError → return, nothing ran
+          ├─ PolicyChecker().visit(tree)         ← forbidden code → security_error, nothing ran
+          ├─ setitimer(ITIMER_REAL, 30)          ← timer starts
+          │
+          ├─ exec(compile(tree), self.namespace)
+          │   │   ── the MODEL'S CODE now runs, line by line ──
+          │   │
+          │   ├─ L1  code = r"""def dog_age…"""       ← a variable in the namespace
+          │   │
+          │   ├─ L5  result = run_tests(code)
+          │   │   └─ tool(*args, **kwargs)            worker.py  make_tool (proxy)
+          │   │       ├─ check the arguments against the MCP schema (extra/missing → TypeError)
+          │   │       └─ call_host_tool("run_tests", {"code": …})   worker.py  call_host_tool
+          │   │           ├─ setitimer(0)            ⏸ timer paused, remaining time saved
+          │   │           ├─ stdout.flush()
+          │   │           ├─ channel.send({"type":"tool_call", …})  ──▶ host.execute(): kind=="tool_call"
+          │   │           │                                              in_tool.set()  (memory watchdog idle)
+          │   │           │                                              _dispatch_tool()
+          │   │           │                                                └ mcp.call_tool() ──stdio──▶ MCP server
+          │   │           │                                                     run_tests → fresh sandbox
+          │   │           │                                                     ◀── "ALL TESTS PASSED (2/2)…"
+          │   │           │                                              tool_time += dt  (not in the timeout)
+          │   │           ├─ reply = channel.recv()  ◀── _send({"type":"tool_result","ok":true,"result":…})
+          │   │           ├─ setitimer(remaining)    ▶ timer runs again
+          │   │           └─ return reply["result"]
+          │   │       result = "ALL TESTS PASSED (2/2)\nPASS 1…"
+          │   │
+          │   ├─ L6  print(result)
+          │   │   └─ StreamingStdout.write()
+          │   │       └─ channel.send({"type":"out","data":…})  ──▶ host: out_chunks.append(...)
+          │   │
+          │   ├─ L7  if result.startswith("ALL TESTS PASSED"):   → True
+          │   │
+          │   └─ L8  final_answer(code)               worker.py  make_final_answer
+          │           ├─ final_answer_value = code; final_answer_called = True
+          │           └─ raise FinalAnswerSignal      ← BaseException: not caught by `except Exception`
+          │
+          ├─ except FinalAnswerSignal: pass           ← exec stops here
+          ├─ finally: setitimer(0), stdout.flush()
+          ├─ final_answer_called → status="final_answer", final_answer=code
+          ├─ result["rss_kb"] = current memory
+          └─ return result
+          │
+          channel.send(result)   {"type":"done","status":"final_answer",…}  ──▶ host.execute(): kind=="done"
+                                                                                 peak-memory check
+                                                                                 _finish() → ExecutionResult(is_final=True)
+                                                                                 ──▶ AgentLoop: break → solution.json
+        ← back to channel.recv(), waiting for the next exec or shutdown
+```
+
+If the tests fail, the `if` is false: the block ends, the worker sends `done`, the host renders stdout as the
+Observation and the agent loop asks the model for the next step. The namespace persists, so `code` and `result` are
+still defined in that next block.
+
 ## Tool implementation details
 
 MCP tools are discovered at runtime (`list_tools`) and injected as Python functions with positional/keyword
