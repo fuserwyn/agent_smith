@@ -71,6 +71,11 @@ if [[ $UNINSTALL == 1 ]]; then
     else rm -f "$HOME/.config/containers/storage.conf"; fi
     ok "Podman storage back to its default place"
   fi
+  if did podman-registries; then
+    if [[ -f "$STATE/registries.conf.bak" ]]; then cp "$STATE/registries.conf.bak" "$HOME/.config/containers/registries.conf"
+    else rm -f "$HOME/.config/containers/registries.conf"; fi
+    ok "Podman registries config restored"
+  fi
   did uv-installed && rm -f "$HOME/.local/bin/uv" "$HOME/.local/bin/uvx" && ok "uv binary"
   for p in "${HEAVY[@]}" .env; do [[ -L "$p" ]] && rm -f "$p"; done
   rm -f .school.env "$KEYS" && ok "API keys (~/.agent_smith.env) and links"
@@ -151,7 +156,15 @@ else
   if [[ $PODMAN == 1 ]]; then
     systemctl --user start podman.socket 2>/dev/null
     DH="unix://${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"; export DOCKER_HOST="$DH"
-    warn "Docker here is Podman: should work through its socket, but it was not tested with this project"
+    # Podman refuses short image names (swebench/..., python:3.11-slim) without a TTY: resolve them on Docker Hub
+    reg="$HOME/.config/containers/registries.conf"
+    if ! grep -qs 'unqualified-search-registries *= *\["docker.io"\]' "$reg"; then
+      mkdir -p "$HOME/.config/containers"
+      [[ -f "$reg" ]] && cp "$reg" "$STATE/registries.conf.bak"
+      printf 'unqualified-search-registries = ["docker.io"]\nshort-name-mode = "permissive"\n' > "$reg"
+      mark podman-registries
+    fi
+    ok "Podman: short image names resolve on docker.io ($reg)"
   else
     DH=$(docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null); [[ -n "$DH" ]] && export DOCKER_HOST="$DH"
   fi
@@ -196,13 +209,13 @@ if [[ $DOCKER_OK == 1 ]]; then
          moulinette/moulinette/swebench/interact.py 2>/dev/null | awk '!seen[$0]++')
   case "$PREFETCH" in all) ids="$pool" ;; none) ids="" ;; *) ids="${PREFETCH//,/ }" ;; esac
   plat=""; [[ "$(uname -m)" != x86_64 ]] && plat="--platform linux/amd64"
-  imgs=("python:3.11-slim")
-  for id in $ids; do imgs+=("swebench/sweb.eval.x86_64.$(echo "$id" | tr '[:upper:]' '[:lower:]' | sed 's/__/_1776_/g'):latest"); done
+  imgs=("docker.io/library/python:3.11-slim")   # full names: Podman refuses short ones without a TTY
+  for id in $ids; do imgs+=("docker.io/swebench/sweb.eval.x86_64.$(echo "$id" | tr '[:upper:]' '[:lower:]' | sed 's/__/_1776_/g'):latest"); done
   for i in "${imgs[@]}"; do docker image inspect "$i" >/dev/null 2>&1 || echo "$i" >> "$STATE/images"; done
   [[ -f "$STATE/images" ]] && sort -u -o "$STATE/images" "$STATE/images"
   ( for i in "${imgs[@]}"; do
       docker image inspect "$i" >/dev/null 2>&1 && { echo "have $i"; continue; }
-      echo "pull $i"; docker pull $plat "$i" >/dev/null 2>&1 && echo "done $i" || echo "FAILED $i"
+      echo "pull $i"; err=$(docker pull $plat "$i" 2>&1 >/dev/null) && echo "done $i" || echo "FAILED $i: ${err: -300}"
     done; echo "ALL DONE" ) > "$LOGS/pull.log" 2>&1 &
   echo $! > "$STATE/pull.pid"
   ok "pulling ${#imgs[@]} image(s) in the background — progress: tail -f $LOGS/pull.log"

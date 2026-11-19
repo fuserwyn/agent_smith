@@ -36,9 +36,20 @@ def _docker(*args: str, timeout: float = 120, check: bool = True) -> subprocess.
     return proc
 
 
+def qualify_image(image: str) -> str:
+    """``swebench/x:tag`` -> ``docker.io/swebench/x:tag``; ``python:3.11`` -> ``docker.io/library/python:3.11``.
+
+    Podman (Fedora, 42 computers) refuses short names without a TTY ("short-name resolution enforced");
+    Docker accepts the full name too, so it is always used."""
+    first, _, rest = image.partition("/")
+    if rest and ("." in first or ":" in first or first == "localhost"):
+        return image  # already has a registry
+    return f"docker.io/{image}" if rest else f"docker.io/library/{image}"
+
+
 class DockerEnv:
     def __init__(self, image: str, instance_id: str, network: str = "none", platform: Optional[str] = None):
-        self.image = image
+        self.image = qualify_image(image)
         self.instance_id = instance_id
         self.network = network
         # SWE-bench images are x86_64 only; on Apple Silicon Docker runs them under emulation.
