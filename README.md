@@ -29,6 +29,9 @@ cp .env.example .env             # add your free-tier API keys (several per prov
 uv run pytest                    # offline test-suite (no API key, no Docker needed)
 ```
 
+Shortcuts: `make` lists them all (`make doctor`, `make ui`, `make test`, `make exam`, `make swe TASKS="id id"`,
+`make clean`, `make school-setup`, ...).
+
 **42 school computers** (small home quota, large `/sgoinfre/goinfre/Perso/$USER`): one script installs everything.
 
 ```bash
