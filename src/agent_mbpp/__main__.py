@@ -23,7 +23,9 @@ from agent_smith.runner import common_parser, default_server, run_cli, server_en
 from agent_smith.sandbox import Sandbox
 
 MBPP_SETTINGS = AgentSettings(
-    max_output_tokens_per_call=800,
+    # 1,500 output tokens for the whole task: one rambling reply may not eat more than a third of it
+    # (a full test-and-submit answer is ~150-250 tokens).
+    max_output_tokens_per_call=500,
     observation_max_chars=1500,
     old_observation_chars=400,
     keep_recent_steps=2,

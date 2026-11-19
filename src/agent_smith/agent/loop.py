@@ -200,7 +200,9 @@ class CodeAgent:
                 else:
                     observation = "\n".join([f"[NOTE] {n}" for n in extraction.notes] + [NO_CODE_FEEDBACK])
 
-                self._record_step(step_no, chat, code, observation if extraction.found else "")
+                # Without a code block nothing ran, but the feedback the LLM receives is still logged so the
+                # trace shows that the agent told the model what went wrong.
+                self._record_step(step_no, chat, code, observation)
                 ev("budget", self.budget.snapshot())
 
                 rejection = (self.answer_validator(result.final_answer or "")

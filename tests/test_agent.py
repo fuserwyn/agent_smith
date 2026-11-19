@@ -50,6 +50,8 @@ def test_mbpp_no_code_feedback_and_fallback_candidate(tmp_path):
     sol, proc, requests = run_mbpp_cli(tmp_path, [no_code, BAD], "--max-iterations", "2")
     assert not sol["success"] and sol["iterations"] == 2
     assert "No valid code block" in requests[1]["messages"][-1]["content"]
+    # nothing ran, but the feedback sent to the LLM is logged for the evaluators
+    assert sol["steps"][0]["sandbox_input"] == "" and "No valid code block" in sol["steps"][0]["sandbox_output"]
     assert "x + y" in sol["solution"] and "best available candidate" in sol["error"]
 
 

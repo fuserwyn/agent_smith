@@ -64,3 +64,14 @@ def test_daily_quota_is_detected_and_key_disabled():
     with pytest.raises(LLMError) as err:
         provider._parse(httpx.Response(429, text='{"error":{"message":"Rate limit exceeded: free-models-per-day"}}'), [])
     assert err.value.disable_key
+
+
+def test_provider_errors_do_not_leak_account_ids():
+    """Error texts are stored in committed solution.json files: account identifiers are masked."""
+    import httpx
+
+    provider = OpenAICompatProvider("http://unused", "m")
+    body = '{"error":{"message":"free-models-per-day","metadata":{}},"user_id":"user_SECRET123"}'
+    with pytest.raises(LLMError) as err:
+        provider._parse(httpx.Response(429, text=body), [])
+    assert "user_SECRET123" not in str(err.value) and '"user_id":"<redacted>"' in str(err.value)

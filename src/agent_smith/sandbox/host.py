@@ -129,9 +129,6 @@ def _rss_kb(pid: int) -> int:
         return 0
 
 
-ToolHandler = Callable[[str, Dict[str, Any]], "tuple[str, bool]"]
-
-
 class Sandbox:
     """A persistent, restricted Python execution environment."""
 
@@ -166,9 +163,10 @@ class Sandbox:
     def start(self) -> "Sandbox":
         cwd = next((d for d in self.config.allowed_directories if os.path.isdir(d)), self._scratch)
         env = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "PYTHONIOENCODING": "utf-8", "PYTHONHASHSEED": "0"}
+        # -I: isolated mode (no PYTHON* variables, no script directory on sys.path);
+        # -S: no site-packages, the worker only needs the stdlib and third-party packages stay out of reach.
         self.proc = subprocess.Popen(
-            [sys.executable, "-I", "-S", str(WORKER_PATH)] if self._can_skip_site() else
-            [sys.executable, "-I", str(WORKER_PATH)],
+            [sys.executable, "-I", "-S", str(WORKER_PATH)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             cwd=cwd, env=env, start_new_session=True,  # Ctrl+C reaches the host only
         )
@@ -183,11 +181,6 @@ class Sandbox:
         msg = json.loads(line)
         self.baseline_rss_kb = int(msg.get("rss_kb", 0))
         return self
-
-    @staticmethod
-    def _can_skip_site() -> bool:
-        # The worker only needs the stdlib; -S keeps third-party site-packages out of reach.
-        return True
 
     def _drain_stderr(self, proc: subprocess.Popen) -> None:
         for raw in iter(proc.stderr.readline, b""):

@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional
 
 import httpx
 
 from agent_smith.llm.base import LLMError, LLMResponse, Message, estimate_messages_tokens, estimate_tokens
+
+# Provider error bodies can carry account identifiers (OpenRouter: "user_id":"user_..."); error texts end up in
+# solution.json files that are committed, so the identifiers are masked before they are stored anywhere.
+_ACCOUNT_ID_RE = re.compile(r'("(?:user_id|organization_id|org_id|account_id)"\s*:\s*")[^"]*(")')
+
+
+def redact_account_ids(text: str) -> str:
+    return _ACCOUNT_ID_RE.sub(r"\1<redacted>\2", text)
 
 
 class OpenAICompatProvider:
@@ -76,7 +85,7 @@ class OpenAICompatProvider:
 
     def _parse(self, resp: httpx.Response, messages: List[Message]) -> LLMResponse:
         status = resp.status_code
-        body_text = resp.text[:500]
+        body_text = redact_account_ids(resp.text[:500])
         if status == 429:
             # A daily/monthly quota will not come back within this task: disable the key and move on
             # (next key or fallback provider) instead of waiting until the time budget is gone.

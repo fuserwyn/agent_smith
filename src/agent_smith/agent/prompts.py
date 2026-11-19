@@ -17,8 +17,9 @@ Never write the Observation yourself. Variables persist between steps. Use print
 def mbpp_system_prompt(config: SandboxConfig, mcp) -> str:
     tools = {t.name for t in mcp.tools} if mcp else set()
     if "run_tests" in tools:
-        method = '''Your FIRST reply must already test and submit. Always use exactly this pattern:
-Thought: Count with a dict and return the most common item.
+        method = '''Your FIRST reply must already test and submit. Always use exactly this pattern
+(the example solves another task: write the Thought and the function for YOUR task):
+Thought: <one sentence: the idea of your solution>.
 ```python
 code = r"""
 from collections import Counter
