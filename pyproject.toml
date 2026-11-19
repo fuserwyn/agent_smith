@@ -13,6 +13,13 @@ dependencies = [
 [project.scripts]
 sandbox = "agent_smith.sandbox.cli:main"
 agent-ui = "agent_smith.ui_server:main"
+agent-studio = "agent_smith.studio.cli:main"
+
+[project.optional-dependencies]
+studio = [
+    "fastapi==0.162.0",
+    "uvicorn[standard]==0.54.0",
+]
 
 [dependency-groups]
 dev = ["pytest>=8.3,<8.5"]
@@ -28,4 +35,8 @@ packages = ["src/agent_smith", "src/agent_mbpp", "src/agent_swebench"]
 testpaths = ["tests"]
 # MBPP reference solutions from the moulinette dataset (e.g. task 593: re.sub('\\.[0]*', ...)) use non-raw
 # regex strings; Python warns when they are parsed. Dataset code, not ours.
-filterwarnings = ["ignore:invalid escape sequence:DeprecationWarning"]
+filterwarnings = [
+    "ignore:invalid escape sequence:DeprecationWarning",
+    # Starlette suggests httpx2 for its test client; the project itself uses httpx.
+    "ignore:Using `httpx` with `starlette.testclient`",
+]

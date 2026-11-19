@@ -3,6 +3,7 @@
 #
 # Variables (on the command line, e.g. `make swe T="sympy__sympy-13480"`):
 M          ?=
+P          ?= .
 ENV        ?= .env
 MOULINETTE ?= ./moulinette
 PORT       ?= 8765
@@ -15,13 +16,14 @@ EXAM := $(SH) ./scripts/mock_exam.sh
 ARGS  = --student-path . --moulinette-path $(MOULINETTE) --env-file $(ENV) $(if $(T),--tasks "$(T)",) $(if $(OR),--paid,)
 
 .DEFAULT_GOAL := help
-.PHONY: help check install up down test sandbox mbpp swe exam clean clean-logs clean-all school purge rm-env
+.PHONY: help check install up down test sandbox mbpp swe exam clean clean-logs clean-all school purge rm-env \
+        studio studio-dev studio-build studio-install
 
 help: ## this list
 	@echo "Agent Smith"
-	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  make %-10s %s\n", $$1, $$2} /^# ---- / {sub(/^# ---- /, ""); printf "\n %s\n", $$0}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  make %-15s %s\n", $$1, $$2} /^# ---- / {sub(/^# ---- /, ""); printf "\n %s\n", $$0}' $(MAKEFILE_LIST)
 	@echo
-	@echo " Options: OR=1 (OpenRouter model: mbpp, swe, exam)  T=\"task ids\" (swe, exam)  K=word (test)  M=moulinette (school)  PORT=$(PORT)  ENV=$(ENV)  MOULINETTE=$(MOULINETTE)"
+	@echo " Options: P=folder (studio)  OR=1 (OpenRouter model: mbpp, swe, exam)  T=\"task ids\" (swe, exam)  K=word (test)  M=moulinette (school)  PORT=$(PORT)  ENV=$(ENV)  MOULINETTE=$(MOULINETTE)"
 
 # ---- start
 check: ## is everything ready? (uv, Docker, .env, moulinette)
@@ -46,7 +48,7 @@ down: ## stop the UI
 
 # ---- tests (offline, no API key used)
 test: ## all tests;  make test K=ui  = only matching, stop at 1st failure
-	$(SH) uv run pytest -q $(if $(K),-x -k "$(K)",)
+	$(SH) uv run --extra studio pytest -q $(if $(K),-x -k "$(K)",)
 
 # ---- mock exam (real AI calls; add OR=1 for the OpenRouter model)
 sandbox: ## sandbox security checks (no AI)
@@ -70,6 +72,22 @@ clean-logs: ## clean + traces/logs of benchmark results
 
 clean-all: ## also Docker images and .venv (asks first)
 	@printf "Remove Docker images and virtualenvs too? [y/N] "; read a; [ "$$a" = y ] && ./scripts/clean.sh --all || echo "cancelled"
+
+# ---- Agent Smith Studio (local IDE: editor, terminal, agent chat)
+studio-install: ## install the studio (Python extra + web packages)
+	$(SH) uv sync --extra studio
+	cd web && npm ci --no-audit --no-fund
+
+studio-build: ## build the studio web app (web/dist)
+	@[ -d web/node_modules ] || (cd web && npm ci --no-audit --no-fund)
+	cd web && npm run build
+
+studio: ## open the studio on a project  (P=folder, default .)
+	@[ -f web/dist/index.html ] || $(MAKE) studio-build
+	$(SH) uv run --extra studio agent-studio $(P)
+
+studio-dev: ## studio with hot reload (API :8790 + Vite :5173)
+	$(SH) ./scripts/studio_dev.sh $(P)
 
 # ---- 42 school computers
 school: ## set up here, heavy data in sgoinfre  (M=moulinette folder/archive if not found)

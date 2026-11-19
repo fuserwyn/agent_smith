@@ -14,3 +14,7 @@ benchmarks/**/stdout.log
 benchmarks/**/stderr.log
 PLAN.md
 .school.env
+
+# Agent Smith Studio web app (built by `make studio-build`)
+web/node_modules/
+web/dist/

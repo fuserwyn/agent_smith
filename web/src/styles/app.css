@@ -1,0 +1,83 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 var(--f-ui); -webkit-font-smoothing: antialiased; overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, [tabindex]:focus-visible { outline: none; box-shadow: var(--focus); }
+code, .mono { font-family: var(--f-mono); }
+::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+
+/* ---------- app frame ---------- */
+.app { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+.workbench { display: grid; grid-template-columns: 48px minmax(0, 1fr); min-height: 0; }
+.wb-group { height: 100%; }
+
+/* ---------- activity bar ---------- */
+.activitybar { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; background: var(--bg); border-right: 1px solid var(--line); }
+.act-logo { width: 32px; height: 32px; display: grid; place-items: center; margin-bottom: 8px; }
+.act { position: relative; width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: var(--r); background: none; color: var(--muted); transition: color var(--t-fast), background var(--t-fast); }
+.act:hover { color: var(--ink); background: var(--bg-3); }
+.act[aria-pressed="true"] { color: var(--ink); }
+.act[aria-pressed="true"]::before { content: ""; position: absolute; left: -5px; top: 9px; bottom: 9px; width: 2px; border-radius: 2px; background: var(--accent); }
+.act-spacer { flex: 1; }
+
+/* ---------- panes ---------- */
+.pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg-2); overflow: hidden; }
+.pane-wrap { min-width: 0; }
+.pane.side { border-right: 0; }
+.pane-h { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px 0 14px; border-bottom: 1px solid var(--line); flex: none; }
+.pane-title { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pane-actions { margin-left: auto; display: flex; gap: 2px; }
+.tabs-bar { height: 34px; flex: none; border-bottom: 1px solid var(--line); background: var(--bg); }
+
+/* separators: a 1px line with a wider invisible grab area */
+.sep { position: relative; flex: none; background: var(--line); transition: background var(--t-fast); }
+.sep-v { width: 1px; }
+.sep-h { height: 1px; }
+.sep::after { content: ""; position: absolute; z-index: 5; }
+.sep-v::after { inset: 0 -3px; cursor: col-resize; }
+.sep-h::after { inset: -3px 0; cursor: row-resize; }
+.sep:hover, .sep[data-separator-state="drag"], .sep:focus-visible { background: var(--accent); }
+
+/* bottom panel tabs */
+.ptabs { display: flex; align-items: center; gap: 2px; height: 34px; padding: 0 8px; border-bottom: 1px solid var(--line); flex: none; }
+.ptab { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: none; color: var(--muted); font-size: 12px; }
+.ptab:hover { color: var(--ink); background: var(--bg-3); }
+.ptab[aria-selected="true"] { color: var(--ink); background: var(--bg-4); }
+.ptabs-spacer { flex: 1; }
+.pbody { flex: 1; min-height: 0; overflow: auto; }
+
+.icon-btn { width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm); background: none; color: var(--muted); }
+.icon-btn:hover { color: var(--ink); background: var(--bg-3); }
+.btn { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--bg-3); color: var(--ink); }
+.btn:hover { border-color: var(--accent); }
+
+/* ---------- empty states ---------- */
+.empty { margin: auto; padding: 24px; max-width: 340px; display: grid; justify-items: center; gap: 8px; text-align: center; }
+.empty-ic { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: var(--bg-3); border: 1px solid var(--line); color: var(--accent); }
+.empty-t { font-size: 14px; font-weight: 600; }
+.empty-b { margin: 0; color: var(--ink-2); font-size: 12.5px; }
+.empty-note { font-size: 11.5px; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 999px; padding: 2px 10px; }
+
+/* ---------- gate screens (no token / server down) ---------- */
+.gate { display: grid; place-content: center; justify-items: center; gap: 16px; padding: 24px; min-height: 0; }
+.gate .empty { max-width: 460px; }
+.gate-cmd { display: grid; gap: 6px; justify-items: center; color: var(--muted); font-size: 12px; }
+.gate-cmd code { background: var(--bg-3); border: 1px solid var(--line); border-radius: var(--r); padding: 6px 12px; color: var(--ink); font-size: 12.5px; }
+
+/* ---------- status bar ---------- */
+.statusbar { display: flex; align-items: center; gap: 2px; height: 26px; padding: 0 8px; background: var(--bg); border-top: 1px solid var(--line); font-size: 11.5px; color: var(--muted); }
+.sb-item { display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; height: 100%; white-space: nowrap; }
+.sb-item.ok { color: var(--ink-2); } .sb-item.warn { color: var(--warn); }
+.conn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.conn.connected .dot { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+.conn.connecting .dot { background: var(--warn); animation: pulse 1.2s ease-in-out infinite; }
+.conn.offline { color: var(--err); } .conn.offline .dot { background: var(--err); }
+.conn.locked { color: var(--warn); } .conn.locked .dot { background: var(--warn); }
+.sb-spacer { flex: 1; }
+.sb-seg { display: inline-flex; gap: 1px; margin-right: 4px; }
+.sb-seg button, .sb-btn { border: 0; background: none; color: var(--muted); height: 20px; padding: 0 6px; border-radius: 4px; font-size: 11px; display: inline-grid; place-items: center; }
+.sb-seg button:hover, .sb-btn:hover { color: var(--ink); background: var(--bg-3); }
+.sb-seg button[aria-pressed="true"] { color: var(--ink); background: var(--bg-4); }
+
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
