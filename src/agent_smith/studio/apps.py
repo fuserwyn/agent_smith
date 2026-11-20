@@ -64,6 +64,16 @@ def port_free(port: int) -> bool:
             return False
 
 
+def wait_port_free(port: int, seconds: float = 3.0) -> bool:
+    """A port just released (docker-proxy, sockets closing) can stay busy for a moment."""
+    deadline = time.monotonic() + seconds
+    while not port_free(port):
+        if time.monotonic() > deadline:
+            return False
+        time.sleep(0.1)
+    return True
+
+
 def exposed_port(dockerfile: str) -> Optional[int]:
     m = re.search(r"^\s*EXPOSE\s+(\d+)", dockerfile, re.M | re.I)
     return int(m.group(1)) if m else None
@@ -193,7 +203,7 @@ class AppManager:
             if not port_free(port):
                 return f"port {port} is already in use on this machine; omit port to get a free one", True
         else:
-            port = old.port if old and port_free(old.port) else free_port()
+            port = old.port if old and wait_port_free(old.port) else free_port()  # same URL after a restart
         slug = re.sub(r"[^a-z0-9]+", "-", folder.name.lower()).strip("-") or "app"
         app = App(id=f"{self.tag}-{slug}", path=rel, name=folder.name, image=f"agent-studio-app-{self.tag}-{slug}",
                   container=f"agent-studio-app-{self.tag}-{slug}", port=port, container_port=cport, run=run)

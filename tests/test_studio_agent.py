@@ -72,6 +72,7 @@ def test_agent_mode_edits_and_the_turn_can_be_reviewed_and_undone(project, tmp_p
         msgs = client.get("/api/agent/state", headers=H).json()["messages"]
         assert [m["role"] for m in msgs] == ["user", "assistant"] and "calc.py" in msgs[1]["text"]
         assert "read_file" in client.get(f"/api/agent/runs/{run['id']}/trace", headers=H).text
+        assert '"type": "workspace", "executor": "local"' in client.get(f"/api/agent/runs/{run['id']}/trace", headers=H).text
     assert not (project / ".git").exists()  # checkpoints live outside the project
 
 

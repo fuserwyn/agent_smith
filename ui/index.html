@@ -1130,7 +1130,7 @@ en: {
   hc_env: "env", hc_install: "pip", hc_reset: "reset", hc_patch: "+test", hc_run: "tests", hc_restore: "undo",
   hn_title: "SWE-bench harness (what run_tests runs)", hn_short: "harness:", hn_mbpp: "MBPP harness (what run_tests runs)", hn_src: "The eval_script of task.json (moulinette), copied to /tmp/agent_eval.sh in the container and run with bash. The moulinette runs the same script on a fresh container to grade the patch.", hn_running: "◌ running the eval script in the container…", hn_moul: "Final grade by the moulinette: FAIL_TO_PASS tests must now pass, PASS_TO_PASS tests must still pass.", hs_env: "env", hs_install: "install", hs_reset: "reset tests", hs_patch: "test patch", hs_run: "run tests", hs_restore: "restore", hd_env: "conda env «testbed», cd /testbed", hd_install: "install the project with the agent's changes", hd_reset: "test files back to the base commit", hd_patch: "adds the test that catches the bug (+{add} −{del}) in {files}", hd_run: "the test command, between the Start/End Test Output markers", hd_restore: "test files restored: the patch never contains the tests",
   z_fit: "Fit", z_reset: "Reset layout", z_full: "Full screen", z_hint: "Drag boxes · drag the background to move · Ctrl/⌘ + wheel or pinch to zoom", d_grip: "Drag to resize", st_paused: "⏸ paused · waits for {t}", st_run: "▶ running", st_done: "✓ {s}",
-  env_src: "📄 tests from task.json (moulinette) → MCP server → code + asserts → new worker", env_hidden: "+ 1 hidden test: only the moulinette runs it", env_local: "local folder · no Docker container", env_img: "image", env_ctr: "container, no network", env_rm: "removed", env_none: "no command yet", env_eval: "▶ eval script from task.json: adds the test for the bug, runs the test file", ph_search: "search", ph_read: "read", ph_run: "run", ph_edit: "edit", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker paused on line {l}: it waits for {t}. Its timer is stopped until the result comes back.", i_paused_tag: "⏸ waits for {t} · {hop}", hp_call: "worker → host", hp_req: "host → MCP server", hp_srv: "server runs the tool", hp_tests: "tests run in a new sandbox", hp_repo: "command in the repository", hp_resp: "result → host",
+  env_src: "📄 tests from task.json (moulinette) → MCP server → code + asserts → new worker", env_hidden: "+ 1 hidden test: only the moulinette runs it", env_local: "local folder · no Docker container", env_studio: "your project · container of the studio (/workspace)", env_img: "image", env_ctr: "container, no network", env_rm: "removed", env_none: "no command yet", env_eval: "▶ eval script from task.json: adds the test for the bug, runs the test file", ph_search: "search", ph_read: "read", ph_run: "run", ph_edit: "edit", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker paused on line {l}: it waits for {t}. Its timer is stopped until the result comes back.", i_paused_tag: "⏸ waits for {t} · {hop}", hp_call: "worker → host", hp_req: "host → MCP server", hp_srv: "server runs the tool", hp_tests: "tests run in a new sandbox", hp_repo: "command in the repository", hp_resp: "result → host",
   empty_trace: "No events in this trace.", empty_steps: "Steps appear here as the agent runs.",
   io_input: "Input", io_output: "Output", io_step: "step {n}", unchanged: "unchanged", nothing: "(nothing recorded)",
   tl_notconn: "Not connected yet: the tool list appears when the agent connects to the server.",
@@ -1459,7 +1459,7 @@ ru: {
   hc_env: "окр.", hc_install: "pip", hc_reset: "сброс", hc_patch: "+тест", hc_run: "тесты", hc_restore: "откат",
   hn_title: "Harness SWE-bench (что запускает run_tests)", hn_short: "harness:", hn_mbpp: "Harness MBPP (что запускает run_tests)", hn_src: "eval_script из task.json (moulinette): копируется в контейнер как /tmp/agent_eval.sh и запускается через bash. Moulinette запускает тот же скрипт в чистом контейнере, чтобы оценить патч.", hn_running: "◌ eval-скрипт выполняется в контейнере…", hn_moul: "Итоговая оценка moulinette: тесты FAIL_TO_PASS должны начать проходить, PASS_TO_PASS — проходить по-прежнему.", hs_env: "окружение", hs_install: "установка", hs_reset: "сброс тестов", hs_patch: "тест-патч", hs_run: "запуск тестов", hs_restore: "откат", hd_env: "conda-окружение «testbed», cd /testbed", hd_install: "установка проекта с правками агента", hd_reset: "тестовые файлы возвращаются к исходному коммиту", hd_patch: "добавляет тест, ловящий баг (+{add} −{del}) в {files}", hd_run: "команда тестов между маркерами Start/End Test Output", hd_restore: "тестовые файлы возвращаются: тесты никогда не попадают в патч",
   z_fit: "Вписать", z_reset: "Сбросить раскладку", z_full: "На весь экран", z_hint: "Блоки можно перетаскивать · фон — сдвиг · Ctrl/⌘ + колесо или щипок — масштаб", d_grip: "Потяните, чтобы изменить высоту", st_paused: "⏸ пауза · ждёт {t}", st_run: "▶ выполняется", st_done: "✓ {s}",
-  env_src: "📄 тесты из task.json (moulinette) → MCP-сервер → код + assert → новый воркер", env_hidden: "+ 1 скрытый тест: его запускает только moulinette", env_local: "локальная папка · без Docker-контейнера", env_img: "образ", env_ctr: "контейнер без сети", env_rm: "удалён", env_none: "команд пока нет", env_eval: "▶ eval-скрипт из task.json: добавляет тест на баг и запускает тестовый файл", ph_search: "поиск", ph_read: "чтение", ph_run: "запуск", ph_edit: "правка", ph_tests: "тесты", ph_patch: "патч", i_paused: "⏸ Воркер на паузе на строке {l}: ждёт {t}. Его таймер остановлен, пока не вернётся результат.", i_paused_tag: "⏸ ждёт {t} · {hop}", hp_call: "воркер → хост", hp_req: "хост → MCP-сервер", hp_srv: "сервер выполняет инструмент", hp_tests: "тесты идут в новой песочнице", hp_repo: "команда в репозитории", hp_resp: "результат → хост",
+  env_src: "📄 тесты из task.json (moulinette) → MCP-сервер → код + assert → новый воркер", env_hidden: "+ 1 скрытый тест: его запускает только moulinette", env_local: "локальная папка · без Docker-контейнера", env_studio: "ваш проект · контейнер студии (/workspace)", env_img: "образ", env_ctr: "контейнер без сети", env_rm: "удалён", env_none: "команд пока нет", env_eval: "▶ eval-скрипт из task.json: добавляет тест на баг и запускает тестовый файл", ph_search: "поиск", ph_read: "чтение", ph_run: "запуск", ph_edit: "правка", ph_tests: "тесты", ph_patch: "патч", i_paused: "⏸ Воркер на паузе на строке {l}: ждёт {t}. Его таймер остановлен, пока не вернётся результат.", i_paused_tag: "⏸ ждёт {t} · {hop}", hp_call: "воркер → хост", hp_req: "хост → MCP-сервер", hp_srv: "сервер выполняет инструмент", hp_tests: "тесты идут в новой песочнице", hp_repo: "команда в репозитории", hp_resp: "результат → хост",
   empty_trace: "В этой трассе нет событий.", empty_steps: "Шаги появятся здесь по мере работы агента.",
   io_input: "Вход", io_output: "Выход", io_step: "шаг {n}", unchanged: "без изменений", nothing: "(ничего не записано)",
   tl_notconn: "Ещё не подключено: список тулов появится, когда агент подключится к серверу.",
@@ -1788,7 +1788,7 @@ fr: {
   hc_env: "env", hc_install: "pip", hc_reset: "reset", hc_patch: "+test", hc_run: "tests", hc_restore: "undo",
   hn_title: "Harness SWE-bench (ce que lance run_tests)", hn_short: "harness :", hn_mbpp: "Harness MBPP (ce que lance run_tests)", hn_src: "L'eval_script du task.json (moulinette), copié dans le conteneur en /tmp/agent_eval.sh et lancé avec bash. La moulinette lance le même script dans un conteneur neuf pour noter le patch.", hn_running: "◌ le script d'évaluation tourne dans le conteneur…", hn_moul: "Note finale de la moulinette : les tests FAIL_TO_PASS doivent passer, les PASS_TO_PASS doivent toujours passer.", hs_env: "env", hs_install: "installation", hs_reset: "reset tests", hs_patch: "patch de test", hs_run: "tests", hs_restore: "restauration", hd_env: "environnement conda « testbed », cd /testbed", hd_install: "installe le projet avec les modifications de l'agent", hd_reset: "fichiers de test ramenés au commit de base", hd_patch: "ajoute le test qui détecte le bug (+{add} −{del}) dans {files}", hd_run: "la commande de tests, entre les marqueurs Start/End Test Output", hd_restore: "fichiers de test restaurés : le patch ne contient jamais les tests",
   z_fit: "Ajuster", z_reset: "Réinitialiser", z_full: "Plein écran", z_hint: "Glissez les blocs · glissez le fond pour déplacer · Ctrl/⌘ + molette ou pincement pour zoomer", d_grip: "Tirer pour redimensionner", st_paused: "⏸ en pause · attend {t}", st_run: "▶ en cours", st_done: "✓ {s}",
-  env_src: "📄 tests depuis task.json (moulinette) → serveur MCP → code + asserts → nouveau worker", env_hidden: "+ 1 test caché : seule la moulinette l'exécute", env_local: "dossier local · sans conteneur Docker", env_img: "image", env_ctr: "conteneur sans réseau", env_rm: "supprimé", env_none: "aucune commande", env_eval: "▶ script d'évaluation de task.json : ajoute le test du bug, lance le fichier de tests", ph_search: "recherche", ph_read: "lecture", ph_run: "exécution", ph_edit: "édition", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker en pause à la ligne {l} : il attend {t}. Son minuteur est arrêté jusqu'au retour du résultat.", i_paused_tag: "⏸ attend {t} · {hop}", hp_call: "worker → hôte", hp_req: "hôte → serveur MCP", hp_srv: "le serveur exécute l'outil", hp_tests: "tests dans un nouveau bac à sable", hp_repo: "commande dans le dépôt", hp_resp: "résultat → hôte",
+  env_src: "📄 tests depuis task.json (moulinette) → serveur MCP → code + asserts → nouveau worker", env_hidden: "+ 1 test caché : seule la moulinette l'exécute", env_local: "dossier local · sans conteneur Docker", env_studio: "votre projet · conteneur du studio (/workspace)", env_img: "image", env_ctr: "conteneur sans réseau", env_rm: "supprimé", env_none: "aucune commande", env_eval: "▶ script d'évaluation de task.json : ajoute le test du bug, lance le fichier de tests", ph_search: "recherche", ph_read: "lecture", ph_run: "exécution", ph_edit: "édition", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker en pause à la ligne {l} : il attend {t}. Son minuteur est arrêté jusqu'au retour du résultat.", i_paused_tag: "⏸ attend {t} · {hop}", hp_call: "worker → hôte", hp_req: "hôte → serveur MCP", hp_srv: "le serveur exécute l'outil", hp_tests: "tests dans un nouveau bac à sable", hp_repo: "commande dans le dépôt", hp_resp: "résultat → hôte",
   empty_trace: "Aucun événement dans cette trace.", empty_steps: "Les étapes apparaissent ici pendant que l'agent travaille.",
   io_input: "Entrée", io_output: "Sortie", io_step: "étape {n}", unchanged: "inchangé", nothing: "(rien d'enregistré)",
   tl_notconn: "Pas encore connecté : la liste des outils apparaît quand l'agent se connecte au serveur.",
@@ -2252,6 +2252,10 @@ const REPO_VIEW = {
           path: "src/agent_smith/tools/executor.py · docker_env.py"},
   local: {title: "Repository", sub: "local folder (no container)", down: "commands", up: "stdout", info: "ni_repo",
           path: "src/agent_smith/tools/executor.py (LocalExecutor)"},
+  studio_docker: {title: "Project", sub: "your project · /workspace · project container", down: "commands", up: "stdout", info: "ni_repo",
+          path: "src/agent_smith/studio (Agent Smith Studio) · tools/executor.py"},
+  studio_local:  {title: "Project", sub: "your project · local folder", down: "commands", up: "stdout", info: "ni_repo",
+          path: "src/agent_smith/studio (Agent Smith Studio) · tools/executor.py (LocalExecutor)"},
   mbpp:  {title: "Test sandbox", sub: "new worker · no MCP · 10 s", down: "code + tests", up: "PASS / FAIL", info: "ni_repo_mbpp",
           path: "src/agent_smith/tools/mbpp_tools.py (run_tests) · sandbox/host.py"},
 };
@@ -2260,6 +2264,11 @@ function benchKind() {
   const run = raw.find((x) => x.type === "run_start");
   if (run && run.benchmark === "mbpp") return "mbpp";
   const tr0 = raw.find((x) => x.type === "tool_result" && x.server && x.server.executor);
+  if (run && run.benchmark === "studio") {  // the studio says where the project lives ("workspace" event)
+    const ws = raw.find((x) => x.type === "workspace");
+    const ex = ws ? ws.executor : tr0 && tr0.server.executor;
+    return ex === "local" ? "studio_local" : "studio_docker";
+  }
   return tr0 && tr0.server.executor === "local" ? "local" : "swe";
 }
 function applyBench() {
@@ -2375,7 +2384,9 @@ function renderEnv(st) {
   // SWE-bench: container life cycle, then what the agent did in the repository
   const life = h("div", "row");
   const docker = raw.some((x) => x.type === "docker_started");
-  if (!docker) life.appendChild(h("span", "chip done", tr("env_local")));
+  const kind = benchKind();
+  if (kind === "studio_docker") life.appendChild(h("span", "chip done", tr("env_studio")));
+  else if (!docker) life.appendChild(h("span", "chip done", tr("env_local")));
   else {
     const seen = (t) => upto.some((x) => x.type === t);
     const pull = upto.find((x) => x.type === "docker_pull") || raw.find((x) => x.type === "docker_pull") || {};
@@ -2429,6 +2440,7 @@ let raw = [], events = [], cursor = -1, playing = false, timer = null, sourceKin
 let selectedStep = null, activeTab = "interp", tabPinned = false, selectedNode = "interp";
 /* "real": the recorded pace (event field t, seconds since start); animations then run at 1x. */
 const realTime = () => $("speed").value === "real";
+const EMBED_LIVE = () => document.body.classList.contains("embed") && sourceKind === "live";
 const speed = () => realTime() ? 1 : parseFloat($("speed").value);
 const withLines = () => $("opt-lines").checked;
 
@@ -3131,7 +3143,9 @@ function tick() {
   const gap = ((next.t ?? 0) - (events[cursor].t ?? 0)) * 1000;
   const simple = MODE === "simple";
   const base = next.type === "exec_line" ? (simple ? 340 : 260) : SUB_EVENTS.has(next.type) ? (simple ? 1100 : 420) : simple ? 2000 : Math.min(1400, Math.max(420, gap));
-  const delay = realTime() ? Math.max(0, gap) : base / speed();
+  // a live run being followed: the further behind, the faster (up to 8x) — it never lags far behind the agent
+  const lag = EMBED_LIVE() ? events.length - 1 - cursor : 0;
+  const delay = realTime() ? Math.max(0, gap) : base / speed() / Math.min(8, 1 + Math.max(0, lag - 4) / 6);
   rtWait(realTime() && delay >= 2000 ? delay : 0);
   timer = setTimeout(() => { rtWait(0); go(cursor + 1); tick(); }, delay);
 }
@@ -3144,6 +3158,16 @@ function rtWait(ms) {
   upd(); rtTimer = setInterval(upd, 250);
 }
 function stop() { playing = false; clearTimeout(timer); rtWait(0); setPlayIcon(); }
+/* Embedded live view (studio): new events are appended, and the player keeps going towards the newest one —
+   a few seconds behind real time, like a replay that catches up. Paused by the user: it stays where it is. */
+function chase() { if (!playing && cursor < events.length - 1) { playing = true; tabPinned = false; setPlayIcon(); tick(); } }
+function liveUpdate(list, live) {
+  const atEnd = cursor < 0 || cursor >= events.length - 1, wasPlaying = playing;
+  raw = list; sourceKind = live ? "live" : "file";
+  events = expandAll(raw, withLines()); $("scrub").max = Math.max(0, events.length - 1); renderLog();
+  if (cursor < 0) go(0);
+  if (wasPlaying || atEnd) chase();
+}
 $("speed").addEventListener("change", () => { if (playing) { clearTimeout(timer); tick(); } });  // a new speed applies at once
 function setPlayIcon() { const icon = playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M4 2v12l10-6z"/>'; $("i-play").innerHTML = icon; const mi = document.getElementById("mi-play"); if (mi) mi.innerHTML = icon; $("b-play").setAttribute("aria-label", playing ? "Pause" : "Play"); syncBigPlay(); }
 $("b-play").addEventListener("click", () => playing ? stop() : play());
@@ -4010,12 +4034,12 @@ if (EMBED) {
     const d = ev.data;
     if (d.theme === "light" || d.theme === "dark") document.documentElement.dataset.theme = d.theme;
     if (d.lang && I18N[d.lang] && d.lang !== LANG) setLang(d.lang);
-    if (Array.isArray(d.events)) {
-      const following = d.live && (cursor < 0 || cursor >= events.length - 1);
-      if (d.reset || following) {
+    if (Array.isArray(d.events) && (d.reset || d.events.length)) {  // theme / language syncs carry no events
+      if (d.reset) {
         setRaw(d.events, d.live ? "live" : "file");
-        if (!d.live && events.length) go(events.length - 1);  // a finished turn opens on its final state; ⏮ replays it
-      }
+        if (!d.live && events.length) go(events.length - 1);  // a finished run opens on its final state; ⏮ replays it
+        else if (d.live && events.length) { go(0); chase(); }  // a running one is played from the start, catching up
+      } else liveUpdate(d.events, d.live);
     }
   });
   window.parent.postMessage({ source: "agent-smith-observatory", ready: true }, location.origin);

@@ -226,6 +226,7 @@ class AgentService:
                 env, root = {"SWEBENCH_CONTAINER": self.terms.container.name, "TESTBED_PATH": "/workspace"}, "/workspace"
             else:
                 env, root = {"TESTBED_PATH": str(self.ws.root)}, str(self.ws.root)
+            sink.emit("workspace", {"executor": "docker" if "SWEBENCH_CONTAINER" in env else "local", "root": root})
             llm = build_client(run.model, url, use_fallbacks=True, on_event=sink.emit)
             config = load_sandbox_config(None)
             mcp = MCPClient(stdio_command=default_server("mcp_tools_swebench.py"), env=server_env(env))

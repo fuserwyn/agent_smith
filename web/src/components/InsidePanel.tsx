@@ -98,9 +98,8 @@ export function InsidePanel({ visible, request }: { visible: boolean; request: {
     if (live || jobId) {
       const list = liveList ?? [];
       if (!isNew && list.length === lastSent.current.n) return;
-      // a finished run is sent as a reset (the observatory ignores non-live updates otherwise and would keep
-      // only what arrived while it was running)
-      const id = window.setTimeout(() => { post([...list], !!live, isNew || !live); lastSent.current = { sel, n: list.length }; }, isNew ? 0 : 600);
+      // a new selection resets the view; later updates are appended and the observatory plays them, catching up
+      const id = window.setTimeout(() => { post([...list], !!live, isNew); lastSent.current = { sel, n: list.length }; }, isNew ? 0 : 600);
       return () => window.clearTimeout(id);
     }
     if (!isNew && lastSent.current.n === -2) return;
@@ -109,7 +108,7 @@ export function InsidePanel({ visible, request }: { visible: boolean; request: {
       const list = cache.current.get(sel) ?? await agentApi.trace(sel);
       if (cancelled) return;
       cache.current.set(sel, list);
-      post(list, false, true);
+      post(list, false, isNew);  // followed live until now: append the rest and let the playback finish
       lastSent.current = { sel, n: -2 };
     })();
     return () => { cancelled = true; };
