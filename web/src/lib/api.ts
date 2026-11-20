@@ -102,6 +102,9 @@ export const termApi = {
 export interface ModelChoice {
   provider: string; model: string; url: string; notes: string; key_env: string | null; key_ok: boolean; paid: boolean;
   inputs?: string[]; price?: { in: number; out: number } | null;  // from the OpenRouter catalog (what it reads, $ per 1M tokens)
+  tier?: "free" | "paid";  // free: a provider's free key (its limits apply); paid: the user's OpenRouter key, per token
+  limits?: string;         // free tier: what the provider caps
+  live?: { requests_left?: number; requests_limit?: number; tokens_left?: number; tokens_limit?: number; exhausted_at?: number } | null;
 }
 /** OpenRouter tab: the whole catalog, the key's balance, the user's picks (chat models, media defaults). */
 export type MediaKind = "image" | "video" | "speech" | "transcribe" | "perceive" | "embeddings";
@@ -142,7 +145,7 @@ export interface AgentChange { path: string; status: "added" | "modified" | "del
 export interface AgentRun {
   id: string; mode: "ask" | "agent"; provider: string; model: string; message: string; started: number; ended: number | null;
   status: "running" | "done" | "failed" | "stopped"; answer: string; error: string | null; checkpoint: string | null;
-  changes: AgentChange[]; steps: number; input_tokens: number; output_tokens: number; attachments?: Attachment[];
+  changes: AgentChange[]; steps: number; input_tokens: number; output_tokens: number; attachments?: Attachment[]; paid?: boolean;
 }
 export interface ChatMessage { role: "user" | "assistant"; text: string; run: string; mode?: "ask" | "agent"; status?: AgentRun["status"]; ts: number; attachments?: Attachment[] }
 export interface AgentState { messages: ChatMessage[]; runs: Record<string, AgentRun>; current: string | null }
@@ -169,7 +172,7 @@ export const scenarioApi = {
 };
 
 export const agentApi = {
-  models: () => api<{ models: ModelChoice[]; default: { provider: string; model: string } }>("/api/agent/models"),
+  models: () => api<{ models: ModelChoice[]; default: { provider: string; model: string }; tiers?: { free: boolean; paid: boolean } }>("/api/agent/models"),
   state: () => api<AgentState>("/api/agent/state"),
   start: (message: string, mode: "ask" | "agent", provider?: string, model?: string, attachments: string[] = []) =>
     api<AgentRun>("/api/agent/runs", { method: "POST", body: JSON.stringify({ message, mode, provider, model, attachments }) }),

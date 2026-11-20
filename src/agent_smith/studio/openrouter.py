@@ -89,12 +89,14 @@ def catalog() -> List[Dict[str, Any]]:
         pin, pout = _price(p, "prompt"), _price(p, "completion")
         if pin is None or (pin < 0):  # routers with variable prices
             continue
+        if not pin and not pout and not _price(p, "image_output") and not _price(p, "request"):
+            continue  # $0: a free router ("openrouter/free") or a preview — this tab is the paid key, priced models only
         out.append({
             "id": m["id"], "name": m.get("name") or m["id"], "created": m.get("created") or 0,
             "context": m.get("context_length") or 0, "in": inp, "out": ["embeddings"] if is_emb else outm,
             "kinds": ["embeddings"] if is_emb else _kinds(inp, outm),
             "price": {"in": pin, "out": pout, "image_out": _price(p, "image_output"), "audio": _price(p, "audio")},
-            "free": m["id"].endswith(":free") or (pin == 0 and not pout),
+            "free": False,
             "tools": "tools" in (m.get("supported_parameters") or []),
             "description": " ".join(str(m.get("description") or "").split())[:400],
         })

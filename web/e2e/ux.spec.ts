@@ -101,3 +101,19 @@ test("the OpenRouter tab lists the task defaults and opens the full-width model 
   await page.keyboard.press("Escape");
   await expect(page.locator(".or-page")).toHaveCount(0);
 });
+
+test("the model picker says Free or Paid and keeps the two apart", async ({ page }) => {
+  await open(page);
+  const trigger = page.locator(".mp-trigger");
+  await expect(trigger).toContainText("Free");              // the e2e model is a keyless local one: free tier
+  await expect(trigger).toContainText("scripted-model");
+  await trigger.click();
+  const pop = page.locator(".mp-pop");
+  await expect(pop.getByRole("tab", { name: /Free/ })).toHaveAttribute("aria-selected", "true");
+  await expect(pop.getByRole("option", { name: /scripted-model/ })).toHaveAttribute("aria-selected", "true");
+  await pop.getByRole("tab", { name: /Paid/ }).click();
+  await expect(pop.getByRole("option")).toHaveCount(0);      // no OpenRouter model in this list: nothing paid
+  await expect(pop.locator(".mp-about")).toContainText("billed per token");
+  await page.keyboard.press("Escape");
+  await expect(pop).toBeHidden();
+});

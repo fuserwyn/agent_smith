@@ -1,6 +1,6 @@
 /* Agent chat: conversation, a live timeline of each turn (thought, tools, code, output), the answer,
  * a review card of the files the turn changed (open diff, undo one / all), and the composer. */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUp, Boxes, Globe, ScrollText, Bot, Paperclip, Mic, Square, X, FileAudio, FileVideo, FileText, FileCode, File as FileIcon, Check, ChevronRight, CircleStop, FileDiff, FilePen, FilePlus, FileX, LoaderCircle, MessageSquarePlus, Search, SquareTerminal, Undo2, Workflow, BookOpen } from "lucide-react";
 import { agentStore, useAgent, type Step, type ToolCall } from "../lib/agent";
 import { uploadsApi, voiceApi, type ModelChoice, type AgentRun, type AppInfo, type Attachment, type ScenarioJob } from "../lib/api";
@@ -13,6 +13,7 @@ import { useUi } from "../lib/ui";
 import { AppLink } from "./AppsPanel";
 import { jobLabel } from "./InsidePanel";
 import { Markdown } from "./Markdown";
+import { ModelPicker } from "./ModelPicker";
 import { WarnIcon } from "./overlays";
 import { fuzzy } from "./QuickOpen";
 import { fs } from "../lib/api";
@@ -27,13 +28,6 @@ const argPath = (t: ToolCall) => (typeof t.args.filepath === "string" ? t.args.f
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const fmtS = (s: number) => (s < 60 ? `${s.toFixed(0)}s` : `${Math.floor(s / 60)}m${String(Math.round(s % 60)).padStart(2, "0")}`);
 
-/** "model · $0.1/$0.5 · 📷🎧🎬": price per 1M tokens in/out and what it reads besides text */
-export function modelLabel(m: ModelChoice): string {
-  const reads = (m.inputs ?? []).map((k) => ({ image: "📷", audio: "🎧", video: "🎬", file: "📄" } as Record<string, string>)[k] ?? "").join("");
-  const price = m.price ? (m.price.in === 0 && m.price.out === 0 ? "free" : `$${m.price.in}/$${m.price.out}`) : m.paid ? "$" : "";
-  return [m.model, price, reads].filter(Boolean).join(" · ");
-}
-
 /** " · $0.012": what the turn cost so far (no limit in the studio, so it is shown), from the catalog price */
 function turnCost(run: AgentRun, models: ModelChoice[]): string {
   const p = models.find((m) => m.provider === run.provider && m.model === run.model)?.price;
@@ -46,11 +40,6 @@ function AttIcon({ kind }: { kind: Attachment["kind"] }) {
   const I = kind === "audio" ? FileAudio : kind === "video" ? FileVideo : kind === "pdf" ? FileText : kind === "text" ? FileCode : FileIcon;
   return <I size={13} />;
 }
-
-const VENDOR: Record<string, string> = {
-  anthropic: "Anthropic", openai: "OpenAI", google: "Google", deepseek: "DeepSeek", qwen: "Qwen", "z-ai": "Z.ai",
-  moonshotai: "Moonshot", minimax: "MiniMax", nvidia: "NVIDIA", "x-ai": "xAI", mistralai: "Mistral", meta: "Meta",
-};
 
 const CHAT_COMMANDS = [
   { cmd: "/mbpp", args: "[task id] [model]", key: "cmdx.mbpp" },
@@ -204,11 +193,13 @@ function Turn({ run, live }: { run: AgentRun; live: boolean }) {
       {ag.jobsOf(run.id).map((j) => <JobCard key={j.id} job={j} />)}
       {ag.appsOf(run.id).map((a) => <AppCard key={a.id} app={a} />)}
       {!live && run.answer && <Markdown text={run.answer} />}
-      {!live && run.status === "failed" && <div className="turn-err"><WarnIcon size={14} />{run.error ?? t("ag.failed")}</div>}
+      {!live && run.status === "failed" && <div className="turn-err"><WarnIcon size={14} /><span>{run.error ?? t("ag.failed")}
+        {!run.paid && /429|rate limit|quota|exhausted/i.test(run.error ?? "") && <span className="turn-hint">{t("tier.limitHit")}</span>}</span></div>}
       {!live && run.status === "stopped" && <div className="turn-note">{t("ag.stopped")}</div>}
       {!live && <Changes run={run} />}
       {!live && (
         <div className="turn-meta">
+          {run.provider !== "agent-smith" && <span className={`tier-b sm t-${run.paid ? "paid" : "free"}`}>{t(run.paid ? "tier.paid" : "tier.free")}</span>}
           <span className="mono">{run.model}</span>
           <button type="button" className="linkbtn" onClick={() => window.dispatchEvent(new CustomEvent("studio:inside", { detail: { run: run.id } }))}>
             <Workflow size={12} />{t("ag.inside")}</button>
@@ -304,15 +295,6 @@ export function AgentPanel() {
     requestAnimationFrame(() => box.current?.focus());
   };
 
-  // grouped by the API that serves them — for OpenRouter (your key) by vendor — cheapest first in each group
-  const choices = useMemo(() => {
-    const label = (m: ModelChoice) => (m.provider === "openrouter" ? `OpenRouter · ${VENDOR[m.model.split("/")[0]!] ?? m.model.split("/")[0]}` : m.provider);
-    const cost = (m: ModelChoice) => (m.price ? m.price.in + m.price.out * 3 : Number.MAX_VALUE);
-    const g = new Map<string, ModelChoice[]>();
-    for (const m of ag.models) g.set(label(m), [...(g.get(label(m)) ?? []), m]);
-    const groups = [...g].map(([k, ms]) => [k, [...ms].sort((a, b) => cost(a) - cost(b) || a.model.localeCompare(b.model))] as const);
-    return groups.sort((a, b) => Math.min(...a[1].map(cost)) - Math.min(...b[1].map(cost)) || a[0].localeCompare(b[0]));
-  }, [ag.models]);
   const running = !!ag.current;
   const runs = ag.runs;
 
@@ -394,14 +376,7 @@ export function AgentPanel() {
               <button key={m} type="button" aria-pressed={ag.mode === m} title={t(m === "ask" ? "ag.askTip" : "ag.agentTip")} onClick={() => ag.setMode(m)}>{t(m === "ask" ? "ag.ask" : "ag.agent")}</button>
             ))}
           </div>
-          <select className="model-sel" aria-label={t("ag.model")} value={ag.model ? `${ag.model.provider}|${ag.model.model}` : ""}
-                  onChange={(e) => { const [provider, model] = e.target.value.split("|"); ag.setModel({ provider: provider!, model: model! }); }}>
-            {choices.map(([prov, ms]) => (
-              <optgroup key={prov} label={prov}>
-                {ms.map((m) => <option key={m.model} value={`${m.provider}|${m.model}`} disabled={!m.key_ok} title={m.notes}>{modelLabel(m)}{m.key_ok ? "" : ` (${t("ag.noKey")})`}</option>)}
-              </optgroup>
-            ))}
-          </select>
+          <ModelPicker />
           <span className="sp" />
           <button type="button" className="cbtn" onClick={() => fileInput.current?.click()} title={t("att.add")} aria-label={t("att.add")}><Paperclip size={15} /></button>
           <button type="button" className={`cbtn${rec ? " rec" : ""}`} onClick={() => void toggleVoice()} disabled={transcribing}

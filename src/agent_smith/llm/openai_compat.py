@@ -42,6 +42,26 @@ def parse_duration(text: Optional[str]) -> Optional[float]:
     return h * 3600 + mi * 60 + s + ms / 1000
 
 
+# What each (provider URL, model) last told us about its limits, for the studio's model picker: remaining
+# requests / tokens in the current window (wall-clock reset time) and whether its quota ran out today.
+LIVE_LIMITS: Dict[tuple, Dict[str, Any]] = {}
+
+
+def live_limits(base_url: str, model: str) -> Optional[Dict[str, Any]]:
+    """The last limits seen for this model (None before its first answer), resets already passed dropped."""
+    info = LIVE_LIMITS.get((base_url.rstrip("/"), model))
+    if not info:
+        return None
+    now, out = time.time(), dict(info)
+    for k in ("tokens", "requests"):
+        if out.get(k + "_reset", 0) and out[k + "_reset"] <= now:  # the window has reset: the number is stale
+            out.pop(k + "_left", None)
+            out.pop(k + "_reset", None)
+    if out.get("exhausted_at") and now - out["exhausted_at"] > 6 * 3600:
+        out.pop("exhausted_at", None)
+    return out
+
+
 class OpenAICompatProvider:
     def __init__(self, base_url: str, model: str, extra_headers: Optional[Dict[str, str]] = None,
                  transport: Optional[httpx.BaseTransport] = None, extra_body: Optional[Dict[str, Any]] = None):
@@ -74,12 +94,22 @@ class OpenAICompatProvider:
     def _learn(self, resp: httpx.Response) -> None:
         h, now = resp.headers, time.monotonic()
         try:
+            live = LIVE_LIMITS.setdefault((self.base_url, self.model), {})
             if h.get("x-ratelimit-remaining-tokens") is not None:
                 self.tokens_left = int(float(h["x-ratelimit-remaining-tokens"]))
-                self.tokens_reset_at = now + (parse_duration(h.get("x-ratelimit-reset-tokens")) or 60.0)
+                wait = parse_duration(h.get("x-ratelimit-reset-tokens")) or 60.0
+                self.tokens_reset_at = now + wait
+                live.update(tokens_left=self.tokens_left, tokens_reset=time.time() + wait)
+                if h.get("x-ratelimit-limit-tokens"):
+                    live["tokens_limit"] = int(float(h["x-ratelimit-limit-tokens"]))
             if h.get("x-ratelimit-remaining-requests") is not None:
                 self.requests_left = int(float(h["x-ratelimit-remaining-requests"]))
-                self.requests_reset_at = now + (parse_duration(h.get("x-ratelimit-reset-requests")) or 60.0)
+                wait = parse_duration(h.get("x-ratelimit-reset-requests")) or 60.0
+                self.requests_reset_at = now + wait
+                live.update(requests_left=self.requests_left, requests_reset=time.time() + wait)
+                if h.get("x-ratelimit-limit-requests"):
+                    live["requests_limit"] = int(float(h["x-ratelimit-limit-requests"]))
+            live["seen"] = time.time()
         except (TypeError, ValueError):
             pass
 
@@ -148,6 +178,7 @@ class OpenAICompatProvider:
             # A daily/monthly quota will not come back within this task: disable the key and move on
             # (next key or fallback provider) instead of waiting until the time budget is gone.
             if self._quota_exhausted(resp):
+                LIVE_LIMITS.setdefault((self.base_url, self.model), {})["exhausted_at"] = time.time()
                 raise LLMError(f"quota exhausted (429): {body_text}", status, disable_key=True, rotate_key=True)
             too_large = _TOO_LARGE_RE.search(resp.text)
             if too_large and too_large.group(1).upper() == "OTPM":

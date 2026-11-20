@@ -217,7 +217,7 @@ It is built for one person on their own machine and protected like Jupyter, only
 
 ### How do I pick among hundreds of models?
 The **OpenRouter tab**: your key's balance, then **All models** — a full-width browser of the whole catalog with
-search, kinds (text, images, video, audio, embeddings, free), "reads" filters (image, audio, video, PDF), prices and
+search, kinds (text, images, video, audio, embeddings), "reads" filters (image, audio, video, PDF), prices and
 context. Add any model to the chat, or make it the default for images, video, speech, voice input, reading files or
 embeddings. Picks apply to every project.
 
@@ -233,10 +233,18 @@ a model transcribes, and the text lands in the box for you to edit.
 
 ### What does it cost?
 Two worlds. **The 42 benchmarks and the exam** (`agent_mbpp`, `agent_swebench`) run on free tiers (NVIDIA, Google AI
-Studio, Groq, Cohere), with key rotation, retries and free fallbacks, as the subject requires. **The studio's chat** runs on
-your OpenRouter key, paid models only — no free tier, no free fallback: the model you pick does the whole turn (and the
-benchmark runs it starts). Cheap and good: Claude Haiku 5.5, the default, solved three SWE-bench bugs for $0.009; the turn
-header shows what a turn costs.
+Studio, Groq, Cohere), with key rotation, retries and free fallbacks, as the subject requires. **The studio's chat** has both, in two tabs of its model
+picker, and the button next to the input always says which one the next message uses:
+
+- **Free** (green) — the free keys of Groq, Google AI Studio, NVIDIA and Cohere. Nothing is charged; each provider caps
+  requests and tokens per minute or per day. The picker shows those limits and, after the first answer, what is left
+  (e.g. "990 req · 5.2k tok left"). On a limit the turn waits a few seconds or moves to another *free* model — never to
+  a paid one.
+- **Paid** (amber) — your OpenRouter key, with the price per 1M tokens and your balance. The model you pick does the whole
+  turn (and the benchmark runs it starts): no switch to a free model. Claude Haiku 5.5, the default, solved three
+  SWE-bench bugs for $0.009; the turn header shows what a turn costs.
+
+OpenRouter's own free tier (`:free` models, $0 routers) is not used: OpenRouter in the studio means your paid key.
 
 ### Which models can I pick?
 Any OpenAI-compatible model in `config/models.json` (your own list via `AGENT_SMITH_MODELS_FILE`). In the studio,

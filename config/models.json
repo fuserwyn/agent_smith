@@ -22,7 +22,8 @@
       ],
       "extra_body": {
         "reasoning_effort": "low"
-      }
+      },
+      "limits": "Groq free tier: ~30 requests/min, ~1000/day and a tokens/min cap per model"
     },
     {
       "name": "gemini",
@@ -33,7 +34,8 @@
       ],
       "extra_body": {
         "reasoning_effort": "none"
-      }
+      },
+      "limits": "Google AI Studio free tier: requests/min and requests/day caps per model"
     },
     {
       "name": "mistral",
@@ -72,7 +74,8 @@
           "enable_thinking": false
         },
         "reasoning_effort": "none"
-      }
+      },
+      "limits": "build.nvidia.com free credits: ~40 requests/min"
     },
     {
       "name": "ollama",
@@ -93,7 +96,8 @@
       ],
       "extra_body": {
         "reasoning_effort": "none"
-      }
+      },
+      "limits": "trial key: 20 calls/min, 1000 calls/month"
     }
   ],
   "models": [

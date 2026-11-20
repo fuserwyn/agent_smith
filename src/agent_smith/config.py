@@ -72,6 +72,7 @@ class ProviderSpec(BaseModel):
     extra_headers: Dict[str, str] = Field(default_factory=dict)
     extra_body: Dict[str, Any] = Field(
         default_factory=dict, description="Extra JSON fields sent with every request (e.g. reasoning off)")
+    limits: str = Field(default="", description="Free tier: what the provider caps (shown next to its free models)")
 
 
 class ModelSpec(BaseModel):

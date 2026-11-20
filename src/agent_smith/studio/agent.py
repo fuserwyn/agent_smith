@@ -184,42 +184,56 @@ class AgentService:
     # ------------------------------------------------------------------ models
     @staticmethod
     def models(on_catalog=None) -> Dict[str, Any]:
-        """Models of config/models.json; with ``on_catalog``, also what each reads and its price (OpenRouter
-        catalog, fetched in the background; ``on_catalog()`` is called when it arrives)."""
+        """The chat's models in two tiers, never mixed within a turn:
+
+        * ``free``: the free keys of the direct providers (NVIDIA, Gemini, Groq, Cohere). Nothing is charged;
+          their limits are what the provider allows (``limits``, and ``live``: what it reported last). When one is
+          throttled the turn waits or moves to another *free* model, never to a paid one.
+        * ``paid``: the user's OpenRouter key, priced per token (``price``). No fallback to anything else.
+
+        With ``on_catalog``, OpenRouter prices and inputs come from its catalog (fetched in the background;
+        ``on_catalog()`` is called when it arrives)."""
         from agent_smith import ui_jobs  # reads config/models.json and which keys exist (never their values)
-        provider, model = ui_jobs.DEFAULTS["swebench"]
-        models = ui_jobs.model_choices()
-        chat = load_models_config().chat_default
-        if chat and any((m["provider"], m["model"]) == (chat.provider, chat.model) and m["key_ok"] for m in models):
-            provider, model = chat.provider, chat.model
-        # models picked in the OpenRouter tab (any of its catalog), after the configured ones
+        from agent_smith.llm.openai_compat import live_limits
         from agent_smith.studio.openrouter import load_picks
+        models = []
+        for m in ui_jobs.model_choices():
+            if m["provider"] == "openrouter" and not m["paid"]:
+                continue  # OpenRouter's own free tier is not used: OpenRouter means the user's paid key
+            models.append({**m, "tier": "paid" if m["paid"] else "free"})
+        # models picked in the OpenRouter tab (any of its catalog), after the configured ones
         base = next((m for m in models if m["provider"] == "openrouter"), None)
         have = {(m["provider"], m["model"]) for m in models}
         for mid in load_picks()["chat"]:
             if base and ("openrouter", mid) not in have and not mid.endswith(":free"):
-                models.append({**base, "model": mid, "notes": "picked in the OpenRouter tab", "paid": True, "picked": True})
-        # The chat runs on the user's OpenRouter key, paid models only. The free direct providers (NVIDIA, Gemini,
-        # Groq, Cohere) stay for the 42 benchmarks / exam; without an OpenRouter key they are all that is left.
-        mine = [m for m in models if m["provider"] == "openrouter" and m.get("paid") and m["key_ok"]]
-        if mine:
-            models = mine
-            if (provider, model) not in {(m["provider"], m["model"]) for m in mine}:
-                provider, model = mine[0]["provider"], mine[0]["model"]
-        if not any((m["provider"], m["model"]) == (provider, model) for m in models) and models:
-            # custom model list (AGENT_SMITH_MODELS_FILE): first model that has a key, else the first one
-            first = next((m for m in models if m["key_ok"]), models[0])
-            provider, model = first["provider"], first["model"]
+                models.append({**base, "model": mid, "notes": "picked in the OpenRouter tab", "picked": True})
+        cat: Dict[str, Any] = {}
         try:  # what each OpenRouter model reads (image / audio / video / file) and its price, for the picker
             from agent_smith.studio.media import Media as _M
             cat = _M.shared_catalog(block=False, on_ready=on_catalog) if on_catalog else {}
-            for m in models:
-                info = cat.get(m["model"]) if m["provider"] == "openrouter" else None
-                m["inputs"] = info["in"] if info else ["text"]
-                m["price"] = info["price"] if info else None
         except Exception:  # noqa: BLE001 - the picker works without it
             pass
-        return {"models": models, "default": {"provider": provider, "model": model}}
+        out = []
+        for m in models:
+            info = cat.get(m["model"]) if m["provider"] == "openrouter" else None
+            if info and not (info["price"]["in"] or info["price"]["out"]):
+                continue  # $0 in the catalog (a router or a preview): not a paid model, not shown as one
+            m["inputs"] = info["in"] if info else ["text"]
+            m["price"] = info["price"] if info else None
+            m["live"] = None if m["tier"] == "paid" else live_limits(m["url"], m["model"])
+            out.append(m)
+        usable = [m for m in out if m["key_ok"]]
+        chat = load_models_config().chat_default
+        pref = [(chat.provider, chat.model)] if chat else []
+        pref += [(m["provider"], m["model"]) for m in usable if m["tier"] == "paid"]
+        pref += [(m["provider"], m["model"]) for m in usable]
+        keys = {(m["provider"], m["model"]) for m in usable}
+        default = next((p for p in pref if p in keys), None)
+        if default is None and out:
+            default = (out[0]["provider"], out[0]["model"])
+        provider, model = default or ("", "")
+        return {"models": out, "default": {"provider": provider, "model": model},
+                "tiers": {t: any(m["tier"] == t and m["key_ok"] for m in out) for t in ("free", "paid")}}
 
     def _pick(self, provider: Optional[str], model: Optional[str]) -> Dict[str, Any]:
         info = self.models()
