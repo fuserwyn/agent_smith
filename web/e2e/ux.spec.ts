@@ -61,3 +61,13 @@ test("no Content Security Policy violation while using the editor, terminal and 
   await expect(page.frameLocator(".inside-frame").locator("#diagram .node").first()).toBeVisible();
   expect(violations).toEqual([]);
 });
+
+test("typing / in the chat lists the commands", async ({ page }) => {
+  await open(page);
+  await page.locator(".composer-in").fill("/");
+  await expect(page.locator(".cmd-item")).toHaveCount(2);
+  await page.locator(".composer-in").fill("/sw");
+  await expect(page.locator(".cmd-item")).toHaveCount(1);
+  await page.locator(".composer-in").press("Tab");
+  await expect(page.locator(".composer-in")).toHaveValue("/swe ");
+});

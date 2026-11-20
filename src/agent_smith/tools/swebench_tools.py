@@ -25,7 +25,9 @@ MAX_READ_LINES = 400
 MAX_MATCHES = 150
 MAX_LINE_CHARS = 300
 MAX_OUTPUT_CHARS = 12_000
-EXCLUDE_DIRS = (".git", "__pycache__", "node_modules", ".tox", ".eggs", "build", "dist")
+# never source code: virtualenvs and caches (a project's .venv alone can bury list_files under thousands of lines)
+EXCLUDE_DIRS = (".git", "__pycache__", "node_modules", ".tox", ".eggs", "build", "dist", ".venv", "venv",
+                ".mypy_cache", ".pytest_cache", ".ruff_cache")
 START_TEST_OUTPUT = ">>>>> Start Test Output"
 END_TEST_OUTPUT = ">>>>> End Test Output"
 

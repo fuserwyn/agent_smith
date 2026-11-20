@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 import traceback
@@ -41,7 +42,8 @@ from agent_smith.studio.workspace import Workspace, WorkspaceError
 READ_ONLY_TOOLS = frozenset({"read_file", "list_files", "search_code", "search_function_or_class_definition_in_code",
                              "find_references"})
 # 30 min: a turn may wait for a whole Agent Smith benchmark run (run_agent_smith, capped at 25 min)
-LIMITS = Limits(max_iterations=30, max_input_tokens=300_000, max_output_tokens=12_000, timeout_seconds=1800)
+# output budget of a whole turn (not the provider's limit): 30 steps of up to 2000 tokens need room
+LIMITS = Limits(max_iterations=30, max_input_tokens=400_000, max_output_tokens=40_000, timeout_seconds=1800)
 # Stop sequences (providers accept 4): an empty ```python``` block is never useful — some small models repeat
 # it until the output cap after their first block; it replaces </function_calls>, a format these models don't use.
 STOP = [END_CODE, "\nObservation:", "</tool_call>", "```python\n```"]
@@ -51,6 +53,14 @@ HISTORY_TURNS = 6  # earlier exchanges given to the model as context
 
 
 def studio_system_prompt(config, mcp, root: str, mode: str) -> str:
+    names = set(mcp.tool_names()) if mcp else set()
+    extra = ""
+    if "run_agent_smith" in names:
+        extra += ("\nWhen the user asks to run / try / test an MBPP or SWE-bench task (Agent Smith's benchmarks), call "
+                  "run_agent_smith(...) in your FIRST step — do not explore the project, do not use run_command or pytest.")
+    if "run_app" in names:
+        extra += ("\nWhen the user asks for a server / an app to run: write it in agent_code/apps/<name>/ with a Dockerfile, "
+                  "then run_app(...), check it with call_app(...), and give the URL.")
     rules = ("You are in ASK mode: you can only read the project (no edits, no commands). Explain, point to files "
              "and lines, and propose changes as code blocks the user can apply."
              if mode == "ask" else
@@ -66,7 +76,7 @@ the tools, never with open() or imports.
 
 {build_manual(config, mcp)}
 
-{rules}
+{rules}{extra}
 
 The folder agent_code/runs/ only holds logs of past agent runs (the code of each step): ignore it unless the
 user asks about it. New standalone projects (a server, a tool) go in agent_code/apps/<name>/.
@@ -74,6 +84,22 @@ user asks about it. New standalone projects (a server, a tool) go in agent_code/
 When you are done, call final_answer(...) with a short answer FOR THE USER in Markdown: what you found or changed
 (files and why), and anything they should check. Do not paste whole files into the answer. Never reveal
 secrets (API keys, passwords, .env contents) even if you read them."""
+
+
+COMMAND = re.compile(r"^/(mbpp|swe|swebench)(?:\s+(\S+))?(?:\s+(\S+))?\s*$", re.I)
+
+
+def parse_command(message: str) -> Optional[Dict[str, Any]]:
+    """'/mbpp 2', '/swe', '/swe sympy__sympy-13480 <model>' -> run_agent_smith arguments; None for a normal message."""
+    m = COMMAND.match(message.strip())
+    if not m:
+        return None
+    args: Dict[str, Any] = {"benchmark": "mbpp" if m.group(1).lower() == "mbpp" else "swebench"}
+    if m.group(2):
+        args["task_id"] = m.group(2)
+    if m.group(3):
+        args["model"] = m.group(3)
+    return args
 
 
 @dataclass
@@ -177,7 +203,9 @@ class AgentService:
             raise WorkspaceError(400, "empty message")
         if mode not in ("ask", "agent"):
             raise WorkspaceError(400, "mode must be ask or agent")
-        m = self._pick(provider, model)
+        command = parse_command(message)
+        m = ({"provider": "agent-smith", "model": command.get("model") or "default model", "url": ""} if command
+             else self._pick(provider, model))
         with self._lock:
             if self.current:
                 raise WorkspaceError(409, "the agent is already working")
@@ -190,7 +218,10 @@ class AgentService:
         self.conversation.append({"role": "user", "text": message, "run": run.id, "mode": mode, "ts": run.started})
         self._save()
         self.publish({"type": "agent-run", "run": run.public()})
-        threading.Thread(target=self._work, args=(run, m["url"], history), name=f"agent-{run.id}", daemon=True).start()
+        if command:
+            threading.Thread(target=self._command, args=(run, command), name=f"command-{run.id}", daemon=True).start()
+        else:
+            threading.Thread(target=self._work, args=(run, m["url"], history), name=f"agent-{run.id}", daemon=True).start()
         return run
 
     def stop(self, run_id: str) -> None:
@@ -261,20 +292,45 @@ class AgentService:
             final, run.error = "failed", f"{type(exc).__name__}: {exc}"
             sink.emit("studio_error", {"error": run.error, "trace": traceback.format_exc()[-2000:]})
         finally:
-            if run.checkpoint:
-                try:
-                    run.changes = self.checkpoints.changes(run.checkpoint)
-                except WorkspaceError:
-                    run.changes = []
-            run.ended = time.time()
-            run.status = final
-            text = run.answer or (run.error or "")
-            self.conversation.append({"role": "assistant", "text": text, "run": run.id, "status": run.status, "ts": run.ended})
-            with self._lock:
-                self.current = None
-            self._save()
-            sink.close()
-            self.publish({"type": "agent-run", "run": run.public()})
+            self._finish(run, sink, final)
+
+    def _finish(self, run: Run, sink: EventSink, final: str) -> None:
+        if run.checkpoint:
+            try:
+                run.changes = self.checkpoints.changes(run.checkpoint)
+            except WorkspaceError:
+                run.changes = []
+        run.ended = time.time()
+        run.status = final  # set last: a finished run already lists its changes
+        text = run.answer or (run.error or "")
+        self.conversation.append({"role": "assistant", "text": text, "run": run.id, "status": run.status, "ts": run.ended})
+        with self._lock:
+            self.current = None
+        self._save()
+        sink.close()
+        self.publish({"type": "agent-run", "run": run.public()})
+
+    # ------------------------------------------------------------------ chat commands (no LLM)
+    def _command(self, run: Run, args: Dict[str, Any]) -> None:
+        """/mbpp, /swe: Agent Smith's pipeline started at once, like a button — no model in the chat, no tokens."""
+        sink = EventSink(run.trace, listeners=[lambda _k, record: self.publish({"type": "agent", "run": run.id, "event": record})])
+        final = "failed"
+        try:
+            sink.emit("chat_command", {"command": run.message, "tool": SCENARIO_TOOL, "args": args})
+            reason = self.scenarios.unavailable()
+            if reason:
+                run.error = f"cannot run Agent Smith here: {reason}"
+                return
+            out = self.scenarios.call(args, run.id, self._cancel[run.id].is_set)
+            head, _, rest = out.text.partition("\n")
+            run.answer = f"**{head}**" + (f"\n\n```text\n{rest.strip()}\n```" if rest.strip() else "")
+            final = "stopped" if self._cancel[run.id].is_set() else ("failed" if out.is_error else "done")
+            if out.is_error:
+                run.error = head
+        except Exception as exc:  # noqa: BLE001 - shown in the chat
+            run.error = f"{type(exc).__name__}: {exc}"
+        finally:
+            self._finish(run, sink, final)
 
     # ------------------------------------------------------------------ review
     def get(self, run_id: str) -> Run:

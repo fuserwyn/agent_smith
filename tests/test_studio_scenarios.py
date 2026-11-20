@@ -73,6 +73,7 @@ def step(code):
 def test_the_chat_agent_runs_agent_smith_and_sees_the_verdict(tmp_path, monkeypatch, fake_repo):
     client, srv = make_client(tmp_path, monkeypatch, [
         step("print(run_agent_smith('mbpp', '11'))"),
+        step("print(run_agent_smith('mbpp', '12'))"),
         step("final_answer('MBPP task 11 passed.')"),
     ])
     with client, srv:
@@ -83,6 +84,8 @@ def test_the_chat_agent_runs_agent_smith_and_sees_the_verdict(tmp_path, monkeypa
         assert "run_agent_smith(" in system                               # offered like an MCP tool
         observation = srv.requests[1]["messages"][-1]["content"]
         assert "verdict PASSED" in observation and "iterations=2" in observation and "def f(): pass" in observation
+        assert "Do not start other runs" in observation
+        assert "Already done in this turn" in srv.requests[2]["messages"][-1]["content"]   # a 2nd run is refused
         assert fake_repo == [("mbpp", {"task_id": "11"})]
         [job] = client.get("/api/scenarios", headers=H).json()["jobs"]
         assert job["run"] == run["id"] and job["status"] == "done" and job["verdict"] == "PASSED"
@@ -112,3 +115,31 @@ def test_not_offered_in_ask_mode_and_bad_arguments_are_reported(tmp_path, monkey
         run = client.post("/api/agent/runs", json={"message": "y", "mode": "ask"}, headers=H).json()
         wait_done(client, run["id"])
         assert "run_agent_smith" not in srv.requests[-1]["messages"][0]["content"]
+
+
+def test_slash_commands_run_agent_smith_without_the_chat_model(tmp_path, monkeypatch, fake_repo):
+    from agent_smith.studio.agent import parse_command
+    assert parse_command("/mbpp 11") == {"benchmark": "mbpp", "task_id": "11"}
+    assert parse_command("/swe") == {"benchmark": "swebench"}
+    assert parse_command("/SWE django__django-1 my-model") == {"benchmark": "swebench", "task_id": "django__django-1", "model": "my-model"}
+    assert parse_command("run mbpp 11") is None and parse_command("/mbpp 1 2 3") is None
+    client, srv = make_client(tmp_path, monkeypatch, [])
+    with client, srv:
+        run = client.post("/api/agent/runs", json={"message": "/mbpp 11", "mode": "agent"}, headers=H).json()
+        done = wait_done(client, run["id"])
+        assert done["status"] == "done" and "verdict PASSED" in done["answer"] and done["input_tokens"] == 0
+        assert srv.requests == []                                         # the chat model was never called
+        assert fake_repo == [("mbpp", {"task_id": "11"})]
+        run = client.post("/api/agent/runs", json={"message": "/swe", "mode": "ask"}, headers=H).json()
+        wait_done(client, run["id"])
+        assert fake_repo[-1] == ("swebench", {"task_id": "sympy__sympy-13480"})  # the default SWE-bench task
+        [job, _] = client.get("/api/scenarios", headers=H).json()["jobs"]
+        assert job["run"] == run["id"]
+
+
+def test_unknown_mbpp_ids_are_refused_with_the_nearest_ones(tmp_path, monkeypatch, fake_repo):
+    monkeypatch.setattr(ui_jobs, "mbpp_tasks", lambda: [{"id": i} for i in (2, 3, 4, 6, 7, 11)])
+    from agent_smith.studio.scenarios import Scenarios
+    out = Scenarios(lambda e: None).call({"benchmark": "mbpp", "task_id": 5}, "r", lambda: False)
+    assert out.is_error and "MBPP task 5 does not exist" in out.text and "Nearest ids: 2, 3, 4, 6, 7, 11" in out.text
+    assert fake_repo == []                                                # nothing was started

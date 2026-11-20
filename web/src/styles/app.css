@@ -369,3 +369,4 @@ kbd, .pal-k { font: 11px var(--f-mono); padding: 1px 6px; border: 1px solid var(
 .app-logs-b { flex: 1; margin: 0; overflow: auto; padding: 8px 10px; font: 12px/1.5 var(--f-mono); white-space: pre-wrap; word-break: break-word; color: var(--ink-2); }
 .job-steps .sp { flex: 1; }
 .sb-link { border: 0; background: none; cursor: pointer; font: inherit; } .sb-link:hover { text-decoration: underline; }
+.cmd-item { display: grid; gap: 1px; } .cmd-item .dim { font-size: 11px; }

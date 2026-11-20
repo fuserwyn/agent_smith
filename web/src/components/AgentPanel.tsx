@@ -26,6 +26,11 @@ const argPath = (t: ToolCall) => (typeof t.args.filepath === "string" ? t.args.f
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const fmtS = (s: number) => (s < 60 ? `${s.toFixed(0)}s` : `${Math.floor(s / 60)}m${String(Math.round(s % 60)).padStart(2, "0")}`);
 
+const CHAT_COMMANDS = [
+  { cmd: "/mbpp", args: "[task id] [model]", key: "cmdx.mbpp" },
+  { cmd: "/swe", args: "[instance id] [model]", key: "cmdx.swe" },
+] as const;
+
 function ToolChip({ t }: { t: ToolCall }) {
   const Icon = TOOL_ICON[t.name] ?? Workflow;
   const path = argPath(t);
@@ -193,6 +198,9 @@ export function AgentPanel() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [mention, setMention] = useState<{ q: string; at: number; files: string[]; i: number } | null>(null);
+  // chat commands: Agent Smith's pipeline at once, without the chat model (see parse_command on the server)
+  const cmds = /^\/[a-z]*$/i.test(text.trim()) || /^\/(mbpp|swe)\s+\S*$/i.test(text)
+    ? CHAT_COMMANDS.filter((c) => c.cmd.startsWith(text.trim().split(/\s/)[0]!.toLowerCase())) : [];
   const list = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
   const fileIndex = useRef<string[] | null>(null);
@@ -261,6 +269,16 @@ export function AgentPanel() {
         })}
       </div>
       <div className="composer">
+        {cmds.length > 0 && (
+          <div className="mention" role="listbox" aria-label={t("cmdx.title")}>
+            {cmds.map((c) => (
+              <div key={c.cmd} role="option" aria-selected={false} className="pal-item cmd-item"
+                   onMouseDown={(e) => { e.preventDefault(); setText(c.cmd + " "); box.current?.focus(); }}>
+                <span className="mono">{c.cmd} <span className="dim">{c.args}</span></span><span className="dim">{t(c.key)}</span>
+              </div>
+            ))}
+          </div>
+        )}
         {mention && (
           <div className="mention" role="listbox">
             {mention.files.map((f, k) => (
@@ -277,6 +295,7 @@ export function AgentPanel() {
                       if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); pick(mention.files[mention.i]!); return; }
                       if (e.key === "Escape") { setMention(null); return; }
                     }
+                    if (e.key === "Tab" && cmds.length === 1 && !text.includes(" ")) { e.preventDefault(); setText(cmds[0]!.cmd + " "); return; }
                     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); }
                   }} />
         <div className="composer-bar">

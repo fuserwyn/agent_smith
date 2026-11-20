@@ -21,6 +21,7 @@ from agent_smith import ui_jobs
 from agent_smith.mcp_client.client import ToolOutcome, ToolParam, ToolSpec
 
 TOOL = "run_agent_smith"
+DEFAULT_SWE = dict(ui_jobs.STATIC_DEFAULTS)["swebench"]["task_id"]  # the observatory's default task
 ALIASES = {"mbpp": "mbpp", "swe": "swebench", "swebench": "swebench", "swe-bench": "swebench", "swe_bench": "swebench"}
 MAX_SECONDS = 25 * 60
 TRANSPORT = "in-process (Agent Smith Studio)"
@@ -31,6 +32,7 @@ class Scenarios:
         self.publish = publish
         self.jobs = ui_jobs.JobManager()
         self.history: Dict[str, Dict[str, Any]] = {}  # job id -> public info (+ the chat run that started it)
+        self.completed: Dict[str, str] = {}  # chat turn -> summary line of the run it completed (one per turn)
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------ offer
@@ -48,11 +50,13 @@ class Scenarios:
             "run agent_mbpp / agent_swebench, validate the solution. Takes minutes; the user watches the inner agent "
             "live in 'Inside the agent'. Returns the verdict, iterations, tokens and where the trace and the generated "
             "code are. Use it when the user asks to run/try/test an MBPP or SWE-bench task; never start these runs "
-            "with run_command. benchmark: 'mbpp' or 'swebench'. task_id: MBPP number (omit for the moulinette's "
-            f"default task) or a SWE-bench id (required), e.g. {', '.join(pool[:3]) or 'sympy__sympy-13480'}. "
+            "with run_command, and call it directly: no need to explore the project first. One run per turn. "
+            "benchmark: 'mbpp' or "
+            "'swebench'. task_id: optional — an MBPP number, or a SWE-bench id "
+            f"(e.g. {', '.join(pool[:3]) or DEFAULT_SWE}); omitted: the default task. "
             "model: optional model id from config/models.json (default: the benchmark's default model)."), [
             ToolParam("benchmark", "str", "'mbpp' or 'swebench'", required=True),
-            ToolParam("task_id", "str", "MBPP number or SWE-bench instance id", default=None, has_default=True),
+            ToolParam("task_id", "str", "MBPP number or SWE-bench instance id (optional)", default=None, has_default=True),
             ToolParam("model", "str", "model id from config/models.json", default=None, has_default=True),
         ])
 
@@ -64,6 +68,9 @@ class Scenarios:
         def out(text: str, error: bool) -> ToolOutcome:
             return ToolOutcome(text, error, request=request, transport=TRANSPORT, rtt_ms=round((time.monotonic() - t0) * 1000, 1))
 
+        if chat_run in self.completed:  # small models like to "also try" more tasks: one completed run per turn
+            return out(f"Already done in this turn: {self.completed[chat_run]}. Report that result to the user now "
+                       "(call final_answer); they can ask again for another run.", True)
         action = ALIASES.get(str(args.get("benchmark") or "").strip().lower())
         if not action:
             return out("benchmark must be 'mbpp' or 'swebench'", True)
@@ -73,6 +80,15 @@ class Scenarios:
         params: Dict[str, Any] = {}
         if args.get("task_id") not in (None, ""):
             params["task_id"] = str(args["task_id"]).strip()
+            if action == "mbpp":  # the ids have gaps (no 1, 5, 10…): answer at once instead of a failed dump
+                known = [t["id"] for t in ui_jobs.mbpp_tasks()]
+                if known and params["task_id"].isdigit() and int(params["task_id"]) not in known:
+                    want = int(params["task_id"])
+                    near = sorted(known, key=lambda i: abs(i - want))[:6]
+                    return out(f"MBPP task {want} does not exist ({len(known)} tasks, ids {known[0]}–{known[-1]} with gaps). "
+                               f"Nearest ids: {', '.join(map(str, sorted(near)))}. Or omit task_id for the default task.", True)
+        elif action == "swebench":
+            params["task_id"] = DEFAULT_SWE
         if args.get("model"):
             match = [m for m in ui_jobs.model_choices() if m["model"] == str(args["model"]).strip()]
             if not match:
@@ -99,7 +115,10 @@ class Scenarios:
                 last = sig
             time.sleep(0.5)
         self._update(job_id, snap, chat_run)
-        return out(self._summary(snap), snap.get("status") != "done")
+        summary = self._summary(snap)
+        if snap.get("status") == "done":
+            self.completed[chat_run] = summary.split("\n", 1)[0]
+        return out(summary, snap.get("status") != "done")
 
     def _update(self, job_id: str, snap: Dict[str, Any], chat_run: str, started: bool = False) -> None:
         info = {"id": job_id, "run": chat_run, "action": snap.get("action"), "params": snap.get("params") or {},
@@ -129,6 +148,8 @@ class Scenarios:
         tail = [ln for ln in snap.get("log", []) if ln.strip()][-25:]
         if tail:
             lines.append("last output lines:\n" + "\n".join(tail))
+        if snap.get("status") == "done":
+            lines.append("This run is complete: report its result to the user. Do not start other runs unless the user asked for several.")
         return "\n".join(lines)
 
     # ------------------------------------------------------------------ API
