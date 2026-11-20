@@ -84,7 +84,7 @@ def catalog() -> List[Dict[str, Any]]:
     for m, is_emb in [(m, False) for m in chat] + [(m, True) for m in emb]:
         p, a = m.get("pricing") or {}, m.get("architecture") or {}
         inp, outm = a.get("input_modalities") or ["text"], a.get("output_modalities") or ["text"]
-        if m["id"].endswith(":batch"):  # asynchronous batch API: not usable from a chat
+        if m["id"].endswith((":batch", ":free")):  # batch API: not usable from a chat; free tier: not used here
             continue
         pin, pout = _price(p, "prompt"), _price(p, "completion")
         if pin is None or (pin < 0):  # routers with variable prices

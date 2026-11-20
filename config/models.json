@@ -108,31 +108,6 @@
       "notes": "free (build.nvidia.com), fast"
     },
     {
-      "provider": "openrouter",
-      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
-      "notes": "free; reasoning disabled"
-    },
-    {
-      "provider": "openrouter",
-      "model": "cohere/north-mini-code:free",
-      "notes": "free code model; supports stop"
-    },
-    {
-      "provider": "openrouter",
-      "model": "nvidia/nemotron-3.5-lightning:free",
-      "notes": "free; reasoning disabled"
-    },
-    {
-      "provider": "openrouter",
-      "model": "nvidia/nemotron-3.5-super-vl:free",
-      "notes": "free; reasoning disabled"
-    },
-    {
-      "provider": "openrouter",
-      "model": "dots-studio/dots-3-note-preview:free",
-      "notes": "free; no stop support (client-side stop)"
-    },
-    {
       "provider": "gemini",
       "model": "gemini-3.5-flash",
       "notes": "free (AI Studio), reasoning off"
@@ -175,7 +150,7 @@
     {
       "provider": "openrouter",
       "model": "deepseek/deepseek-v4-flash",
-      "notes": "PAID (OpenRouter credits): outside the subject's free-tier rule, use only as a backup",
+      "notes": "PAID $0.09/$0.18: cheap strong coder",
       "paid": true
     },
     {
@@ -243,6 +218,42 @@
       "model": "minimax/minimax-m3.1-flash",
       "notes": "PAID $0.075/$0.3: cheapest, images and video in",
       "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen3.8-27b",
+      "notes": "PAID $0.06/$1.96 via OpenRouter: the Groq model without Groq's free 8k tokens/min cap",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "openai/gpt-oss-120b",
+      "notes": "PAID $0.09/$0.36: open-weights OpenAI model",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "notes": "PAID $0.5/$2.2: the free-tier NVIDIA model, without quotas",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "google/gemini-3.5-flash-lite",
+      "notes": "PAID $0.3/$2.5: reads images, audio, video, PDF",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "google/gemini-3.5-flash",
+      "notes": "PAID $1.5/$9: reads images, audio, video, PDF",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning",
+      "notes": "PAID $0.07/$0.2: the fast NVIDIA model, without quotas",
+      "paid": true
     }
   ],
   "fallbacks": [
@@ -255,11 +266,6 @@
       "provider": "gemini",
       "model": "gemini-3.5-flash-lite",
       "notes": "free"
-    },
-    {
-      "provider": "openrouter",
-      "model": "cohere/north-mini-code:free",
-      "notes": "same account quota: helps only for per-model limits"
     },
     {
       "provider": "groq",

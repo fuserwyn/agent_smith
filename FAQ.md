@@ -231,9 +231,12 @@ Yes: attach (picker, drop, paste) files, photos, audio, video; a model that read
 otherwise a cheap multimodal model describes it first, so it works with every model. The microphone button records,
 a model transcribes, and the text lands in the box for you to edit.
 
-### Is it free?
-By default, yes: free tiers of NVIDIA, Google AI Studio, Groq, Cohere, OpenRouter. Several keys per provider are
-rotated, with retries and fallback to backup models. A paid OpenRouter model is available, marked `$`.
+### What does it cost?
+Two worlds. **The 42 benchmarks and the exam** (`agent_mbpp`, `agent_swebench`) run on free tiers (NVIDIA, Google AI
+Studio, Groq, Cohere), with key rotation, retries and free fallbacks, as the subject requires. **The studio's chat** runs on
+your OpenRouter key, paid models only — no free tier, no free fallback: the model you pick does the whole turn (and the
+benchmark runs it starts). Cheap and good: Claude Haiku 5.5, the default, solved three SWE-bench bugs for $0.009; the turn
+header shows what a turn costs.
 
 ### Which models can I pick?
 Any OpenAI-compatible model in `config/models.json` (your own list via `AGENT_SMITH_MODELS_FILE`). In the studio,

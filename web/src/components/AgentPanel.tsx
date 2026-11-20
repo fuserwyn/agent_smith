@@ -47,6 +47,11 @@ function AttIcon({ kind }: { kind: Attachment["kind"] }) {
   return <I size={13} />;
 }
 
+const VENDOR: Record<string, string> = {
+  anthropic: "Anthropic", openai: "OpenAI", google: "Google", deepseek: "DeepSeek", qwen: "Qwen", "z-ai": "Z.ai",
+  moonshotai: "Moonshot", minimax: "MiniMax", nvidia: "NVIDIA", "x-ai": "xAI", mistralai: "Mistral", meta: "Meta",
+};
+
 const CHAT_COMMANDS = [
   { cmd: "/mbpp", args: "[task id] [model]", key: "cmdx.mbpp" },
   { cmd: "/swe", args: "[instance id] [model]", key: "cmdx.swe" },
@@ -299,10 +304,14 @@ export function AgentPanel() {
     requestAnimationFrame(() => box.current?.focus());
   };
 
+  // grouped by the API that serves them — for OpenRouter (your key) by vendor — cheapest first in each group
   const choices = useMemo(() => {
-    const g = new Map<string, typeof ag.models>();
-    for (const m of ag.models) g.set(m.provider, [...(g.get(m.provider) ?? []), m]);
-    return [...g];
+    const label = (m: ModelChoice) => (m.provider === "openrouter" ? `OpenRouter · ${VENDOR[m.model.split("/")[0]!] ?? m.model.split("/")[0]}` : m.provider);
+    const cost = (m: ModelChoice) => (m.price ? m.price.in + m.price.out * 3 : Number.MAX_VALUE);
+    const g = new Map<string, ModelChoice[]>();
+    for (const m of ag.models) g.set(label(m), [...(g.get(label(m)) ?? []), m]);
+    const groups = [...g].map(([k, ms]) => [k, [...ms].sort((a, b) => cost(a) - cost(b) || a.model.localeCompare(b.model))] as const);
+    return groups.sort((a, b) => Math.min(...a[1].map(cost)) - Math.min(...b[1].map(cost)) || a[0].localeCompare(b[0]));
   }, [ag.models]);
   const running = !!ag.current;
   const runs = ag.runs;

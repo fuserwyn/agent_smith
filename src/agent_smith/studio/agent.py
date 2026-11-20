@@ -197,9 +197,15 @@ class AgentService:
         base = next((m for m in models if m["provider"] == "openrouter"), None)
         have = {(m["provider"], m["model"]) for m in models}
         for mid in load_picks()["chat"]:
-            if base and ("openrouter", mid) not in have:
-                models.append({**base, "model": mid, "notes": "picked in the OpenRouter tab", "paid": not mid.endswith(":free"),
-                               "picked": True})
+            if base and ("openrouter", mid) not in have and not mid.endswith(":free"):
+                models.append({**base, "model": mid, "notes": "picked in the OpenRouter tab", "paid": True, "picked": True})
+        # The chat runs on the user's OpenRouter key, paid models only. The free direct providers (NVIDIA, Gemini,
+        # Groq, Cohere) stay for the 42 benchmarks / exam; without an OpenRouter key they are all that is left.
+        mine = [m for m in models if m["provider"] == "openrouter" and m.get("paid") and m["key_ok"]]
+        if mine:
+            models = mine
+            if (provider, model) not in {(m["provider"], m["model"]) for m in mine}:
+                provider, model = mine[0]["provider"], mine[0]["model"]
         if not any((m["provider"], m["model"]) == (provider, model) for m in models) and models:
             # custom model list (AGENT_SMITH_MODELS_FILE): first model that has a key, else the first one
             first = next((m for m in models if m["key_ok"]), models[0])

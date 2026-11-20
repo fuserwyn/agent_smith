@@ -15,8 +15,8 @@ const ROLE_ICON: Record<MediaKind, typeof ImageIcon> = {
   image: ImageIcon, video: Clapperboard, speech: AudioLines, transcribe: Mic, perceive: Eye, embeddings: Binary,
 };
 const ROLES: MediaKind[] = ["image", "video", "speech", "transcribe", "perceive", "embeddings"];
-type Kind = "all" | "text" | "image" | "video" | "audio" | "embeddings" | "free";
-const KINDS: Kind[] = ["all", "text", "image", "video", "audio", "embeddings", "free"];
+type Kind = "all" | "text" | "image" | "video" | "audio" | "embeddings";
+const KINDS: Kind[] = ["all", "text", "image", "video", "audio", "embeddings"];  // paid models only: no free tier
 
 function hue(s: string) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
 function Avatar({ id, size = 30 }: { id: string; size?: number }) {
@@ -102,7 +102,7 @@ export function ModelBrowser({ initialKind = "all", onClose }: { initialKind?: K
   const list = useMemo(() => {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);
     let ms = or.models.filter((m) =>
-      (kind === "all" || (kind === "free" ? m.free : m.kinds.includes(kind as "text"))) &&
+      (kind === "all" || m.kinds.includes(kind as "text")) &&
       reads.every((r) => m.in.includes(r)) &&
       words.every((w) => `${m.id} ${m.name}`.toLowerCase().includes(w)));
     const cost = (m: OrModel) => (m.price.in ?? 0) + (m.price.out ?? 0) * 3 + (m.price.image_out ?? 0);
@@ -110,7 +110,7 @@ export function ModelBrowser({ initialKind = "all", onClose }: { initialKind?: K
     else if (sort === "context") ms = [...ms].sort((a, b) => b.context - a.context);
     return ms;
   }, [or.models, q, kind, reads, sort]);
-  const counts = useMemo(() => Object.fromEntries(KINDS.map((k) => [k, k === "all" ? or.models.length : or.models.filter((m) => k === "free" ? m.free : m.kinds.includes(k as "text")).length])), [or.models]);
+  const counts = useMemo(() => Object.fromEntries(KINDS.map((k) => [k, k === "all" ? or.models.length : or.models.filter((m) => m.kinds.includes(k as "text")).length])), [or.models]);
   const m = sel ? or.byId.get(sel) : undefined;
 
   return (
@@ -160,7 +160,6 @@ function Badges({ m }: { m: OrModel }) {
     <>
       {or.picks.chat.includes(m.id) && <span className="or-badge chat"><MessageSquare size={10} />{t("or.inChat")}</span>}
       {roles.map((r) => <span key={r} className="or-badge role">{t(`or.role.${r}` as "or.role.image")}</span>)}
-      {m.free && <span className="or-badge free">{t("or.free")}</span>}
     </>
   );
 }

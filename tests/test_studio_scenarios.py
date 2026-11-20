@@ -172,9 +172,11 @@ def test_a_paid_chat_model_runs_everything_itself(tmp_path, monkeypatch, fake_re
 
 
 def test_paid_runs_disable_the_cli_fallback():
-    assert ui_jobs._no_free_fallback("anthropic/claude-haiku-5.5") == {"AGENT_FALLBACK": "0"}
-    assert ui_jobs._no_free_fallback("some/new-model") == {"AGENT_FALLBACK": "0"}  # catalog pick, not in config
-    assert ui_jobs._no_free_fallback("qwen/qwen3.8-27b") == {} and ui_jobs._no_free_fallback("x/y:free") == {}
+    OR, GROQ = "https://openrouter.ai/api/v1", "https://api.groq.com/openai/v1"
+    assert ui_jobs._no_free_fallback("anthropic/claude-haiku-5.5", OR) == {"AGENT_FALLBACK": "0"}
+    assert ui_jobs._no_free_fallback("some/new-model", OR) == {"AGENT_FALLBACK": "0"}  # catalog pick, not in config
+    assert ui_jobs._no_free_fallback("qwen/qwen3.8-27b", GROQ) == {}                      # free on Groq…
+    assert ui_jobs._no_free_fallback("qwen/qwen3.8-27b", OR) == {"AGENT_FALLBACK": "0"}  # …paid on OpenRouter
 
 
 def test_build_client_without_fallbacks(monkeypatch):

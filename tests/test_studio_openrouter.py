@@ -63,10 +63,19 @@ def test_catalog_shapes_and_account_numbers(monkeypatch):
 
     monkeypatch.setattr(openrouter.httpx, "get", fake_get)
     cat = {m["id"]: m for m in openrouter.catalog()}
-    assert set(cat) == {"g/painter", "a/chat:free", "q/emb"}                        # variable-price routers left out
+    assert set(cat) == {"g/painter", "q/emb"}                  # variable-price routers and the free tier left out
     assert cat["g/painter"]["kinds"] == ["image"] and cat["g/painter"]["price"]["image_out"] == 60.0
-    assert cat["a/chat:free"]["free"] and cat["a/chat:free"]["tools"] and cat["q/emb"]["kinds"] == ["embeddings"]
+    assert cat["q/emb"]["kinds"] == ["embeddings"]
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
     acc = openrouter.account()
     assert acc["balance"] == 8.75 and acc["usage"] == 1.25 and "sk-test" not in str(acc)
     openrouter._CACHE.update(models=None, at=0)
+
+
+def test_the_chat_offers_the_paid_openrouter_models_only(client):
+    c, _ = client
+    models = c.get("/api/agent/models", headers=H).json()
+    assert models["models"] and all(m["provider"] == "openrouter" and m["paid"] for m in models["models"])
+    assert not any(m["model"].endswith(":free") for m in models["models"])
+    assert models["default"] == {"provider": "openrouter", "model": "anthropic/claude-haiku-5.5"}
+    assert any(m["model"] == "qwen/qwen3.8-27b" for m in models["models"])            # the Groq model, through your key

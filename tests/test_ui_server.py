@@ -124,8 +124,9 @@ def test_paid_model_is_flagged_and_free_fallback_is_on():
     models = ui_jobs.model_choices()
     paid = [m for m in models if m["paid"]]
     assert paid and all(m["provider"] == "openrouter" for m in paid)
-    assert ui_jobs.DEFAULTS["mbpp"][1] not in {m["model"] for m in paid}  # defaults stay free
-    assert ui_jobs.DEFAULTS["swebench"][1] not in {m["model"] for m in paid}
+    paid_pairs = {(m["provider"], m["model"]) for m in paid}
+    assert ui_jobs.DEFAULTS["mbpp"] not in paid_pairs and ui_jobs.DEFAULTS["swebench"] not in paid_pairs  # defaults stay free
+    assert not any(m["model"].endswith(":free") for m in models if m["provider"] == "openrouter")  # no free OpenRouter
     cmd = ui_jobs.preview("mbpp", {"provider": "openrouter", "model": paid[0]["model"]})["steps"][1]["command"]
     assert f"--model-name {paid[0]['model']} --provider-url https://openrouter.ai/api/v1" in cmd
     cfg = load_models_config()
