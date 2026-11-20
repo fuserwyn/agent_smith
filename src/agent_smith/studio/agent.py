@@ -22,6 +22,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from agent_smith.agent import AgentSettings, CodeAgent
 from agent_smith.agent.prompts import FORMAT_RULES
+from agent_smith.codelog import CodeLog, code_root
 from agent_smith.config import PROJECT_ROOT, load_env_file, load_sandbox_config
 from agent_smith.events import EventSink
 from agent_smith.llm import build_client
@@ -31,12 +32,14 @@ from agent_smith.runner import default_server, server_env
 from agent_smith.sandbox import Sandbox
 from agent_smith.sandbox.manual import build_manual
 from agent_smith.studio.checkpoints import Checkpoints
+from agent_smith.studio.scenarios import TOOL as SCENARIO_TOOL, Scenarios
 from agent_smith.studio.terminal import TerminalManager
 from agent_smith.studio.workspace import Workspace, WorkspaceError
 
 READ_ONLY_TOOLS = frozenset({"read_file", "list_files", "search_code", "search_function_or_class_definition_in_code",
                              "find_references"})
-LIMITS = Limits(max_iterations=30, max_input_tokens=300_000, max_output_tokens=12_000, timeout_seconds=900)
+# 30 min: a turn may wait for a whole Agent Smith benchmark run (run_agent_smith, capped at 25 min)
+LIMITS = Limits(max_iterations=30, max_input_tokens=300_000, max_output_tokens=12_000, timeout_seconds=1800)
 SETTINGS = AgentSettings(max_output_tokens_per_call=2000, observation_max_chars=7000, old_observation_chars=900,
                          keep_recent_steps=4, show_budget=True, safety_seconds=20.0)
 HISTORY_TURNS = 6  # earlier exchanges given to the model as context
@@ -96,6 +99,7 @@ class AgentService:
         self.state_dir.mkdir(parents=True, exist_ok=True)
         (self.state_dir / "runs").mkdir(exist_ok=True)
         self.checkpoints = Checkpoints(ws, self.state_dir)
+        self.scenarios = Scenarios(publish)
         self.runs: Dict[str, Run] = {}
         self.current: Optional[str] = None
         self._cancel: Dict[str, threading.Event] = {}
@@ -199,7 +203,8 @@ class AgentService:
                 run.output_tokens += int(record.get("output_tokens") or 0)
             self.publish({"type": "agent", "run": run.id, "event": record})
 
-        sink = EventSink(run.trace, listeners=[relay])
+        slug = "".join(c if c.isalnum() else "-" for c in run.message.lower())[:40].strip("-")
+        sink = EventSink(run.trace, listeners=[relay, CodeLog(code_root(self.ws.root), label=slug or run.id)])
         final = "failed"  # published only once the changes are known (a finished run must list its changes)
         try:
             if run.mode == "agent":
@@ -220,6 +225,11 @@ class AgentService:
                     allowed, call = {t.name for t in mcp.tools}, mcp.call_tool
                     mcp.call_tool = lambda name, args: (call(name, args) if name in allowed else  # type: ignore[method-assign]
                                                         (_ for _ in ()).throw(PermissionError(f"{name} is not allowed in Ask mode")))
+                elif self.scenarios.unavailable() is None:  # Agent mode: Agent Smith's own runs, served in-process
+                    mcp.tools.append(self.scenarios.spec())
+                    forward, cancelled = mcp.call_tool, self._cancel[run.id].is_set
+                    mcp.call_tool = lambda name, args: (self.scenarios.call(args, run.id, cancelled)  # type: ignore[method-assign]
+                                                        if name == SCENARIO_TOOL else forward(name, args))
                 sink.emit("mcp_connected", mcp.describe())
                 with Sandbox(config, mcp, event_hook=sink.emit, trace_execution=True) as sandbox:
                     agent = CodeAgent(llm, sandbox, studio_system_prompt(config, mcp, root, run.mode), LIMITS, "studio", run.id,

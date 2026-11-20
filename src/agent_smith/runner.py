@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, Optional
 
+from agent_smith.codelog import CodeLog, code_root
 from agent_smith.config import PROJECT_ROOT, load_env_file
 from agent_smith.events import EventSink
 from agent_smith.models import SolutionOutput
@@ -44,7 +45,8 @@ def setup(args: argparse.Namespace) -> EventSink:
     load_env_file(args.env_file, override=bool(args.env_file))
     # SIGTERM (e.g. exam timeout) -> SystemExit so `finally` blocks clean up containers.
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
-    return EventSink(args.trace_file)
+    # agent_code/<benchmark>/<run>/step_NN.py: the code each step sent to the sandbox worker (git-ignored)
+    return EventSink(args.trace_file, listeners=[CodeLog(code_root())])
 
 
 def server_env(extra: Dict[str, str]) -> Dict[str, str]:

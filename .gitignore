@@ -13,6 +13,7 @@ benchmarks/**/events.jsonl
 benchmarks/**/stdout.log
 benchmarks/**/stderr.log
 PLAN.md
+agent_code/
 .school.env
 
 # Agent Smith Studio web app (built by `make studio-build`)

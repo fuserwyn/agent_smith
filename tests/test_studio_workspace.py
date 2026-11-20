@@ -25,6 +25,8 @@ def proj(tmp_path):
     (root / "README.md").write_text("# Demo\nHello world\n")
     (root / "node_modules" / "x").mkdir(parents=True)
     (root / "node_modules" / "x" / "index.js").write_text("hello inside heavy\n")
+    (root / "agent_code" / "mbpp" / "run").mkdir(parents=True)  # generated code of the agent: not indexed either
+    (root / "agent_code" / "mbpp" / "run" / "step_01.py").write_text("print('hello from a generated step')\n")
     (root / ".env").write_text("SECRET=1\n")
     (root / ".git").mkdir()
     (tmp_path / "outside.txt").write_text("top secret\n")
@@ -146,7 +148,7 @@ def test_search_skips_heavy_folders_and_binary(proj, client):
 
 def test_quick_open_file_index(client):
     files = client.get("/api/fs/files", headers=H).json()["files"]
-    assert "src/main.py" in files and "README.md" in files and not any(f.startswith("node_modules/") for f in files)
+    assert "src/main.py" in files and "README.md" in files and not any(f.startswith(("node_modules/", "agent_code/")) for f in files)
 
 
 # ---------------------------------------------------------------- git

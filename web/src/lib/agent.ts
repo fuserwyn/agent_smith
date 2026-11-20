@@ -1,6 +1,6 @@
 /* Agent chat state: conversation, runs, live events of the running turn, model and mode choice. */
 import { useSyncExternalStore } from "react";
-import { agentApi, type AgentRun, type ChatMessage, type ModelChoice, type TraceEvent } from "./api";
+import { agentApi, scenarioApi, type AgentRun, type ChatMessage, type ModelChoice, type ScenarioJob, type TraceEvent } from "./api";
 import type { StudioEvent } from "./events";
 
 export interface ToolCall { name: string; args: Record<string, unknown>; line?: number; result?: string; error?: boolean; ms?: number }
@@ -12,6 +12,7 @@ export interface Step {
 class AgentStore {
   messages: ChatMessage[] = [];
   runs: Record<string, AgentRun> = {};
+  jobs: Record<string, ScenarioJob> = {};  // Agent Smith runs started from the chat (run_agent_smith)
   current: string | null = null;
   events = new Map<string, TraceEvent[]>();
   models: ModelChoice[] = [];
@@ -27,7 +28,8 @@ class AgentStore {
 
   async load() {
     try {
-      const [st, m] = await Promise.all([agentApi.state(), agentApi.models()]);
+      const [st, m, sc] = await Promise.all([agentApi.state(), agentApi.models(), scenarioApi.list().catch(() => null)]);
+      if (sc) this.jobs = Object.fromEntries(sc.jobs.map((j) => [j.id, j]));
       this.messages = st.messages; this.runs = st.runs; this.current = st.current; this.models = m.models;
       let saved: { provider: string; model: string } | null = null;
       try { saved = JSON.parse(localStorage.getItem("studio-agent-model") ?? "null"); } catch { /* none */ }
@@ -54,6 +56,7 @@ class AgentStore {
   async stop() { if (this.current) await agentApi.stop(this.current); }
 
   async clear() { await agentApi.clear(); this.messages = []; this.events.clear(); this.emit(); }
+  jobsOf(run: string): ScenarioJob[] { return Object.values(this.jobs).filter((j) => j.run === run).sort((a, b) => a.started - b.started); }
 
   async undo(run: string, paths?: string[]) {
     const r = await agentApi.undo(run, paths);
@@ -71,6 +74,12 @@ class AgentStore {
       list.push(ev.event);
       this.events.set(ev.run, list);
       this.emit();
+    } else if (ev.type === "scenario") {
+      const { job, started } = e as unknown as { job: ScenarioJob; started: boolean };
+      this.jobs = { ...this.jobs, [job.id]: job };
+      this.emit();
+      // show the inner agent at work on the canvas
+      if (started) window.dispatchEvent(new CustomEvent("studio:inside", { detail: { job: job.id } }));
     } else if (ev.type === "agent-run" && ev.run && typeof ev.run === "object") {
       const run = ev.run;
       const was = this.runs[run.id];

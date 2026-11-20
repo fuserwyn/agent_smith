@@ -55,7 +55,8 @@ export function Workbench({ workspace, theme, onTheme, lang, onLang }: {
   const [insideReq, setInsideReq] = useState<{ run: string; n: number } | null>(null);
   useEffect(() => {  // "Inside the agent" links in the chat
     const on = (e: Event) => {
-      const run = (e as CustomEvent<{ run: string }>).detail?.run; if (!run) return;
+      const d = (e as CustomEvent<{ run?: string; job?: string }>).detail;
+      const run = d?.job ? `job:${d.job}` : d?.run; if (!run) return;  // a chat turn, or an Agent Smith run it started
       setBottom("inside");
       const bp = bottomPanel.current;
       if (bp?.isCollapsed()) bp.expand();

@@ -11,9 +11,11 @@ FIXTURES = ROOT / "tests" / "fixtures"
 
 
 @pytest.fixture(autouse=True)
-def _offline_llm(monkeypatch):
+def _offline_llm(monkeypatch, tmp_path_factory):
     """Tests talk to fake LLM servers only: never fall back to the real providers whose keys are in .env."""
     monkeypatch.setenv("AGENT_FALLBACK", "0")
+    # generated-code folder (agent_smith.codelog): never inside the repository during tests
+    monkeypatch.setenv("AGENT_SMITH_CODE_DIR", str(tmp_path_factory.getbasetemp() / "agent_code"))
 
 
 @pytest.fixture

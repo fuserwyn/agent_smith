@@ -177,6 +177,19 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
     def git_diff(path: str) -> Dict[str, Any]:
         return git.diff(ws, path)
 
+    # ---------------------------------------------------------------- Agent Smith runs started from the chat
+    @app.get("/api/scenarios")
+    def scenarios_list() -> Dict[str, Any]:
+        return {"available": agent.scenarios.unavailable() is None, "reason": agent.scenarios.unavailable(),
+                "jobs": agent.scenarios.list()}
+
+    @app.get("/api/scenarios/{job_id}/trace")
+    def scenario_trace(job_id: str, since: int = 0) -> Dict[str, Any]:
+        try:
+            return agent.scenarios.trace(job_id, max(0, since))
+        except KeyError:
+            raise WorkspaceError(404, "unknown run") from None
+
     # ---------------------------------------------------------------- agent chat
     @app.get("/api/agent/models")
     def agent_models() -> Dict[str, Any]:

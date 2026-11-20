@@ -139,6 +139,13 @@ sandbox, MCP tools — event by event.*
 - **Ask / Agent modes.** Ask only gets read tools; Agent mode takes a checkpoint first (a shadow git repo
   outside the project), then shows changed files with a diff, and undoes per file or per turn. Stop works mid-run.
 - **Inside the agent.** The observatory is embedded as a bottom tab: live while the agent works, step by step afterwards.
+- **Agent Smith runs from the chat.** "Run Agent Smith on MBPP task 2" → the chat agent calls the tool
+  `run_agent_smith(benchmark, task_id, model)` (offered like its MCP tools, Agent mode only). The studio runs the
+  real pipeline (moulinette dump → `agent_mbpp` / `agent_swebench` → validation), shows its progress and verdict in the
+  chat, and switches "Inside the agent" to the inner agent, live. Only these fixed recipes can run.
+- **`agent_code/`.** Every run (CLI, exam, studio) keeps the code each step sent to the sandbox worker:
+  `agent_code/<benchmark>/<date>_<task>/step_NN.py` — thought as header, exact code, observation as a trailing comment
+  — plus `task.md`. The folder ignores itself in git; `AGENT_SMITH_CODE_DIR=off` disables it.
 - **Terminal.** `docker exec` into a per-project container (only the project folder is mounted, your uid);
   `--shell local` is opt-in and shown in the status bar. API keys are stripped from every shell environment.
 - **Security.** Bound to loopback only, session token (like Jupyter), Host / Origin checks against DNS rebinding,

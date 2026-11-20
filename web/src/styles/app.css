@@ -333,3 +333,21 @@ kbd, .pal-k { font: 11px var(--f-mono); padding: 1px 6px; border: 1px solid var(
 .msg-user { align-self: flex-end; }
 .tchip .tn { flex: none; }
 .md code { overflow-wrap: anywhere; }
+
+/* ---------- Agent Smith runs started from the chat ---------- */
+.job-card { border: 1px solid var(--line-2); border-left: 3px solid var(--accent); border-radius: var(--r); background: var(--bg-3); padding: 6px 10px; display: grid; gap: 6px; min-width: 0; }
+.job-card.st-done { border-left-color: var(--ok); } .job-card.st-failed, .job-card.st-cancelled { border-left-color: var(--err); }
+.job-h { display: flex; align-items: center; gap: 7px; font-size: 12.5px; min-width: 0; }
+.job-h .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-h .sp { flex: 1; }
+.job-v { font: 600 10.5px var(--f-mono); padding: 1px 6px; border-radius: 999px; }
+.job-v.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.job-v.bad { color: var(--err); background: color-mix(in srgb, var(--err) 14%, transparent); }
+.job-steps { display: flex; flex-wrap: wrap; gap: 4px; }
+.job-step { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--muted); }
+.job-step.s-running { color: var(--accent); border-color: var(--accent); }
+.job-step.s-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, var(--line-2)); }
+.job-step.s-failed, .job-step.s-cancelled { color: var(--err); border-color: color-mix(in srgb, var(--err) 50%, var(--line-2)); }
+.job-steps { align-items: center; }
+.job-open { margin-left: auto; white-space: nowrap; font-size: 11.5px; }
+.job-h .nm { flex: 1; min-width: 0; }

@@ -109,6 +109,17 @@ export interface AgentRun {
 export interface ChatMessage { role: "user" | "assistant"; text: string; run: string; mode?: "ask" | "agent"; status?: AgentRun["status"]; ts: number }
 export interface AgentState { messages: ChatMessage[]; runs: Record<string, AgentRun>; current: string | null }
 export type TraceEvent = { t: number; type: string; [k: string]: unknown };
+/** An Agent Smith benchmark run started by the chat agent (tool run_agent_smith). */
+export interface ScenarioJob {
+  id: string; run: string; action: "mbpp" | "swebench"; params: { task_id?: string; model?: string };
+  status: "running" | "done" | "failed" | "cancelled"; verdict: string | null; trace: string | null; dir: string;
+  started: number; ended: number | null; steps: { key: string; status: string }[];
+}
+export const scenarioApi = {
+  list: () => api<{ available: boolean; reason: string | null; jobs: ScenarioJob[] }>("/api/scenarios"),
+  trace: (id: string, since = 0) => api<{ job: ScenarioJob; since: number; events: TraceEvent[] }>(`/api/scenarios/${id}/trace` + q({ since: String(since) })),
+};
+
 export const agentApi = {
   models: () => api<{ models: ModelChoice[]; default: { provider: string; model: string } }>("/api/agent/models"),
   state: () => api<AgentState>("/api/agent/state"),
