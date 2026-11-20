@@ -299,3 +299,28 @@ mark { background: color-mix(in srgb, var(--warn) 35%, transparent); color: inhe
 .inside-frame { flex: 1; width: 100%; border: 0; background: var(--bg); }
 .inside-bar .sp { flex: 1; }
 .inside.max { position: fixed; inset: 0; z-index: 45; background: var(--bg); }
+
+/* ---------- stage 5: welcome, palette, runs, settings ---------- */
+.welcome { margin: auto; display: grid; justify-items: center; gap: 10px; text-align: center; max-width: 440px; padding: 24px; }
+.welcome h2 { margin: 4px 0 0; font-size: 20px; letter-spacing: -.01em; }
+.welcome p { margin: 0; color: var(--ink-2); font-size: 13px; }
+.welcome-keys { margin-top: 10px; display: grid; gap: 6px; width: 280px; }
+.welcome-keys > div { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--muted); }
+kbd, .pal-k { font: 11px var(--f-mono); padding: 1px 6px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 5px; background: var(--bg-3); color: var(--ink-2); white-space: nowrap; }
+.pal-g { font-size: 11px; color: var(--muted); min-width: 92px; }
+.pal-k { margin-left: auto; }
+.run-row { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 7px 12px; border: 0; background: none; text-align: left; color: var(--ink-2); }
+.run-row:hover { background: var(--bg-3); }
+.run-row svg { margin-top: 2px; flex: none; }
+.run-row.st-done svg { color: var(--ok); } .run-row.st-failed svg { color: var(--err); } .run-row.st-running svg { color: var(--accent); } .run-row.st-stopped svg { color: var(--muted); }
+.run-main { display: grid; min-width: 0; gap: 1px; }
+.run-main .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.settings { flex: 1; overflow: auto; padding: 6px 14px 16px; display: grid; gap: 18px; align-content: start; }
+.settings h4 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.set-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12.5px; }
+.set-models { display: grid; gap: 3px; margin: 6px 0; }
+.set-model { display: flex; align-items: center; gap: 6px; font-size: 12px; min-width: 0; }
+.set-model .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-model.off { color: var(--muted); } .set-model .ok { color: var(--ok); }
+.set-note { margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+.set-keys { display: grid; gap: 5px; } .set-keys > div { display: flex; gap: 10px; align-items: center; font-size: 12px; } .set-keys kbd { min-width: 92px; text-align: center; }

@@ -8,6 +8,7 @@ import { toast } from "../lib/toast";
 import { useUi } from "../lib/ui";
 import { FileIcon } from "./fileIcon";
 import { WarnIcon } from "./overlays";
+import { kbd } from "./StudioViews";
 import { EmptyState } from "./ui";
 
 type Monaco = typeof Mon;
@@ -102,7 +103,18 @@ export function EditorArea() {
 
   /* ---------------- body ---------------- */
   let overlay: React.ReactNode = null;
-  if (!tab) overlay = <EmptyState icon={<FileCode size={26} />} title={t("editor.empty.title")} body={t("editor.empty.body")} note={t("ed.shortcuts")} />;
+  if (!tab) overlay = (
+    <div className="welcome">
+      <div className="welcome-logo" aria-hidden="true"><svg viewBox="0 0 32 32" width="44" height="44"><rect width="32" height="32" rx="9" fill="var(--accent)" /><path d="M9 21l5-10 4 7 2-3 3 6" stroke="white" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
+      <h2>Agent Smith Studio</h2>
+      <p>{t("ed.welcome")}</p>
+      <div className="welcome-keys">
+        {([["⌘P", "sc.open"], ["⌘K", "sc.palette"], ["⌘L", "sc.chat"], ["⌘⇧F", "sc.search"], ["Ctrl+`", "sc.terminal"]] as const).map(([k, l]) => (
+          <div key={k}><span>{t(l)}</span><kbd>{kbd(k)}</kbd></div>
+        ))}
+      </div>
+    </div>
+  );
   else if (tab.kind === "file" && file) {
     if (file.loading) overlay = <div className="center muted"><LoaderCircle className="spin" size={18} /></div>;
     else if (file.error && !model) overlay = <EmptyState icon={<WarnIcon size={24} />} title={t("ed.cannotOpen")} body={file.error} />;

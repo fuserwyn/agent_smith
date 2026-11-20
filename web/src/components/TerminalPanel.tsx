@@ -142,6 +142,11 @@ export function TerminalPanel({ visible, focusSignal, onStatus }: { visible: boo
     return () => ro.disconnect();
   }, [active, visible]);
   useEffect(() => { if (focusSignal && active) live.current.get(active)?.term.focus(); }, [focusSignal, active]);
+  useEffect(() => {  // "New terminal" from the command palette
+    const on = () => void create();
+    window.addEventListener("studio:new-terminal", on);
+    return () => window.removeEventListener("studio:new-terminal", on);
+  }, [create]);
   // follow the app theme
   useEffect(() => {
     const obs = new MutationObserver(() => { const th = themeFromCss(); live.current.forEach((L) => { L.term.options.theme = th; }); });

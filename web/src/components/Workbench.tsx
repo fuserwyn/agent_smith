@@ -2,9 +2,11 @@
  * Every split is draggable (react-resizable-panels) and the layout is remembered per viewer. */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Group, Panel, Separator, useDefaultLayout, type PanelImperativeHandle } from "react-resizable-panels";
-import { Activity, Files, ScrollText, Settings, SquareTerminal, Workflow } from "lucide-react";
+import { Files, ScrollText, SquareTerminal, Workflow } from "lucide-react";
 import { ActivityBar, type View } from "./ActivityBar";
 import { AgentPanel } from "./AgentPanel";
+import { CommandPalette, type Command } from "./CommandPalette";
+import { RunsPanel, SettingsPanel, kbd } from "./StudioViews";
 import { EditorArea } from "./EditorArea";
 import { Explorer } from "./Explorer";
 import { ContextMenu, Dialog, Toaster, type DialogSpec, type MenuItem } from "./overlays";
@@ -12,8 +14,11 @@ import { QuickOpen, invalidateFileIndex } from "./QuickOpen";
 import { GitPanel, SearchPanel } from "./SidePanels";
 import { InsidePanel } from "./InsidePanel";
 import { TerminalPanel } from "./TerminalPanel";
-import { EmptyState, PaneHeader } from "./ui";
-import { gitApi, type GitFile, type GitStatus } from "../lib/api";
+import { EmptyState } from "./ui";
+import { fs, gitApi, type GitFile, type GitStatus } from "../lib/api";
+import { agentStore } from "../lib/agent";
+import { LANGS, type Lang } from "../lib/i18n";
+import type { ThemeChoice } from "../lib/prefs";
 import { editors } from "../lib/editors";
 import { useStudioEvents, type StudioEvent } from "../lib/events";
 import { type Key, useT } from "../lib/i18n";
@@ -32,13 +37,16 @@ const storage = (() => { try { localStorage.setItem("studio-probe", "1"); return
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const mod = (e: KeyboardEvent) => (IS_MAC ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey);
 
-export function Workbench({ workspace }: { workspace: string }) {
+export function Workbench({ workspace, theme, onTheme, lang, onLang }: {
+  workspace: string; theme: ThemeChoice; onTheme: (t: ThemeChoice) => void; lang: Lang; onLang: (l: Lang) => void;
+}) {
   const t = useT();
   const [view, setView] = useState<View | null>("explorer");
   const [bottom, setBottom] = useState<BottomTab>("terminal");
   const [dialog, setDialog] = useState<DialogSpec | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [palette, setPalette] = useState(false);
   const [searchFocus, setSearchFocus] = useState(0);
   const [git, setGit] = useState<GitStatus | null>(null);
   const side = useRef<PanelImperativeHandle | null>(null);
@@ -120,6 +128,8 @@ export function Workbench({ workspace }: { workspace: string }) {
         setTermFocus((n) => n + 1);
       } else if (!mod(e) || e.altKey) handled = false;
       else if (k === "p" && !e.shiftKey) setQuickOpen(true);
+      else if ((k === "k" && !e.shiftKey) || (k === "p" && e.shiftKey)) setPalette(true);
+      else if (k === "l" && !e.shiftKey) focusChat();
       else if (k === "s" && !e.shiftKey) void saveActive();
       else if (k === "f" && e.shiftKey) { selectView("search"); setSearchFocus((n) => n + 1); }
       else if (k === "e" && e.shiftKey) selectView("explorer");
@@ -136,9 +146,42 @@ export function Workbench({ workspace }: { workspace: string }) {
     return () => { window.removeEventListener("keydown", onKey, true); window.removeEventListener("beforeunload", onUnload); };
   }, [selectView, saveActive]);
 
-  const placeholder = (Icon: typeof Files, title: Key, note: Key) => (
-    <div className="sidepanel"><PaneHeader title={t(title)} /><EmptyState icon={<Icon size={22} />} title={t(title)} note={t(note)} /></div>
-  );
+  function focusChat() {
+    const p = document.querySelector<HTMLTextAreaElement>(".composer-in");
+    p?.focus();
+  }
+  const showBottom = (tab: BottomTab) => {
+    setBottom(tab);
+    if (bottomPanel.current?.isCollapsed()) bottomPanel.current.expand();
+  };
+  const newFile = () => setDialog({
+    title: t("fx.newFile"), confirm: t("fx.create"), cancel: t("cancel"), input: { value: "", placeholder: "src/new_module.py" },
+    onConfirm: async (path) => { await fs.create(path, "file"); void editors.open(path); },
+  });
+  const commands: Command[] = useMemo(() => {
+    const g = { f: t("cmd.gFile"), v: t("cmd.gView"), te: t("panel.terminal"), a: t("panel.agent"), p: t("cmd.gPrefs") };
+    return [
+      { id: "open", group: g.f, label: t("cmd.open"), hint: kbd("⌘P"), run: () => setQuickOpen(true) },
+      { id: "save", group: g.f, label: t("ed.save"), hint: kbd("⌘S"), run: () => void saveActive() },
+      { id: "new", group: g.f, label: t("fx.newFile"), run: newFile },
+      { id: "explorer", group: g.v, label: t("act.explorer"), hint: kbd("⌘⇧E"), run: () => selectView("explorer") },
+      { id: "search", group: g.v, label: t("act.search"), hint: kbd("⌘⇧F"), run: () => { selectView("search"); setSearchFocus((n) => n + 1); } },
+      { id: "git", group: g.v, label: t("act.git"), hint: kbd("⌘⇧G"), run: () => selectView("git") },
+      { id: "runs", group: g.v, label: t("act.runs"), run: () => selectView("runs") },
+      { id: "settings", group: g.v, label: t("act.settings"), run: () => selectView("settings") },
+      { id: "inside", group: g.v, label: t("panel.inside"), run: () => showBottom("inside") },
+      { id: "term", group: g.te, label: t("cmd.showTerminal"), hint: "Ctrl+`", run: () => { showBottom("terminal"); setTermFocus((n) => n + 1); } },
+      { id: "term-new", group: g.te, label: t("term.new"), run: () => { showBottom("terminal"); window.dispatchEvent(new Event("studio:new-terminal")); } },
+      { id: "chat", group: g.a, label: t("cmd.focusChat"), hint: kbd("⌘L"), run: focusChat },
+      { id: "ask", group: g.a, label: t("cmd.modeAsk"), run: () => agentStore.setMode("ask") },
+      { id: "agent", group: g.a, label: t("cmd.modeAgent"), run: () => agentStore.setMode("agent") },
+      { id: "stop", group: g.a, label: t("ag.stop"), run: () => void agentStore.stop() },
+      { id: "newchat", group: g.a, label: t("ag.newChat"), run: () => { if (!agentStore.current) void agentStore.clear(); } },
+      ...(["system", "dark", "light"] as const).map((th) => ({ id: `theme-${th}`, group: g.p, label: t(`theme.${th}`), run: () => onTheme(th) })),
+      ...LANGS.map((l) => ({ id: `lang-${l}`, group: g.p, label: `${t("set.lang")}: ${l.toUpperCase()}`, run: () => onLang(l) })),
+    ];
+  }, [t, saveActive, selectView, onTheme, onLang]);  // eslint-disable-line react-hooks/exhaustive-deps
+
 
   return (
     <UiContext.Provider value={ui}>
@@ -151,8 +194,8 @@ export function Workbench({ workspace }: { workspace: string }) {
               <div hidden={view !== "explorer" && view !== null}><Explorer git={gitMap} workspace={workspace} /></div>
               {view === "search" && <SearchPanel focusSignal={searchFocus} />}
               {view === "git" && <GitPanel status={git} refresh={refreshGit} />}
-              {view === "runs" && placeholder(Activity, "act.runs", "runs.soon")}
-              {view === "settings" && placeholder(Settings, "act.settings", "settings.soon")}
+              {view === "runs" && <RunsPanel />}
+              {view === "settings" && <SettingsPanel theme={theme} onTheme={onTheme} lang={lang} onLang={onLang} />}
             </div>
           </Panel>
           <Separator className="sep sep-v" />
@@ -187,6 +230,7 @@ export function Workbench({ workspace }: { workspace: string }) {
         </Group>
       </div>
       {quickOpen && <QuickOpen onClose={() => setQuickOpen(false)} />}
+      {palette && <CommandPalette commands={commands} onClose={() => setPalette(false)} />}
       {dialog && <Dialog spec={dialog} onClose={() => setDialog(null)} />}
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
       <Toaster />

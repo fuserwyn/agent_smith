@@ -60,7 +60,7 @@ export default function App() {
       </div>
     );
   } else if (!session) body = <div className="gate"><LoaderCircle className="spin muted" size={20} /></div>;
-  else body = <Workbench workspace={session.workspace.path} />;
+  else body = <Workbench workspace={session.workspace.path} theme={theme} onTheme={setTheme} lang={lang} onLang={setLang} />;
 
   return (
     <LangContext.Provider value={lang}>
