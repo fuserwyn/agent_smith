@@ -110,6 +110,7 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
             agent.stop(run_id)
         await hub.close()
         terms.close_all()
+        agent.apps.stop_all()
 
     app = FastAPI(title="Agent Smith Studio", version=__version__, docs_url=None, redoc_url=None, openapi_url=None,
                   lifespan=lifespan)
@@ -176,6 +177,19 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
     @app.get("/api/git/diff")
     def git_diff(path: str) -> Dict[str, Any]:
         return git.diff(ws, path)
+
+    # ---------------------------------------------------------------- apps the agent built and runs (run_app)
+    @app.get("/api/apps")
+    def apps_list() -> Dict[str, Any]:
+        return {"apps": agent.apps.list()}
+
+    @app.get("/api/apps/{app_id}/logs")
+    def apps_logs(app_id: str, lines: int = 300) -> Dict[str, Any]:
+        return {"logs": agent.apps.logs_by_id(app_id, max(1, min(lines, 2000)))}
+
+    @app.post("/api/apps/{app_id}/stop")
+    def apps_stop(app_id: str) -> Dict[str, Any]:
+        return agent.apps.stop_by_id(app_id)
 
     # ---------------------------------------------------------------- Agent Smith runs started from the chat
     @app.get("/api/scenarios")

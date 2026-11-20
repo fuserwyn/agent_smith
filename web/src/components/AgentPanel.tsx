@@ -1,14 +1,15 @@
 /* Agent chat: conversation, a live timeline of each turn (thought, tools, code, output), the answer,
  * a review card of the files the turn changed (open diff, undo one / all), and the composer. */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Bot, Check, ChevronRight, CircleStop, FileDiff, FilePen, FilePlus, FileX, LoaderCircle, MessageSquarePlus, Search, SquareTerminal, Undo2, Workflow, BookOpen } from "lucide-react";
+import { ArrowUp, Boxes, Globe, ScrollText, Bot, Check, ChevronRight, CircleStop, FileDiff, FilePen, FilePlus, FileX, LoaderCircle, MessageSquarePlus, Search, SquareTerminal, Undo2, Workflow, BookOpen } from "lucide-react";
 import { agentStore, useAgent, type Step, type ToolCall } from "../lib/agent";
-import type { AgentRun, ScenarioJob } from "../lib/api";
+import type { AgentRun, AppInfo, ScenarioJob } from "../lib/api";
 import { editors } from "../lib/editors";
 import { useStudioEvents } from "../lib/events";
 import { useT } from "../lib/i18n";
 import { toast } from "../lib/toast";
 import { useUi } from "../lib/ui";
+import { AppLink } from "./AppsPanel";
 import { jobLabel } from "./InsidePanel";
 import { Markdown } from "./Markdown";
 import { WarnIcon } from "./overlays";
@@ -19,6 +20,7 @@ import { EmptyState, IconButton, PaneHeader } from "./ui";
 const TOOL_ICON: Record<string, typeof Bot> = {
   read_file: BookOpen, list_files: BookOpen, search_code: Search, search_function_or_class_definition_in_code: Search,
   find_references: Search, edit_file: FilePen, run_command: SquareTerminal, run_tests: Check, get_patch: FileDiff, run_agent_smith: Bot,
+  run_app: Boxes, call_app: Globe, app_logs: ScrollText, stop_app: CircleStop,
 };
 const argPath = (t: ToolCall) => (typeof t.args.filepath === "string" ? t.args.filepath : typeof t.args.directory === "string" ? t.args.directory : null);
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
@@ -28,6 +30,7 @@ function ToolChip({ t }: { t: ToolCall }) {
   const Icon = TOOL_ICON[t.name] ?? Workflow;
   const path = argPath(t);
   const detail = t.name === "run_agent_smith" ? [t.args.benchmark, t.args.task_id].filter(Boolean).join(" ")
+    : t.name === "call_app" ? `${String(t.args.method ?? "GET")} ${String(t.args.route ?? "/")}`
     : path ?? (typeof t.args.pattern === "string" ? `“${t.args.pattern}”` : typeof t.args.name === "string" ? t.args.name : typeof t.args.command === "string" ? t.args.command : "");
   return (
     <button type="button" className={`tchip${t.error ? " err" : ""}${t.result === undefined ? " pending" : ""}`}
@@ -55,6 +58,30 @@ function JobCard({ job }: { job: ScenarioJob }) {
         {job.steps.map((s) => <span key={s.key} className={`job-step s-${s.status}`}>{t(`job.${s.key}` as "job.step_agent")}</span>)}
         <button type="button" className="linkbtn job-open" onClick={() => window.dispatchEvent(new CustomEvent("studio:inside", { detail: { job: job.id } }))}>
           <Workflow size={12} />{t(running ? "job.watch" : "ag.inside")}</button>
+      </div>
+    </div>
+  );
+}
+
+/** A project the agent runs in Docker (run_app): where it answers, its state, logs and stop. */
+function AppCard({ app }: { app: AppInfo }) {
+  const t = useT();
+  const ag = useAgent();
+  return (
+    <div className={`job-card app-card st-${app.status === "running" ? "done" : app.status === "starting" ? "running" : "failed"}`}>
+      <div className="job-h">
+        {app.status === "starting" ? <LoaderCircle size={13} className="spin" /> : <Boxes size={13} />}
+        <span className="nm">{app.name}</span>
+        <span className={`job-v ${app.status === "running" ? "ok" : app.status === "starting" ? "" : "bad"}`}>{t(`apps.${app.status}` as "apps.running")}</span>
+      </div>
+      <div className="job-steps">
+        <AppLink app={app} />
+        <span className="sp" />
+        <button type="button" className="linkbtn job-open" onClick={() => window.dispatchEvent(new CustomEvent("studio:apps", { detail: { id: app.id } }))}>
+          <ScrollText size={12} />{t("apps.logs")}</button>
+        {app.status === "running" && (
+          <button type="button" className="linkbtn job-open" onClick={() => void ag.stopApp(app.id)}><CircleStop size={12} />{t("apps.stop")}</button>
+        )}
       </div>
     </div>
   );
@@ -144,6 +171,7 @@ function Turn({ run, live }: { run: AgentRun; live: boolean }) {
       )}
       {showSteps && (hasEvents ? steps.map((s) => <StepRow key={s.n} s={s} live={live} />) : run.steps > 0 && !live ? <div className="step-note">{t("ag.noTrace")}</div> : null)}
       {ag.jobsOf(run.id).map((j) => <JobCard key={j.id} job={j} />)}
+      {ag.appsOf(run.id).map((a) => <AppCard key={a.id} app={a} />)}
       {!live && run.answer && <Markdown text={run.answer} />}
       {!live && run.status === "failed" && <div className="turn-err"><WarnIcon size={14} />{run.error ?? t("ag.failed")}</div>}
       {!live && run.status === "stopped" && <div className="turn-note">{t("ag.stopped")}</div>}

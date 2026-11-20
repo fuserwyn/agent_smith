@@ -143,8 +143,13 @@ sandbox, MCP tools — event by event.*
   `run_agent_smith(benchmark, task_id, model)` (offered like its MCP tools, Agent mode only). The studio runs the
   real pipeline (moulinette dump → `agent_mbpp` / `agent_swebench` → validation), shows its progress and verdict in the
   chat, and switches "Inside the agent" to the inner agent, live. Only these fixed recipes can run.
+- **Apps the agent builds and runs.** "Write a simple server in Docker and run it on a free port" → the agent writes
+  the whole project in `agent_code/apps/<name>/` (code, Dockerfile, dependencies) and calls `run_app`: the studio builds
+  the image and serves it on `127.0.0.1:<free or requested port>` (memory / CPU / process limits, no capabilities), waits
+  until it answers, and the agent checks it with `call_app` and `app_logs`. The chat shows the URL, the Apps tab the
+  logs; Stop, or closing the studio, removes the container. Tested live with the default free model.
 - **`agent_code/`.** Every run (CLI, exam, studio) keeps the code each step sent to the sandbox worker:
-  `agent_code/<benchmark>/<date>_<task>/step_NN.py` — thought as header, exact code, observation as a trailing comment
+  `agent_code/runs/<benchmark>/<date>_<task>/step_NN.py` — thought as header, exact code, observation as a trailing comment
   — plus `task.md`. The folder ignores itself in git; `AGENT_SMITH_CODE_DIR=off` disables it.
 - **Terminal.** `docker exec` into a per-project container (only the project folder is mounted, your uid);
   `--shell local` is opt-in and shown in the status bar. API keys are stripped from every shell environment.

@@ -2,7 +2,7 @@
  * Every split is draggable (react-resizable-panels) and the layout is remembered per viewer. */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Group, Panel, Separator, useDefaultLayout, type PanelImperativeHandle } from "react-resizable-panels";
-import { Files, ScrollText, SquareTerminal, Workflow } from "lucide-react";
+import { Boxes, Files, SquareTerminal, Workflow } from "lucide-react";
 import { ActivityBar, type View } from "./ActivityBar";
 import { AgentPanel } from "./AgentPanel";
 import { CommandPalette, type Command } from "./CommandPalette";
@@ -12,9 +12,9 @@ import { Explorer } from "./Explorer";
 import { ContextMenu, Dialog, Toaster, type DialogSpec, type MenuItem } from "./overlays";
 import { QuickOpen, invalidateFileIndex } from "./QuickOpen";
 import { GitPanel, SearchPanel } from "./SidePanels";
+import { AppsPanel } from "./AppsPanel";
 import { InsidePanel } from "./InsidePanel";
 import { TerminalPanel } from "./TerminalPanel";
-import { EmptyState } from "./ui";
 import { fs, gitApi, type GitFile, type GitStatus } from "../lib/api";
 import { agentStore } from "../lib/agent";
 import { LANGS, type Lang } from "../lib/i18n";
@@ -29,7 +29,7 @@ type BottomTab = "terminal" | "inside" | "output";
 const BOTTOM: { id: BottomTab; key: Key; Icon: typeof Files }[] = [
   { id: "terminal", key: "panel.terminal", Icon: SquareTerminal },
   { id: "inside", key: "panel.inside", Icon: Workflow },
-  { id: "output", key: "panel.output", Icon: ScrollText },
+  { id: "output", key: "panel.output", Icon: Boxes },
 ];
 
 const storage = (() => { try { localStorage.setItem("studio-probe", "1"); return localStorage; } catch { return undefined; } })();
@@ -53,6 +53,17 @@ export function Workbench({ workspace, theme, onTheme, lang, onLang }: {
   const bottomPanel = useRef<PanelImperativeHandle | null>(null);
   const [termFocus, setTermFocus] = useState(0);
   const [insideReq, setInsideReq] = useState<{ run: string; n: number } | null>(null);
+  const [appsReq, setAppsReq] = useState<{ id: string; n: number } | null>(null);
+  useEffect(() => {  // "Logs" on an app card, or the apps item of the status bar
+    const on = (e: Event) => {
+      const id = (e as CustomEvent<{ id?: string }>).detail?.id ?? "";
+      setBottom("output");
+      if (bottomPanel.current?.isCollapsed()) bottomPanel.current.expand();
+      if (id) setAppsReq((r) => ({ id, n: (r?.n ?? 0) + 1 }));
+    };
+    window.addEventListener("studio:apps", on);
+    return () => window.removeEventListener("studio:apps", on);
+  }, []);
   useEffect(() => {  // "Inside the agent" links in the chat
     const on = (e: Event) => {
       const d = (e as CustomEvent<{ run?: string; job?: string }>).detail;
@@ -219,7 +230,7 @@ export function Workbench({ workspace, theme, onTheme, lang, onLang }: {
                   {/* kept mounted: terminals keep their screen while another tab is shown */}
                   <div className="pbody-term" hidden={bottom !== "terminal"}><TerminalPanel visible={bottom === "terminal"} focusSignal={termFocus} /></div>
                   <div className="pbody-term" hidden={bottom !== "inside"}><InsidePanel visible={bottom === "inside"} request={insideReq} /></div>
-                  {bottom === "output" && <EmptyState icon={<ScrollText size={22} />} title={t("panel.output")} />}
+                  <div className="pbody-term" hidden={bottom !== "output"}><AppsPanel visible={bottom === "output"} request={appsReq} /></div>
                 </div>
               </Panel>
             </Group>

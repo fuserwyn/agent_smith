@@ -38,6 +38,7 @@ class AgentSettings:
     idle_hint: Optional[str] = None       # added when a step printed nothing and called no tool
     safety_seconds: float = 8.0
     input_estimate_margin: float = 1.1
+    stop_sequences: Optional[List[str]] = None  # None: the extractor's STOP_SEQUENCES (benchmarks)
 
 
 def truncate_observation(text: str, limit: int) -> str:
@@ -159,7 +160,7 @@ class CodeAgent:
                                    "compacted_steps": self._compacted(messages)})
                 try:
                     temperature = min(1.0, 0.4 * self.loop_streak) if self.loop_streak else None
-                    chat = self.llm.chat(messages, max_tokens=max_tokens, stop=STOP_SEQUENCES,
+                    chat = self.llm.chat(messages, max_tokens=max_tokens, stop=self.settings.stop_sequences or STOP_SEQUENCES,
                                          deadline=self.budget.deadline, temperature=temperature)
                 except LLMError as exc:
                     error = f"LLM failure: {exc}"

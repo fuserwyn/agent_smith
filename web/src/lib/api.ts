@@ -115,6 +115,16 @@ export interface ScenarioJob {
   status: "running" | "done" | "failed" | "cancelled"; verdict: string | null; trace: string | null; dir: string;
   started: number; ended: number | null; steps: { key: string; status: string }[];
 }
+/** A project folder the agent built and runs in Docker (run_app). */
+export interface AppInfo {
+  id: string; path: string; name: string; url: string; port: number; container_port: number; container: string;
+  run: string | null; status: "starting" | "running" | "failed" | "stopped"; started: number; error: string | null;
+}
+export const appsApi = {
+  list: () => api<{ apps: AppInfo[] }>("/api/apps"),
+  logs: (id: string) => api<{ logs: string }>(`/api/apps/${id}/logs`),
+  stop: (id: string) => api<AppInfo>(`/api/apps/${id}/stop`, { method: "POST" }),
+};
 export const scenarioApi = {
   list: () => api<{ available: boolean; reason: string | null; jobs: ScenarioJob[] }>("/api/scenarios"),
   trace: (id: string, since = 0) => api<{ job: ScenarioJob; since: number; events: TraceEvent[] }>(`/api/scenarios/${id}/trace` + q({ since: String(since) })),

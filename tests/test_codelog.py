@@ -17,7 +17,7 @@ def emit_run(sink):
 
 def test_each_step_becomes_a_module(tmp_path):
     emit_run(EventSink(listeners=[CodeLog(tmp_path / "agent_code")]))
-    [run] = list((tmp_path / "agent_code" / "mbpp").iterdir())
+    [run] = list((tmp_path / "agent_code" / "runs" / "mbpp").iterdir())
     assert run.name.endswith("_11")
     assert sorted(p.name for p in run.iterdir()) == ["step_01.py", "step_02.py", "task.md"]
     step1 = (run / "step_01.py").read_text()

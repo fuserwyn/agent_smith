@@ -1,6 +1,6 @@
 /* Agent chat state: conversation, runs, live events of the running turn, model and mode choice. */
 import { useSyncExternalStore } from "react";
-import { agentApi, scenarioApi, type AgentRun, type ChatMessage, type ModelChoice, type ScenarioJob, type TraceEvent } from "./api";
+import { agentApi, appsApi, scenarioApi, type AgentRun, type AppInfo, type ChatMessage, type ModelChoice, type ScenarioJob, type TraceEvent } from "./api";
 import type { StudioEvent } from "./events";
 
 export interface ToolCall { name: string; args: Record<string, unknown>; line?: number; result?: string; error?: boolean; ms?: number }
@@ -12,7 +12,8 @@ export interface Step {
 class AgentStore {
   messages: ChatMessage[] = [];
   runs: Record<string, AgentRun> = {};
-  jobs: Record<string, ScenarioJob> = {};  // Agent Smith runs started from the chat (run_agent_smith)
+  jobs: Record<string, ScenarioJob> = {};
+  apps: Record<string, AppInfo> = {};      // projects the agent runs in Docker (run_app), by id  // Agent Smith runs started from the chat (run_agent_smith)
   current: string | null = null;
   events = new Map<string, TraceEvent[]>();
   models: ModelChoice[] = [];
@@ -30,6 +31,8 @@ class AgentStore {
     try {
       const [st, m, sc] = await Promise.all([agentApi.state(), agentApi.models(), scenarioApi.list().catch(() => null)]);
       if (sc) this.jobs = Object.fromEntries(sc.jobs.map((j) => [j.id, j]));
+      const ap = await appsApi.list().catch(() => null);
+      if (ap) this.apps = Object.fromEntries(ap.apps.map((a) => [a.id, a]));
       this.messages = st.messages; this.runs = st.runs; this.current = st.current; this.models = m.models;
       let saved: { provider: string; model: string } | null = null;
       try { saved = JSON.parse(localStorage.getItem("studio-agent-model") ?? "null"); } catch { /* none */ }
@@ -56,6 +59,8 @@ class AgentStore {
   async stop() { if (this.current) await agentApi.stop(this.current); }
 
   async clear() { await agentApi.clear(); this.messages = []; this.events.clear(); this.emit(); }
+  appsOf(run: string): AppInfo[] { return Object.values(this.apps).filter((a) => a.run === run); }
+  async stopApp(id: string) { const a = await appsApi.stop(id); this.apps = { ...this.apps, [a.id]: a }; this.emit(); }
   jobsOf(run: string): ScenarioJob[] { return Object.values(this.jobs).filter((j) => j.run === run).sort((a, b) => a.started - b.started); }
 
   async undo(run: string, paths?: string[]) {
@@ -73,6 +78,10 @@ class AgentStore {
       const list = this.events.get(ev.run) ?? [];
       list.push(ev.event);
       this.events.set(ev.run, list);
+      this.emit();
+    } else if (ev.type === "app") {
+      const { app } = e as unknown as { app: AppInfo };
+      this.apps = { ...this.apps, [app.id]: app };
       this.emit();
     } else if (ev.type === "scenario") {
       const { job, started } = e as unknown as { job: ScenarioJob; started: boolean };

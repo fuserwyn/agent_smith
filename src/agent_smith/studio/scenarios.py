@@ -125,7 +125,7 @@ class Scenarios:
         except (OSError, ValueError):
             pass
         lines.append(f"files: {snap['dir']}/ (task.json, solution.json, events.jsonl, output.log); "
-                     "the code of each step: agent_code/ in the Agent Smith repository")
+                     "the code of each step: agent_code/runs/ in the Agent Smith repository")
         tail = [ln for ln in snap.get("log", []) if ln.strip()][-25:]
         if tail:
             lines.append("last output lines:\n" + "\n".join(tail))

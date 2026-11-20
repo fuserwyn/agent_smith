@@ -1,4 +1,5 @@
-import { Container, GitBranch, Monitor, Moon, Sun } from "lucide-react";
+import { Boxes, Container, GitBranch, Monitor, Moon, Sun } from "lucide-react";
+import { useAgent } from "../lib/agent";
 import type { Session } from "../lib/api";
 import { LANGS, type Lang, useT } from "../lib/i18n";
 import type { ThemeChoice } from "../lib/prefs";
@@ -12,6 +13,7 @@ export function StatusBar({ conn, session, theme, onTheme, lang, onLang }: {
   const nextTheme: Record<ThemeChoice, ThemeChoice> = { system: "dark", dark: "light", light: "system" };
   const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
   const docker = session?.docker;
+  const running = Object.values(useAgent().apps).filter((a) => a.status === "running").length;
   return (
     <footer className="statusbar">
       <span className={`sb-item conn ${conn}`} role="status"><i className="dot" />{t(`status.${conn}`)}</span>
@@ -23,6 +25,10 @@ export function StatusBar({ conn, session, theme, onTheme, lang, onLang }: {
         <span className={`sb-item ${docker.running ? "ok" : "warn"}`}>
           <Container size={13} />{t(docker.running ? "status.docker.ok" : docker.installed ? "status.docker.off" : "status.docker.none")}
         </span>
+      )}
+      {running > 0 && (
+        <button type="button" className="sb-item sb-link ok" onClick={() => window.dispatchEvent(new CustomEvent("studio:apps", { detail: {} }))}>
+          <Boxes size={13} />{t("apps.count", { n: running })}</button>
       )}
       <span className="sb-spacer" />
       <span className="sb-seg" role="group" aria-label="Language">

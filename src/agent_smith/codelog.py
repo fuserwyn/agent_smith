@@ -1,7 +1,7 @@
 """Keep the Python code the agent sends to the sandbox worker, one module per step.
 
 An :class:`EventSink` listener: every run gets a folder
-``agent_code/<benchmark>/<date>_<time>_<task>/`` with ``task.md`` (model, task prompt) and
+``agent_code/runs/<benchmark>/<date>_<time>_<task>/`` with ``task.md`` (model, task prompt) and
 ``step_01.py``, ``step_02.py``, … — the thought as a header comment, the exact code the worker ran, and the
 observation as a trailing comment. Handy to study a run, re-run a step by hand or diff two runs.
 
@@ -72,7 +72,7 @@ class CodeLog:
     def _start(self, r: Dict[str, Any]) -> None:
         bench = _SAFE.sub("-", str(r.get("benchmark") or "run")).strip("-") or "run"
         task = re.sub(r"-{2,}", "-", _SAFE.sub("-", str(self.label or r.get("task_id") or "task"))).strip("-")[:60] or "task"
-        base = self.root / bench  # type: ignore[operator]
+        base = self.root / "runs" / bench  # type: ignore[operator]  (agent_code/apps/ holds projects)
         name = f"{datetime.now():%Y-%m-%d_%H-%M-%S}_{task}"
         folder, n = base / name, 2
         while folder.exists():
