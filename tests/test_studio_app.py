@@ -44,12 +44,15 @@ def test_security_headers_and_public_page(client):
     r = client.get("/")
     assert r.status_code == 200 and "Agent Smith Studio" in r.text  # served without token: no data in it
     assert r.headers["referrer-policy"] == "no-referrer" and r.headers["x-frame-options"] == "SAMEORIGIN"
+    csp = r.headers["content-security-policy"]
+    assert "script-src 'self'" in csp and "connect-src 'self'" in csp and "object-src 'none'" in csp
 
 
 def test_session_describes_workspace_and_docker(client, tmp_path):
     data = client.get("/api/session", headers=AUTH).json()
     assert data["workspace"]["name"] == tmp_path.name and data["workspace"]["git"] is False
     assert set(data["docker"]) == {"installed", "running"}
+    assert data["shell"] in ("docker", "local")
 
 
 def test_websocket_without_token_is_closed(client):

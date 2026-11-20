@@ -112,6 +112,38 @@ API keys: `<PROVIDER>_API_KEY`, `<PROVIDER>_API_KEY_2…_9` or `<PROVIDER>_API_K
 (`OPENROUTER`, `GROQ`, `GEMINI`, `MISTRAL`, `TOGETHER`, `CEREBRAS`, `NVIDIA`; `LLM_API_KEY` for any other
 OpenAI-compatible URL). Keys are never written in code or config.
 
+## Agent Smith Studio (mini-IDE)
+
+A local web IDE around the agent: file explorer, Monaco editor, real terminal, git, and a chat where
+Agent Smith reads and edits your project — with every step visible and every change reviewable.
+
+```bash
+make studio-install                 # Python extra + web packages (once)
+make studio P=~/code/my-project     # builds the web app if needed, opens http://127.0.0.1:8790/?token=…
+```
+
+| Agent chat: review the diff of a turn, undo a file or the whole turn | Inside the agent: replay a turn on the architecture canvas |
+|---|---|
+| ![agent review](web/screenshots/agent-review.png) | ![inside the agent](web/screenshots/inside-the-agent.png) |
+| **Terminal** in the project's Docker container | **Command palette** (⌘K): every action, searchable |
+| ![terminal](web/screenshots/terminal.png) | ![command palette](web/screenshots/command-palette.png) |
+
+- **Ask / Agent modes.** Ask only gets read tools; Agent mode takes a checkpoint first (a shadow git repo
+  outside the project), then shows changed files with a diff, and undoes per file or per turn. Stop works mid-run.
+- **Inside the agent.** The observatory is embedded as a bottom tab: live while the agent works, step by step afterwards.
+- **Terminal.** `docker exec` into a per-project container (only the project folder is mounted, your uid);
+  `--shell local` is opt-in and shown in the status bar. API keys are stripped from every shell environment.
+- **Security.** Bound to loopback only, session token (like Jupyter), Host / Origin checks against DNS rebinding,
+  `X-Studio` header against CSRF, strict Content-Security-Policy, path jail (no `..`, no symlink escape),
+  `.env`-like files open only after confirmation. Keys live in Agent Smith's `.env` and never reach the browser.
+- **Editor.** Tabs, save with conflict detection (file changed on disk → compare / overwrite / reload),
+  quick open (⌘P), search in files, git status and diffs, live file-system events, EN / RU / FR, light and dark.
+- **Tested.** Python tests for the API, jail, terminal and agent; 18 Playwright scenarios drive the real server
+  in a browser with a scripted LLM (CI runs them on every push).
+
+Stack: FastAPI + uvicorn, React 19 + TypeScript + Vite, Monaco, xterm.js. Development: `make studio-dev P=…`
+(Vite hot reload), `cd web && npm run e2e`.
+
 ## System architecture
 
 ```

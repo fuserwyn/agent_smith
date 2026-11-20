@@ -29,6 +29,12 @@ SECURITY_HEADERS: Tuple[Tuple[bytes, bytes], ...] = (
     (b"x-frame-options", b"SAMEORIGIN"),  # the studio embeds its own observatory; other sites cannot
 )
 
+# Content Security Policy of the studio app (not of /observatory, which keeps its inline scripts):
+# only our own scripts run, no third-party connections, frames only from this origin.
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+       "font-src 'self' data:; worker-src 'self' blob:; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; "
+       "object-src 'none'; base-uri 'none'; form-action 'none'").encode()
+
 Scope = Dict[str, Any]
 Receive = Callable[[], Awaitable[Dict[str, Any]]]
 Send = Callable[[Dict[str, Any]], Awaitable[None]]
@@ -94,9 +100,13 @@ class GuardMiddleware:
         if kind == "websocket":
             return await self.app(scope, receive, send)
 
+        extra = list(SECURITY_HEADERS)
+        if not scope["path"].startswith("/observatory"):
+            extra.append((b"content-security-policy", CSP))
+
         async def send_with_headers(message: Dict[str, Any]) -> None:
             if message["type"] == "http.response.start":
-                message = {**message, "headers": list(message.get("headers", [])) + list(SECURITY_HEADERS)}
+                message = {**message, "headers": list(message.get("headers", [])) + extra}
             await send(message)
 
         await self.app(scope, receive, send_with_headers)

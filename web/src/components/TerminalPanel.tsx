@@ -95,7 +95,8 @@ export function TerminalPanel({ visible, focusSignal, onStatus }: { visible: boo
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); return null; }
   }, [attach, onStatus]);
 
-  const create = useCallback(async () => {
+  const focusSoon = (id: string) => requestAnimationFrame(() => live.current.get(id)?.term.focus());
+  const create = useCallback(async (focus = true) => {
     setBusy(true);
     try {
       const cur = active ? live.current.get(active)?.term : undefined;
@@ -104,6 +105,7 @@ export function TerminalPanel({ visible, focusSignal, onStatus }: { visible: boo
       attach(info);
       setActive(info.id);
       setError(null);
+      if (focus) focusSoon(info.id);
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : String(e);
       setError(msg);
@@ -123,7 +125,7 @@ export function TerminalPanel({ visible, focusSignal, onStatus }: { visible: boo
   useEffect(() => {
     if (!visible || started.current) return;
     started.current = true;
-    void refresh().then((s) => { if (s && s.available && !s.sessions.length) void create(); });
+    void refresh().then((s) => { if (s && s.available && !s.sessions.length) void create(false); });
   }, [visible, refresh, create]);
 
   useEffect(() => { if (!active && tabs.length) setActive(tabs[tabs.length - 1]!.id); }, [active, tabs]);
@@ -133,7 +135,8 @@ export function TerminalPanel({ visible, focusSignal, onStatus }: { visible: boo
     live.current.forEach((L, id) => { L.host.style.display = id === active ? "block" : "none"; });
     const L = active ? live.current.get(active) : undefined;
     if (!L || !visible) return;
-    requestAnimationFrame(() => { try { L.fit.fit(); } catch { /* not laid out */ } L.term.focus(); });
+    // no focus here: an automatic attach must not steal the keyboard from a dialog or the editor
+    requestAnimationFrame(() => { try { L.fit.fit(); } catch { /* not laid out */ } });
   }, [active, visible, tabs]);
   useEffect(() => {
     const el = stage.current; if (!el) return;
@@ -161,7 +164,7 @@ export function TerminalPanel({ visible, focusSignal, onStatus }: { visible: boo
       <div className="term-bar">
         {tabs.map((x) => (
           <div key={x.id} className={`term-tab${x.id === active ? " active" : ""}${x.alive ? "" : " dead"}`} role="tab" aria-selected={x.id === active}
-               onClick={() => setActive(x.id)} title={x.alive ? x.title : t("term.exited", { code: x.exit_code ?? "?" })}>
+               onClick={() => { setActive(x.id); focusSoon(x.id); }} title={x.alive ? x.title : t("term.exited", { code: x.exit_code ?? "?" })}>
             <SquareTerminal size={13} /><span>{x.title}</span>
             <button type="button" className="tab-x" aria-label={t("term.kill")} onClick={(e) => { e.stopPropagation(); void kill(x.id); }}><X size={12} /></button>
           </div>

@@ -123,3 +123,23 @@ def test_default_model_falls_back_to_the_custom_model_list(tmp_path, monkeypatch
                  ' "models": [{"provider": "local", "model": "my-model"}], "fallbacks": [], "fallback_enabled": false}')
     monkeypatch.setenv("AGENT_SMITH_MODELS_FILE", str(f))
     assert AgentService.models()["default"] == {"provider": "local", "model": "my-model"}
+
+
+def test_a_finished_run_already_lists_its_changes(project, tmp_path, monkeypatch):
+    """Regression: the status used to turn 'done' before the changed files were computed."""
+    from agent_smith.studio.checkpoints import Checkpoints
+    slow = Checkpoints.changes
+
+    def slow_changes(self, since):
+        time.sleep(0.5)
+        return slow(self, since)
+
+    monkeypatch.setattr(Checkpoints, "changes", slow_changes)
+    client, _app, srv = make_client(project, tmp_path, monkeypatch, [
+        step("print(edit_file('calc.py', 'return a + b', 'return a - b'))"),
+        step("final_answer('done')"),
+    ])
+    with client, srv:
+        run = client.post("/api/agent/runs", json={"message": "subtract", "mode": "agent"}, headers=H).json()
+        done = wait_done(client, run["id"])
+        assert done["status"] == "done" and [c["path"] for c in done["changes"]] == ["calc.py"]

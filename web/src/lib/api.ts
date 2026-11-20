@@ -60,6 +60,7 @@ export interface Health { app: string; version: string; workspace: string }
 export interface Session {
   workspace: { name: string; path: string; git: boolean };
   docker: { installed: boolean; running: boolean };
+  shell?: "docker" | "local";
   platform: { system: string; python: string };
 }
 

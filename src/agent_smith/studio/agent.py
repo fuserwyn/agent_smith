@@ -200,6 +200,7 @@ class AgentService:
             self.publish({"type": "agent", "run": run.id, "event": record})
 
         sink = EventSink(run.trace, listeners=[relay])
+        final = "failed"  # published only once the changes are known (a finished run must list its changes)
         try:
             if run.mode == "agent":
                 sink.emit("checkpoint", {"phase": "start"})
@@ -226,10 +227,10 @@ class AgentService:
                     out = agent.run(self._task_prompt(run, history))
             run.answer = (out.solution or "").strip()
             stopped = self._cancel[run.id].is_set()
-            run.status = "stopped" if stopped else ("done" if out.success else "failed")
+            final = "stopped" if stopped else ("done" if out.success else "failed")
             run.error = None if out.success else (out.error or None)
         except Exception as exc:  # noqa: BLE001 - surface any failure in the chat instead of losing it
-            run.status, run.error = "failed", f"{type(exc).__name__}: {exc}"
+            final, run.error = "failed", f"{type(exc).__name__}: {exc}"
             sink.emit("studio_error", {"error": run.error, "trace": traceback.format_exc()[-2000:]})
         finally:
             if run.checkpoint:
@@ -238,6 +239,7 @@ class AgentService:
                 except WorkspaceError:
                     run.changes = []
             run.ended = time.time()
+            run.status = final
             text = run.answer or (run.error or "")
             self.conversation.append({"role": "assistant", "text": text, "run": run.id, "status": run.status, "ts": run.ended})
             with self._lock:

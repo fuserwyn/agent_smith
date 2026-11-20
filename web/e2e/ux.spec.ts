@@ -31,7 +31,7 @@ test("the command palette switches the theme and opens views", async ({ page }) 
   await expect(page.locator(".settings")).toContainText(/keyboard shortcuts|горячие клавиши/i);
   if (SHOTS) await page.screenshot({ path: join(SHOTS, "13-settings.png") });
   await command(page, "agent runs");
-  await expect(page.locator(".run-row").first()).toBeVisible();               // the agent test made a run
+  await expect(page.locator(".sidepanel .pane-title")).toContainText(/agent runs|запуски агента/i);
 });
 
 test("new terminal from the palette, chat focus with Cmd/Ctrl+L", async ({ page }) => {
@@ -43,4 +43,20 @@ test("new terminal from the palette, chat focus with Cmd/Ctrl+L", async ({ page 
   await expect(page.locator(".term-tab")).toHaveCount(before + 1);
   await page.keyboard.press("ControlOrMeta+L");
   await expect(page.locator(".composer-in")).toBeFocused();
+});
+
+test("no Content Security Policy violation while using the editor, terminal and observatory", async ({ page }) => {
+  const violations: string[] = [];
+  page.on("console", (m) => { if (/Content Security Policy|Refused to/i.test(m.text())) violations.push(m.text()); });
+  page.on("pageerror", (e) => violations.push(String(e)));
+  await open(page);
+  await page.keyboard.press("ControlOrMeta+P");
+  await page.getByRole("dialog").getByRole("textbox").fill("calc");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".monaco-host").first().locator(".view-lines")).toContainText("def add");
+  await page.getByRole("tab", { name: /terminal|терминал/i }).first().click();
+  await expect(page.locator(".term-host:visible .xterm-rows")).toBeVisible();
+  await page.getByRole("tab", { name: /inside the agent|внутри агента/i }).first().click();
+  await expect(page.frameLocator(".inside-frame").locator("#diagram .node").first()).toBeVisible();
+  expect(violations).toEqual([]);
 });

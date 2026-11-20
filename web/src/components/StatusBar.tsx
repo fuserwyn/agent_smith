@@ -17,7 +17,9 @@ export function StatusBar({ conn, session, theme, onTheme, lang, onLang }: {
       <span className={`sb-item conn ${conn}`} role="status"><i className="dot" />{t(`status.${conn}`)}</span>
       {session && <span className="sb-item mono" title={session.workspace.path}>{session.workspace.name}</span>}
       {session?.workspace.git && <span className="sb-item"><GitBranch size={13} />{t("status.git")}</span>}
-      {docker && (
+      {session?.shell === "local" ? (
+        <span className="sb-item warn" title={t("set.termLocal")}><Container size={13} />{t("status.localShell")}</span>
+      ) : docker && (
         <span className={`sb-item ${docker.running ? "ok" : "warn"}`}>
           <Container size={13} />{t(docker.running ? "status.docker.ok" : docker.installed ? "status.docker.off" : "status.docker.none")}
         </span>

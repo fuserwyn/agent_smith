@@ -130,6 +130,7 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
         return {
             "workspace": {"name": ws.root.name, "path": str(ws.root), "git": git.is_repo(ws.root)},
             "docker": _docker_state(),
+            "shell": shell,
             "platform": {"system": platform.system(), "python": platform.python_version()},
         }
 
