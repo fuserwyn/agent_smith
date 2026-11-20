@@ -179,7 +179,11 @@ def test_file_change_events_reach_the_browser(proj, client):
         assert ws.receive_json()["type"] == "hello"
         time.sleep(0.3)  # watcher started
         (proj / "src" / "fresh.py").write_text("x = 1\n")
-        msg = ws.receive_json()
-        while msg["type"] != "fs":
+        seen = []
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline and not any(c["path"] == "src/fresh.py" for c in seen):
             msg = ws.receive_json()
-        assert {"kind": "added", "path": "src/fresh.py"} in msg["changes"] or any(c["path"] == "src/fresh.py" for c in msg["changes"])
+            if msg["type"] == "fs":
+                seen += msg["changes"]
+        assert any(c["path"] == "src/fresh.py" for c in seen)
+        assert not any(c["path"].startswith(".git") for c in seen)  # hidden folders produce no events

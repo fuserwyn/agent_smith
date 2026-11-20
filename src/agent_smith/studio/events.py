@@ -11,7 +11,7 @@ import contextlib
 from pathlib import Path
 from typing import Any, Dict, Optional, Set
 
-from agent_smith.studio.workspace import HEAVY_DIRS, Workspace
+from agent_smith.studio.workspace import HEAVY_DIRS, HIDDEN, Workspace
 
 KIND = {1: "added", 2: "modified", 3: "deleted"}  # watchfiles.Change values
 QUEUE_MAX = 200
@@ -22,7 +22,8 @@ def _interesting(root: Path, path: str) -> bool:
         parts = Path(path).relative_to(root).parts
     except ValueError:
         return False
-    return bool(parts) and not any(p in HEAVY_DIRS for p in parts[:-1]) and not parts[-1].startswith(".studio-")
+    return (bool(parts) and not any(p in HEAVY_DIRS for p in parts[:-1]) and not any(p in HIDDEN for p in parts)
+            and not parts[-1].startswith(".studio-"))
 
 
 class EventHub:
