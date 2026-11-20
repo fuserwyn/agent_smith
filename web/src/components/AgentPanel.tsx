@@ -34,6 +34,14 @@ export function modelLabel(m: ModelChoice): string {
   return [m.model, price, reads].filter(Boolean).join(" · ");
 }
 
+/** " · $0.012": what the turn cost so far (no limit in the studio, so it is shown), from the catalog price */
+function turnCost(run: AgentRun, models: ModelChoice[]): string {
+  const p = models.find((m) => m.provider === run.provider && m.model === run.model)?.price;
+  if (!p || (!p.in && !p.out)) return "";
+  const usd = (run.input_tokens * p.in + run.output_tokens * p.out) / 1e6;
+  return ` · $${usd < 0.01 ? usd.toFixed(4) : usd.toFixed(3)}`;
+}
+
 function AttIcon({ kind }: { kind: Attachment["kind"] }) {
   const I = kind === "audio" ? FileAudio : kind === "video" ? FileVideo : kind === "pdf" ? FileText : kind === "text" ? FileCode : FileIcon;
   return <I size={13} />;
@@ -184,7 +192,7 @@ function Turn({ run, live }: { run: AgentRun; live: boolean }) {
           {live ? <LoaderCircle size={13} className="spin" /> : <Workflow size={13} />}
           <span>{live ? (last?.type === "checkpoint" ? t("ag.checkpoint") : t("ag.working", { n: Math.max(run.steps, steps.length) })) : t("ag.worked", { n: run.steps, s: fmtS(secs) })}</span>
           <span className="sp" />
-          <span className="tok">{t("ag.tok", { i: (run.input_tokens / 1000).toFixed(1), o: (run.output_tokens / 1000).toFixed(1) })}</span>
+          <span className="tok">{t("ag.tok", { i: (run.input_tokens / 1000).toFixed(1), o: (run.output_tokens / 1000).toFixed(1) })}{turnCost(run, ag.models)}</span>
         </button>
       )}
       {showSteps && (hasEvents ? steps.map((s) => <StepRow key={s.n} s={s} live={live} />) : run.steps > 0 && !live ? <div className="step-note">{t("ag.noTrace")}</div> : null)}

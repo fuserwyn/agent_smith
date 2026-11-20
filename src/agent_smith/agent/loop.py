@@ -39,6 +39,9 @@ class AgentSettings:
     safety_seconds: float = 8.0
     input_estimate_margin: float = 1.1
     stop_sequences: Optional[List[str]] = None  # None: the extractor's STOP_SEQUENCES (benchmarks)
+    # long open-ended runs (studio): only the last N steps are sent, older ones become a one-line note, so the
+    # request stays inside the model's context window (None: every step, as in the benchmarks)
+    max_history_steps: Optional[int] = None
 
 
 def truncate_observation(text: str, limit: int) -> str:
@@ -89,13 +92,22 @@ class CodeAgent:
         self.attachments: List[dict] = []
 
     # ------------------------------------------------------------------ #
+    def _window(self) -> int:
+        """Index of the first step sent to the model (older ones are summarised by a note)."""
+        cap = self.settings.max_history_steps
+        return max(0, len(self.history) - cap) if cap else 0
+
     def _messages(self, task_prompt: str, compact_all: bool = False) -> List[Message]:
+        first = self._window()
+        if first:
+            task_prompt += (f"\n\n[{first} earlier step(s) of this run are not shown, to stay within the context window. "
+                            f"Their effects are in the project: check its current state instead of assuming.]")
         # attachments (images, audio, video, PDF the user gave): content parts next to the task text
         task: object = [{"type": "text", "text": task_prompt}, *self.attachments] if self.attachments else task_prompt
         msgs: List[Message] = [{"role": "system", "content": self.system_prompt},
                                {"role": "user", "content": task}]
         n = len(self.history)
-        for i, (assistant, observation) in enumerate(self.history):
+        for i, (assistant, observation) in enumerate(self.history[first:], start=first):
             recent = (n - i) <= self.settings.keep_recent_steps and not (compact_all and n - i > 1)
             limit = self.settings.observation_max_chars if recent else self.settings.old_observation_chars
             msgs.append({"role": "assistant", "content": assistant})
@@ -105,7 +117,8 @@ class CodeAgent:
     def _compacted(self, messages: List[Message]) -> List[int]:
         """Steps whose observation reaches the LLM shortened in this request."""
         sent = [m["content"] for m in messages[2:] if m["role"] == "user"]
-        return [i + 1 for i, ((_, obs), text) in enumerate(zip(self.history, sent))
+        first = self._window()
+        return [i + 1 for i, ((_, obs), text) in enumerate(zip(self.history[first:], sent), start=first)
                 if text != "Observation:\n" + obs]
 
     def _estimate(self, messages: List[Message]) -> int:

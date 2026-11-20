@@ -43,14 +43,15 @@ from agent_smith.studio.workspace import Workspace, WorkspaceError
 
 READ_ONLY_TOOLS = frozenset({"read_file", "list_files", "search_code", "search_function_or_class_definition_in_code",
                              "find_references"})
-# 30 min: a turn may wait for a whole Agent Smith benchmark run (run_agent_smith, capped at 25 min)
-# output budget of a whole turn (not the provider's limit): 30 steps of up to 2000 tokens need room
-LIMITS = Limits(max_iterations=30, max_input_tokens=400_000, max_output_tokens=40_000, timeout_seconds=1800)
+# No limit in the studio: a turn works until the result (or Stop). The 42 exam limits belong to agent_mbpp /
+# agent_swebench (and to the benchmark runs the chat starts), not to this open-ended work.
+LIMITS = Limits(max_iterations=1_000_000, max_input_tokens=10**12, max_output_tokens=10**12, timeout_seconds=30 * 24 * 3600)
 # Stop sequences (providers accept 4): an empty ```python``` block is never useful — some small models repeat
 # it until the output cap after their first block; it replaces </function_calls>, a format these models don't use.
 STOP = [END_CODE, "\nObservation:", "</tool_call>", "```python\n```"]
 SETTINGS = AgentSettings(max_output_tokens_per_call=2000, observation_max_chars=7000, old_observation_chars=900,
-                         keep_recent_steps=4, show_budget=True, safety_seconds=20.0, stop_sequences=STOP)
+                         keep_recent_steps=4, show_budget=False, safety_seconds=20.0, stop_sequences=STOP,
+                         max_history_steps=40)
 HISTORY_TURNS = 6  # earlier exchanges given to the model as context
 
 

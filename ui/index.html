@@ -2565,10 +2565,16 @@ function renderEmpty() {
   $("steps").replaceChildren(h("div", "empty", tr("empty_steps")));
   renderPlain(null, derive(-1));
 }
+/* A studio turn has no limit (huge values in run_start): show "∞" instead of a meter that never moves. */
+function finiteLimits(lim) {
+  lim = lim || {};
+  if (!(lim.max_iterations >= 100000)) return lim;
+  return {unlimited: true};
+}
 function meter(label, used, max, fmt = num, explain, term) {
   const m = h("div", "meter"), top = h("div", "meter-top"), lab = h("span", "", label);
   if (term) markTerm(lab, term);
-  top.append(lab, h("span", "", `${fmt(used)} / ${fmt(max)}`));
+  top.append(lab, h("span", "", max ? `${fmt(used)} / ${fmt(max)}` : `${fmt(used)} / ∞`));
   const bar = h("div", "bar"), fill = document.createElement("i"), r = max ? used / max : 0;
   fill.style.width = `${Math.min(100, r * 100)}%`; if (r > .9) fill.className = "crit"; else if (r > .7) fill.className = "warn";
   bar.appendChild(fill); m.append(top, bar);
@@ -2576,7 +2582,7 @@ function meter(label, used, max, fmt = num, explain, term) {
   return m;
 }
 function renderState(st) {
-  const run = st.run || events.find((x) => x.type === "run_start") || {}, lim = run.limits || {};
+  const run = st.run || events.find((x) => x.type === "run_start") || {}, lim = finiteLimits(run.limits);
   const steps = [...st.steps.values()].filter((s) => s.n > 0).sort((a, b) => a.n - b.n);
   if ((selectedStep == null || !st.steps.has(selectedStep)) && steps.length) selectedStep = steps[steps.length - 1].n;
   const inTok = steps.reduce((a, s) => a + (s.inTok || 0), 0), outTok = steps.reduce((a, s) => a + (s.outTok || 0), 0);
@@ -2595,7 +2601,8 @@ function renderState(st) {
       [tr("sb_time"), t, lim.timeout_seconds, (x) => `${Math.round(x)}s`, tr("m_time")]]) {
     const r = m ? v / m : 0, g = h("span", "mb"), bar = h("span", `mbar${r > 1 ? " over" : r > 0.8 ? " hi" : ""}`), i = document.createElement("i");
     i.style.width = `${Math.min(100, r * 100)}%`; bar.appendChild(i);
-    g.append(h("span", "l", lab), `${f(v)}/${m ? f(m) : "–"}`, bar); g.title = `${full}: ${num(Math.round(v))} / ${m ? num(m) : "–"}`; sb.appendChild(g);
+    const cap = m ? f(m) : lim.unlimited ? "∞" : "–";
+    g.append(h("span", "l", lab), `${f(v)}/${cap}`, bar); g.title = `${full}: ${num(Math.round(v))} / ${m ? num(m) : cap}`; sb.appendChild(g);
   }
   $("sum-steps").replaceChildren();
   $("result").textContent = st.end ? tr(st.end.success ? "chip_ok" : "chip_bad") : (st.run ? tr("chip_run") : "");
@@ -3800,8 +3807,8 @@ function renderStory(e, st) {
   $("story-ico").replaceChildren(icon(n.ico));
   const say = $("story-say"); say.replaceChildren(n.text);
   if (n.quote) { say.append(" "); say.appendChild(h("q", "", n.quote)); }
-  const lim = (st.run && st.run.limits) || {}, k = stepsSoFar(st);
-  $("story-where").textContent = k && lim.max_iterations ? tr("where_step", {n: k, max: lim.max_iterations}) : "";
+  const lim = finiteLimits(st.run && st.run.limits), k = stepsSoFar(st);
+  $("story-where").textContent = k ? tr("where_step", {n: k, max: lim.max_iterations || (lim.unlimited ? "∞" : "?")}) : "";
   syncBigPlay();
 }
 function syncBigPlay() {
@@ -3845,7 +3852,7 @@ function renderSimple(e, st) {
   const ans = simpleEls.answer.querySelector(".now");
   if (st.end) ans.replaceChildren(icon(st.end.success ? "checkcircle" : "xcircle"), " " + tr(st.end.success ? "sbn_ok" : "sbn_bad"));
   else ans.textContent = st.run ? tr("sbn_waiting") : "";
-  const lim = (st.run && st.run.limits) || {}, k = stepsSoFar(st);
+  const lim = finiteLimits(st.run && st.run.limits), k = stepsSoFar(st);
   simpleEls.loopLbl.replaceChildren(icon("repeat"), " " + tr("s_loop") + (k ? " · " + tr("where_step", {n: k, max: lim.max_iterations || "?"}) : ""));
 }
 

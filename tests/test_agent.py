@@ -129,3 +129,18 @@ def test_rejected_final_answer_and_empty_response(git_repo):
     assert out.success and out.solution.startswith("diff --git") and out.iterations == 3
     assert "[REJECTED final_answer]" in out.steps[1].sandbox_output
     assert all(m["content"] for r in sent for m in r["messages"])  # no empty message was ever sent
+
+
+def test_long_runs_send_only_the_last_steps(tmp_path):
+    """Studio turns have no step limit: the request keeps the last N steps, older ones become a note."""
+    steps = [f"Thought: step {i}.\n```python\nprint({i})\n```<end_code>" for i in range(6)]
+    steps.append("Thought: done.\n```python\nfinal_answer('ok')\n```<end_code>")
+    unlimited = Limits(max_iterations=1_000_000, max_input_tokens=10**12, max_output_tokens=10**12, timeout_seconds=3600)
+    with FakeLLMServer(steps) as srv, Sandbox(SandboxConfig(), None) as sb:
+        llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
+        out = CodeAgent(llm, sb, "system", unlimited, "studio", "t", settings=AgentSettings(max_history_steps=2)).run("task")
+        last = srv.requests[-1]["messages"]
+    assert out.success and out.iterations == 7
+    assert len(last) == 2 + 2 * 2                                      # system, task, then only 2 (assistant, observation) pairs
+    assert "4 earlier step(s) of this run are not shown" in last[1]["content"]
+    assert "print(5)" in last[-2]["content"] and "print(0)" not in json.dumps(last)
