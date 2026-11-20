@@ -41,7 +41,9 @@ def fake_repo(tmp_path, monkeypatch):
         return [ui_jobs.Step("step_agent", [sys.executable, "-c", INNER, str(job_dir)], root)]
 
     monkeypatch.setattr(ui_jobs, "plan", plan)
-    return seen
+    ui_jobs.mbpp_tasks.cache_clear()  # cached per moulinette folder: never leak this fake one to other tests
+    yield seen
+    getattr(ui_jobs.mbpp_tasks, "cache_clear", lambda: None)()  # a test may have replaced it with a stub
 
 
 def make_client(tmp_path, monkeypatch, script):
