@@ -35,6 +35,7 @@ from agent_smith.sandbox import Sandbox
 from agent_smith.sandbox.manual import build_manual
 from agent_smith.studio.apps import TOOLS as APP_TOOLS, AppManager
 from agent_smith.studio.checkpoints import Checkpoints
+from agent_smith.studio.media import Media
 from agent_smith.studio.scenarios import TOOL as SCENARIO_TOOL, Scenarios
 from agent_smith.studio.terminal import TerminalManager
 from agent_smith.studio.workspace import Workspace, WorkspaceError
@@ -120,6 +121,7 @@ class Run:
     input_tokens: int = 0
     output_tokens: int = 0
     trace: str = ""
+    attachments: List[Dict[str, Any]] = field(default_factory=list)  # uploads given with the message
 
     def public(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -136,6 +138,7 @@ class AgentService:
         self.checkpoints = Checkpoints(ws, self.state_dir)
         self.scenarios = Scenarios(publish)
         self.apps = AppManager(ws, publish)
+        self.media = Media(ws, self.state_dir)
         self.runs: Dict[str, Run] = {}
         self.current: Optional[str] = None
         self._cancel: Dict[str, threading.Event] = {}
@@ -176,7 +179,9 @@ class AgentService:
 
     # ------------------------------------------------------------------ models
     @staticmethod
-    def models() -> Dict[str, Any]:
+    def models(on_catalog=None) -> Dict[str, Any]:
+        """Models of config/models.json; with ``on_catalog``, also what each reads and its price (OpenRouter
+        catalog, fetched in the background; ``on_catalog()`` is called when it arrives)."""
         from agent_smith import ui_jobs  # reads config/models.json and which keys exist (never their values)
         provider, model = ui_jobs.DEFAULTS["swebench"]
         models = ui_jobs.model_choices()
@@ -184,6 +189,15 @@ class AgentService:
             # custom model list (AGENT_SMITH_MODELS_FILE): first model that has a key, else the first one
             first = next((m for m in models if m["key_ok"]), models[0])
             provider, model = first["provider"], first["model"]
+        try:  # what each OpenRouter model reads (image / audio / video / file) and its price, for the picker
+            from agent_smith.studio.media import Media as _M
+            cat = _M.shared_catalog(block=False, on_ready=on_catalog) if on_catalog else {}
+            for m in models:
+                info = cat.get(m["model"]) if m["provider"] == "openrouter" else None
+                m["inputs"] = info["in"] if info else ["text"]
+                m["price"] = info["price"] if info else None
+        except Exception:  # noqa: BLE001 - the picker works without it
+            pass
         return {"models": models, "default": {"provider": provider, "model": model}}
 
     def _pick(self, provider: Optional[str], model: Optional[str]) -> Dict[str, Any]:
@@ -197,8 +211,12 @@ class AgentService:
         raise WorkspaceError(400, f"unknown model {want[0]}/{want[1]}")
 
     # ------------------------------------------------------------------ runs
-    def start(self, message: str, mode: str, provider: Optional[str] = None, model: Optional[str] = None) -> Run:
+    def start(self, message: str, mode: str, provider: Optional[str] = None, model: Optional[str] = None,
+              attachments: Optional[List[str]] = None) -> Run:
         message = (message or "").strip()
+        files = [self.media.get(a) for a in (attachments or [])]
+        if not message and files:
+            message = "See the attached file(s)."
         if not message:
             raise WorkspaceError(400, "empty message")
         if mode not in ("ask", "agent"):
@@ -209,13 +227,15 @@ class AgentService:
         with self._lock:
             if self.current:
                 raise WorkspaceError(409, "the agent is already working")
-            run = Run(id=uuid.uuid4().hex[:12], mode=mode, provider=m["provider"], model=m["model"], message=message)
+            run = Run(id=uuid.uuid4().hex[:12], mode=mode, provider=m["provider"], model=m["model"], message=message,
+                      attachments=files)
             run.trace = str(self.state_dir / "runs" / f"{run.id}.jsonl")
             self.runs[run.id] = run
             self.current = run.id
             self._cancel[run.id] = threading.Event()
         history = self.conversation[-2 * HISTORY_TURNS:]
-        self.conversation.append({"role": "user", "text": message, "run": run.id, "mode": mode, "ts": run.started})
+        self.conversation.append({"role": "user", "text": message, "run": run.id, "mode": mode, "ts": run.started,
+                                  "attachments": files})
         self._save()
         self.publish({"type": "agent-run", "run": run.public()})
         if command:
@@ -283,7 +303,10 @@ class AgentService:
                 with Sandbox(config, mcp, event_hook=sink.emit, trace_execution=True) as sandbox:
                     agent = CodeAgent(llm, sandbox, studio_system_prompt(config, mcp, root, run.mode), LIMITS, "studio", run.id,
                                       settings=SETTINGS, events=sink, cancel=self._cancel[run.id].is_set)
-                    out = agent.run(self._task_prompt(run, history))
+                    extra, parts = (self.media.for_turn([f["id"] for f in run.attachments], run.model, run.provider,
+                                                        lambda s: sink.emit("attachments", {"note": s}))
+                                    if run.attachments else ("", []))
+                    out = agent.run(self._task_prompt(run, history) + extra, attachments=parts)
             run.answer = (out.solution or "").strip()
             stopped = self._cancel[run.id].is_set()
             final = "stopped" if stopped else ("done" if out.success else "failed")

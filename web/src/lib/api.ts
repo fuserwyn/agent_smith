@@ -99,14 +99,37 @@ export const termApi = {
 };
 
 /* ---------- agent chat ---------- */
-export interface ModelChoice { provider: string; model: string; url: string; notes: string; key_env: string | null; key_ok: boolean; paid: boolean }
+export interface ModelChoice {
+  provider: string; model: string; url: string; notes: string; key_env: string | null; key_ok: boolean; paid: boolean;
+  inputs?: string[]; price?: { in: number; out: number } | null;  // from the OpenRouter catalog (what it reads, $ per 1M tokens)
+}
+/** A file given with a chat message (stored in the project under agent_code/uploads/). */
+export interface Attachment { id: string; name: string; path: string; mime: string; size: number; kind: "image" | "audio" | "video" | "pdf" | "text" | "file" }
+export const uploadsApi = {
+  upload: async (file: File | Blob, name: string): Promise<Attachment> => {
+    const res = await fetch("/api/uploads", { method: "POST", body: file,
+      headers: { ...authHeaders(), "X-Studio": "1", "Content-Type": file.type || "application/octet-stream", "X-Filename": encodeURIComponent(name) } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? res.statusText);
+    return data as Attachment;
+  },
+  url: (id: string) => `/api/uploads/${id}?token=${encodeURIComponent(token ?? "")}`,
+};
+export const voiceApi = {
+  transcribe: async (wav: Blob, lang: string): Promise<string> => {
+    const res = await fetch("/api/voice", { method: "POST", body: wav, headers: { ...authHeaders(), "X-Studio": "1", "Content-Type": "audio/wav", "X-Language": lang } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? res.statusText);
+    return (data as { text: string }).text;
+  },
+};
 export interface AgentChange { path: string; status: "added" | "modified" | "deleted" }
 export interface AgentRun {
   id: string; mode: "ask" | "agent"; provider: string; model: string; message: string; started: number; ended: number | null;
   status: "running" | "done" | "failed" | "stopped"; answer: string; error: string | null; checkpoint: string | null;
-  changes: AgentChange[]; steps: number; input_tokens: number; output_tokens: number;
+  changes: AgentChange[]; steps: number; input_tokens: number; output_tokens: number; attachments?: Attachment[];
 }
-export interface ChatMessage { role: "user" | "assistant"; text: string; run: string; mode?: "ask" | "agent"; status?: AgentRun["status"]; ts: number }
+export interface ChatMessage { role: "user" | "assistant"; text: string; run: string; mode?: "ask" | "agent"; status?: AgentRun["status"]; ts: number; attachments?: Attachment[] }
 export interface AgentState { messages: ChatMessage[]; runs: Record<string, AgentRun>; current: string | null }
 export type TraceEvent = { t: number; type: string; [k: string]: unknown };
 /** An Agent Smith benchmark run started by the chat agent (tool run_agent_smith). */
@@ -133,8 +156,8 @@ export const scenarioApi = {
 export const agentApi = {
   models: () => api<{ models: ModelChoice[]; default: { provider: string; model: string } }>("/api/agent/models"),
   state: () => api<AgentState>("/api/agent/state"),
-  start: (message: string, mode: "ask" | "agent", provider?: string, model?: string) =>
-    api<AgentRun>("/api/agent/runs", { method: "POST", body: JSON.stringify({ message, mode, provider, model }) }),
+  start: (message: string, mode: "ask" | "agent", provider?: string, model?: string, attachments: string[] = []) =>
+    api<AgentRun>("/api/agent/runs", { method: "POST", body: JSON.stringify({ message, mode, provider, model, attachments }) }),
   stop: (id: string) => api<{ ok: boolean }>(`/api/agent/runs/${id}/stop`, { method: "POST" }),
   diff: (id: string, path: string) => api<GitDiff>(`/api/agent/runs/${id}/diff` + q({ path })),
   undo: (id: string, paths?: string[]) => api<{ restored: string[]; changes: AgentChange[] }>(`/api/agent/runs/${id}/undo`, { method: "POST", body: JSON.stringify({ paths: paths ?? null }) }),

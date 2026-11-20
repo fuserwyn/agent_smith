@@ -11,10 +11,10 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -22,6 +22,7 @@ from agent_smith.config import PROJECT_ROOT
 from agent_smith.studio import __version__, git
 from agent_smith.studio.agent import AgentService
 from agent_smith.studio.events import EventHub
+from agent_smith.studio.media import MAX_UPLOAD
 from agent_smith.studio.security import GuardMiddleware
 from agent_smith.studio.terminal import DEFAULT_IMAGE, TerminalError, TerminalManager
 from agent_smith.studio.workspace import Workspace, WorkspaceError
@@ -61,6 +62,7 @@ class AskBody(BaseModel):
     mode: str = Field("agent", pattern="^(ask|agent)$")
     provider: Optional[str] = None
     model: Optional[str] = None
+    attachments: List[str] = Field(default_factory=list, max_length=20)  # ids from /api/uploads
 
 
 class UndoBody(BaseModel):
@@ -178,6 +180,35 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
     def git_diff(path: str) -> Dict[str, Any]:
         return git.diff(ws, path)
 
+    # ---------------------------------------------------------------- attachments and voice
+    @app.post("/api/uploads")
+    async def upload(request: Request) -> Dict[str, Any]:
+        """Raw body (no multipart dependency); the file name comes URL-encoded in X-Filename."""
+        from urllib.parse import unquote
+        size = int(request.headers.get("content-length") or 0)
+        if size > MAX_UPLOAD:
+            raise WorkspaceError(413, f"file too large (max {MAX_UPLOAD // 1024 // 1024} MB)")
+        data = await request.body()
+        return agent.media.save_upload(unquote(request.headers.get("x-filename") or "file"),
+                                       (request.headers.get("content-type") or "").split(";")[0], data)
+
+    @app.get("/api/uploads/{uid}")
+    def upload_file(uid: str) -> Response:
+        info = agent.media.get(uid)
+        inline = info["kind"] in ("image", "audio", "video")  # never inline HTML/SVG: no script from an upload
+        return FileResponse(agent.media.file(uid), media_type=info["mime"] if inline else "application/octet-stream",
+                            headers={"Content-Disposition": ("inline" if inline else "attachment") + f'; filename="{info["name"]}"',
+                                     "Content-Security-Policy": "sandbox; default-src 'none'"})
+
+    @app.post("/api/voice")
+    async def voice(request: Request) -> Dict[str, Any]:
+        """A recording from the browser (WAV) -> text, by the transcribe model (config/models.json)."""
+        data = await request.body()
+        fmt = {"audio/wav": "wav", "audio/x-wav": "wav", "audio/mpeg": "mp3"}.get(
+            (request.headers.get("content-type") or "audio/wav").split(";")[0], "wav")
+        text = await asyncio.to_thread(agent.media.transcribe, data, fmt, request.headers.get("x-language") or "")
+        return {"text": text}
+
     # ---------------------------------------------------------------- apps the agent built and runs (run_app)
     @app.get("/api/apps")
     def apps_list() -> Dict[str, Any]:
@@ -207,7 +238,7 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
     # ---------------------------------------------------------------- agent chat
     @app.get("/api/agent/models")
     def agent_models() -> Dict[str, Any]:
-        return agent.models()
+        return agent.models(on_catalog=lambda: agent.publish({"type": "models"}))
 
     @app.get("/api/agent/state")
     def agent_state() -> Dict[str, Any]:
@@ -215,7 +246,7 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
 
     @app.post("/api/agent/runs")
     def agent_start(body: AskBody) -> Dict[str, Any]:
-        return agent.start(body.message, body.mode, body.provider, body.model).public()
+        return agent.start(body.message, body.mode, body.provider, body.model, body.attachments).public()
 
     @app.post("/api/agent/runs/{run_id}/stop")
     def agent_stop(run_id: str) -> Dict[str, Any]:

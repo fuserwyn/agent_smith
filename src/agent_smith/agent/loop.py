@@ -86,11 +86,14 @@ class CodeAgent:
         self.cancel = cancel
         self.loop_streak = 0  # consecutive exact repeats: raises the sampling temperature to break the loop
         self.known_tools = [t.name for t in sandbox.mcp.tools] if sandbox.mcp else []
+        self.attachments: List[dict] = []
 
     # ------------------------------------------------------------------ #
     def _messages(self, task_prompt: str, compact_all: bool = False) -> List[Message]:
+        # attachments (images, audio, video, PDF the user gave): content parts next to the task text
+        task: object = [{"type": "text", "text": task_prompt}, *self.attachments] if self.attachments else task_prompt
         msgs: List[Message] = [{"role": "system", "content": self.system_prompt},
-                               {"role": "user", "content": task_prompt}]
+                               {"role": "user", "content": task}]
         n = len(self.history)
         for i, (assistant, observation) in enumerate(self.history):
             recent = (n - i) <= self.settings.keep_recent_steps and not (compact_all and n - i > 1)
@@ -127,7 +130,8 @@ class CodeAgent:
         return "\n".join(parts)
 
     # ------------------------------------------------------------------ #
-    def run(self, task_prompt: str) -> SolutionOutput:
+    def run(self, task_prompt: str, attachments: Optional[List[dict]] = None) -> SolutionOutput:
+        self.attachments = list(attachments or [])
         ev = self.events
         ev("run_start", {"benchmark": self.benchmark, "task_id": self.task_id, "limits": self.limits.model_dump(),
                          "system_prompt": self.system_prompt, "task_prompt": task_prompt,

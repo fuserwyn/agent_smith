@@ -1,6 +1,6 @@
 /* Agent chat state: conversation, runs, live events of the running turn, model and mode choice. */
 import { useSyncExternalStore } from "react";
-import { agentApi, appsApi, scenarioApi, type AgentRun, type AppInfo, type ChatMessage, type ModelChoice, type ScenarioJob, type TraceEvent } from "./api";
+import { agentApi, appsApi, scenarioApi, type AgentRun, type AppInfo, type Attachment, type ChatMessage, type ModelChoice, type ScenarioJob, type TraceEvent } from "./api";
 import type { StudioEvent } from "./events";
 
 export interface ToolCall { name: string; args: Record<string, unknown>; line?: number; result?: string; error?: boolean; ms?: number }
@@ -47,12 +47,12 @@ class AgentStore {
   setMode(m: "ask" | "agent") { this.mode = m; try { localStorage.setItem("studio-agent-mode", m); } catch { /* blocked */ } this.emit(); }
   setModel(x: { provider: string; model: string }) { this.model = x; try { localStorage.setItem("studio-agent-model", JSON.stringify(x)); } catch { /* blocked */ } this.emit(); }
 
-  async send(text: string) {
-    const run = await agentApi.start(text, this.mode, this.model?.provider, this.model?.model);
+  async send(text: string, files: Attachment[] = []) {
+    const run = await agentApi.start(text, this.mode, this.model?.provider, this.model?.model, files.map((f) => f.id));
     this.runs = { ...this.runs, [run.id]: run };
     this.current = run.id;
     if (!this.events.has(run.id)) this.events.set(run.id, []);
-    this.messages = [...this.messages, { role: "user", text, run: run.id, mode: this.mode, ts: run.started }];
+    this.messages = [...this.messages, { role: "user", text: run.message, run: run.id, mode: this.mode, ts: run.started, attachments: files }];
     this.emit();
   }
 
@@ -79,6 +79,8 @@ class AgentStore {
       list.push(ev.event);
       this.events.set(ev.run, list);
       this.emit();
+    } else if (ev.type === "models") {  // the OpenRouter catalog arrived: prices and capabilities for the picker
+      void agentApi.models().then((m) => { this.models = m.models; this.emit(); });
     } else if (ev.type === "app") {
       const { app } = e as unknown as { app: AppInfo };
       this.apps = { ...this.apps, [app.id]: app };

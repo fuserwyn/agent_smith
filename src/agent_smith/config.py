@@ -87,6 +87,9 @@ class ModelsConfig(BaseModel):
     fallbacks: List[ModelSpec] = Field(default_factory=list)
     fallback_enabled: bool = Field(
         default=False, description="Use `fallbacks` even without --fallback (only providers with a key in env)")
+    # non-text models (image, video, speech, transcribe, perceive, embeddings) -> list of {model, notes, …};
+    # the first entry of each list is the default (all through OpenRouter)
+    media: Dict[str, Any] = Field(default_factory=dict)
 
     def provider_by_name(self, name: str) -> Optional[ProviderSpec]:
         return next((p for p in self.providers if p.name == name), None)

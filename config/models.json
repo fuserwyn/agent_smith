@@ -177,6 +177,72 @@
       "model": "deepseek/deepseek-v4-flash",
       "notes": "PAID (OpenRouter credits): outside the subject's free-tier rule, use only as a backup",
       "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "anthropic/claude-opus-5.5",
+      "notes": "PAID $4/$20 per 1M: top quality, hardest tasks",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "anthropic/claude-sonnet-5.5",
+      "notes": "PAID $2/$10: near-top agentic coding, best quality per dollar at the top",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "openai/gpt-6.2-sol",
+      "notes": "PAID $2/$10: price-performance leader on coding-agent boards (no stop: cut client-side)",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "google/gemini-4-hydrogen",
+      "notes": "PAID $1.5/$7.5: reads text, images, audio, video, PDF",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen4-max",
+      "notes": "PAID $1.42/$4.27: strong open model, images and video in",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "notes": "PAID $0.3/$1.2: cheap strong coder",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "moonshotai/kimi-k3.1-pro",
+      "notes": "PAID $0.25/$8.8: long agentic runs",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "z-ai/glm-5.3",
+      "notes": "PAID $0.07/$1.4: very cheap, text only",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "anthropic/claude-haiku-5.5",
+      "notes": "PAID $0.1/$0.5: cheapest Claude, fast",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "openai/gpt-6-luna",
+      "notes": "PAID $0.1/$0.5: lowest cost per task (no stop: cut client-side)",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "minimax/minimax-m3.1-flash",
+      "notes": "PAID $0.075/$0.3: cheapest, images and video in",
+      "paid": true
     }
   ],
   "fallbacks": [
@@ -201,5 +267,74 @@
       "notes": "free; small prompts only"
     }
   ],
-  "fallback_enabled": true
+  "fallback_enabled": true,
+  "media": {
+    "_doc": "Models for non-text work, all through OpenRouter (key OPENROUTER_API_KEY). The first entry of each list is the default. Prices from the OpenRouter catalog, checked 2026-11-20.",
+    "image": [
+      {
+        "model": "google/gemini-3.1-flash-image",
+        "notes": "default: good quality, ~$0.07 per image (tested)"
+      },
+      {
+        "model": "google/gemini-3.1-flash-lite-image",
+        "notes": "cheaper, ~half the price"
+      },
+      {
+        "model": "google/gemini-3-pro-image",
+        "notes": "best quality, ~4x the price"
+      }
+    ],
+    "video": [
+      {
+        "model": "google/gemini-omni-1.2-flash",
+        "notes": "the only video generator on OpenRouter; $1.5/$9 per 1M tokens"
+      }
+    ],
+    "speech": [
+      {
+        "model": "openai/gpt-audio-mini",
+        "voice": "alloy",
+        "notes": "default text-to-speech, ~$0.0004 per sentence (tested)"
+      },
+      {
+        "model": "openai/gpt-audio",
+        "voice": "alloy",
+        "notes": "better voice, ~4x the price"
+      }
+    ],
+    "transcribe": [
+      {
+        "model": "google/gemini-3.1-flash-lite",
+        "notes": "default speech-to-text, <1 s, ~$0.0001 per sentence (tested)"
+      },
+      {
+        "model": "mistralai/voxtral-small-24b-2507",
+        "notes": "speech-specialised alternative"
+      }
+    ],
+    "perceive": [
+      {
+        "model": "google/gemini-3.1-flash-lite",
+        "notes": "describes images, audio, video, PDF for a chat model that cannot read them"
+      },
+      {
+        "model": "google/gemini-4-hydrogen",
+        "notes": "stronger, ~6x the price"
+      }
+    ],
+    "embeddings": [
+      {
+        "model": "qwen/qwen3-embedding-8b",
+        "notes": "default: 4096 dims, 40k context, $0.01 per 1M tokens (tested)"
+      },
+      {
+        "model": "nvidia/nemotron-3.5-embed-8b:free",
+        "notes": "free"
+      },
+      {
+        "model": "mongodb/voyage-code-4",
+        "notes": "code-specialised, $0.12 per 1M"
+      }
+    ]
+  }
 }

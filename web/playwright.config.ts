@@ -52,7 +52,7 @@ export default defineConfig({
     {
       // local shell in tests (fast, no image pull); the Docker shell has its own test (STUDIO_DOCKER_TESTS=1)
       command: `uv run --project .. --extra studio agent-studio "${root}" --port ${PORT} --no-browser --shell ${process.env.STUDIO_E2E_SHELL ?? "local"}`,
-      env: { STUDIO_TOKEN: TOKEN, AGENT_SMITH_MODELS_FILE: join(root, "..", "studio-e2e-models.json"), XDG_CACHE_HOME: join(root, "..", "studio-e2e-cache") },
+      env: { STUDIO_TOKEN: TOKEN, AGENT_SMITH_OFFLINE: "1", AGENT_SMITH_MODELS_FILE: join(root, "..", "studio-e2e-models.json"), XDG_CACHE_HOME: join(root, "..", "studio-e2e-cache") },
       url: `http://127.0.0.1:${PORT}/`,
       reuseExistingServer: false,
       timeout: 90_000,

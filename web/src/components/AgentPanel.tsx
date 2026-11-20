@@ -1,9 +1,10 @@
 /* Agent chat: conversation, a live timeline of each turn (thought, tools, code, output), the answer,
  * a review card of the files the turn changed (open diff, undo one / all), and the composer. */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Boxes, Globe, ScrollText, Bot, Check, ChevronRight, CircleStop, FileDiff, FilePen, FilePlus, FileX, LoaderCircle, MessageSquarePlus, Search, SquareTerminal, Undo2, Workflow, BookOpen } from "lucide-react";
+import { ArrowUp, Boxes, Globe, ScrollText, Bot, Paperclip, Mic, Square, X, FileAudio, FileVideo, FileText, FileCode, File as FileIcon, Check, ChevronRight, CircleStop, FileDiff, FilePen, FilePlus, FileX, LoaderCircle, MessageSquarePlus, Search, SquareTerminal, Undo2, Workflow, BookOpen } from "lucide-react";
 import { agentStore, useAgent, type Step, type ToolCall } from "../lib/agent";
-import type { AgentRun, AppInfo, ScenarioJob } from "../lib/api";
+import { uploadsApi, voiceApi, type ModelChoice, type AgentRun, type AppInfo, type Attachment, type ScenarioJob } from "../lib/api";
+import { Recorder } from "../lib/voice";
 import { editors } from "../lib/editors";
 import { useStudioEvents } from "../lib/events";
 import { useT } from "../lib/i18n";
@@ -25,6 +26,18 @@ const TOOL_ICON: Record<string, typeof Bot> = {
 const argPath = (t: ToolCall) => (typeof t.args.filepath === "string" ? t.args.filepath : typeof t.args.directory === "string" ? t.args.directory : null);
 const short = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const fmtS = (s: number) => (s < 60 ? `${s.toFixed(0)}s` : `${Math.floor(s / 60)}m${String(Math.round(s % 60)).padStart(2, "0")}`);
+
+/** "model · $0.1/$0.5 · 📷🎧🎬": price per 1M tokens in/out and what it reads besides text */
+export function modelLabel(m: ModelChoice): string {
+  const reads = (m.inputs ?? []).map((k) => ({ image: "📷", audio: "🎧", video: "🎬", file: "📄" } as Record<string, string>)[k] ?? "").join("");
+  const price = m.price ? (m.price.in === 0 && m.price.out === 0 ? "free" : `$${m.price.in}/$${m.price.out}`) : m.paid ? "$" : "";
+  return [m.model, price, reads].filter(Boolean).join(" · ");
+}
+
+function AttIcon({ kind }: { kind: Attachment["kind"] }) {
+  const I = kind === "audio" ? FileAudio : kind === "video" ? FileVideo : kind === "pdf" ? FileText : kind === "text" ? FileCode : FileIcon;
+  return <I size={13} />;
+}
 
 const CHAT_COMMANDS = [
   { cmd: "/mbpp", args: "[task id] [model]", key: "cmdx.mbpp" },
@@ -198,6 +211,47 @@ export function AgentPanel() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [mention, setMention] = useState<{ q: string; at: number; files: string[]; i: number } | null>(null);
+  const [files, setFiles] = useState<(Attachment | { pending: string })[]>([]);
+  const [rec, setRec] = useState<{ r: Recorder; secs: number; level: number } | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const [drag, setDrag] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const ready = files.filter((f): f is Attachment => "id" in f);
+  const uploading = files.length !== ready.length;
+  const addFiles = async (list: FileList | File[]) => {
+    for (const f of Array.from(list)) {
+      const tag = { pending: f.name || "file" };
+      setFiles((x) => [...x, tag]);
+      try {
+        const a = await uploadsApi.upload(f, f.name || `pasted-${Date.now()}.${(f.type.split("/")[1] || "bin").split(";")[0]}`);
+        setFiles((x) => x.map((y) => (y === tag ? a : y)));
+      } catch (e) {
+        setFiles((x) => x.filter((y) => y !== tag));
+        toast(`${f.name}: ${e instanceof Error ? e.message : String(e)}`, "err", 7000);
+      }
+    }
+  };
+  // voice: record -> WAV -> transcription on the server -> text in the box (editable before sending)
+  useEffect(() => {
+    if (!rec) return;
+    const id = window.setInterval(() => setRec((r) => r && { ...r, secs: Math.floor((Date.now() - r.r.started) / 1000), level: r.r.level() }), 120);
+    return () => window.clearInterval(id);
+  }, [!!rec]);  // eslint-disable-line react-hooks/exhaustive-deps
+  const toggleVoice = async () => {
+    if (rec) {
+      const r = rec.r;
+      setRec(null); setTranscribing(true);
+      try {
+        const said = await voiceApi.transcribe(await r.stop(), document.documentElement.lang || "");
+        if (said) setText((v) => (v.trim() ? v.trimEnd() + " " : "") + said);
+        box.current?.focus();
+      } catch (e) { toast(t("voice.failed", { e: e instanceof Error ? e.message : String(e) }), "err", 7000); }
+      finally { setTranscribing(false); }
+      return;
+    }
+    try { const r = new Recorder(); await r.start(); setRec({ r, secs: 0, level: 0 }); }
+    catch (e) { toast(t("voice.noMic", { e: e instanceof Error ? e.message : String(e) }), "err", 7000); }
+  };
   // chat commands: Agent Smith's pipeline at once, without the chat model (see parse_command on the server)
   const cmds = /^\/[a-z]*$/i.test(text.trim()) || /^\/(mbpp|swe)\s+\S*$/i.test(text)
     ? CHAT_COMMANDS.filter((c) => c.cmd.startsWith(text.trim().split(/\s/)[0]!.toLowerCase())) : [];
@@ -214,9 +268,9 @@ export function AgentPanel() {
 
   const send = async () => {
     const msg = text.trim();
-    if (!msg || sending || ag.current) return;
+    if ((!msg && !ready.length) || sending || ag.current || uploading) return;
     setSending(true);
-    try { await ag.send(msg); setText(""); }
+    try { await ag.send(msg, ready); setText(""); setFiles([]); }
     catch (e) { toast(e instanceof Error ? e.message : String(e), "err", 7000); }
     finally { setSending(false); }
   };
@@ -260,7 +314,10 @@ export function AgentPanel() {
             const run = runs[m.run];
             return (
               <div key={i} className="exchange">
-                <div className="msg-user"><span className={`mode-b ${m.mode ?? "agent"}`}>{t(m.mode === "ask" ? "ag.ask" : "ag.agent")}</span><div className="msg-t">{m.text}</div></div>
+                <div className="msg-user"><span className={`mode-b ${m.mode ?? "agent"}`}>{t(m.mode === "ask" ? "ag.ask" : "ag.agent")}</span><div className="msg-t">{m.text}</div>
+                  {!!m.attachments?.length && <div className="att-row in-msg">{m.attachments.map((f) => (
+                    <a key={f.id} className={`att k-${f.kind}`} href={uploadsApi.url(f.id)} target="_blank" rel="noreferrer" title={f.path}>
+                      {f.kind === "image" ? <img src={uploadsApi.url(f.id)} alt="" /> : <AttIcon kind={f.kind} />}<span className="nm">{f.name}</span></a>))}</div>}</div>
                 {run && <Turn run={run} live={run.status === "running"} />}
               </div>
             );
@@ -268,7 +325,21 @@ export function AgentPanel() {
           return null;
         })}
       </div>
-      <div className="composer">
+      <div className={`composer${drag ? " drop" : ""}`}
+           onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setDrag(true); } }}
+           onDragLeave={() => setDrag(false)}
+           onDrop={(e) => { if (e.dataTransfer.files.length) { e.preventDefault(); setDrag(false); void addFiles(e.dataTransfer.files); } }}>
+        {files.length > 0 && (
+          <div className="att-row">
+            {files.map((f, k) => "id" in f ? (
+              <span key={f.id} className={`att k-${f.kind}`} title={`${f.path} · ${Math.max(1, Math.round(f.size / 1024))} KB`}>
+                {f.kind === "image" ? <img src={uploadsApi.url(f.id)} alt="" /> : <AttIcon kind={f.kind} />}
+                <span className="nm">{f.name}</span>
+                <button type="button" aria-label={t("att.remove")} onClick={() => setFiles((x) => x.filter((_, i) => i !== k))}><X size={11} /></button>
+              </span>
+            ) : <span key={`p${k}`} className="att pending"><LoaderCircle size={12} className="spin" /><span className="nm">{f.pending}</span></span>)}
+          </div>
+        )}
         {cmds.length > 0 && (
           <div className="mention" role="listbox" aria-label={t("cmdx.title")}>
             {cmds.map((c) => (
@@ -286,7 +357,9 @@ export function AgentPanel() {
             ))}
           </div>
         )}
-        <textarea ref={box} className="composer-in" rows={1} value={text} placeholder={t(ag.mode === "ask" ? "ag.phAsk" : "ag.phAgent")} aria-label={t("ag.message")}
+        <input ref={fileInput} type="file" multiple hidden onChange={(e) => { if (e.target.files) void addFiles(e.target.files); e.target.value = ""; }} />
+        <textarea ref={box} className="composer-in" rows={1} value={text} placeholder={rec ? t("voice.listening") : transcribing ? t("voice.transcribing") : t(ag.mode === "ask" ? "ag.phAsk" : "ag.phAgent")} aria-label={t("ag.message")}
+                  onPaste={(e) => { const imgs = Array.from(e.clipboardData.files); if (imgs.length) { e.preventDefault(); void addFiles(imgs); } }}
                   onChange={(e) => void onChange(e.target.value, e.target.selectionStart)}
                   onKeyDown={(e) => {
                     if (mention) {
@@ -308,14 +381,19 @@ export function AgentPanel() {
                   onChange={(e) => { const [provider, model] = e.target.value.split("|"); ag.setModel({ provider: provider!, model: model! }); }}>
             {choices.map(([prov, ms]) => (
               <optgroup key={prov} label={prov}>
-                {ms.map((m) => <option key={m.model} value={`${m.provider}|${m.model}`} disabled={!m.key_ok}>{m.model}{m.key_ok ? "" : ` (${t("ag.noKey")})`}{m.paid ? " · $" : ""}</option>)}
+                {ms.map((m) => <option key={m.model} value={`${m.provider}|${m.model}`} disabled={!m.key_ok}>{modelLabel(m)}{m.key_ok ? "" : ` (${t("ag.noKey")})`}</option>)}
               </optgroup>
             ))}
           </select>
           <span className="sp" />
+          <button type="button" className="cbtn" onClick={() => fileInput.current?.click()} title={t("att.add")} aria-label={t("att.add")}><Paperclip size={15} /></button>
+          <button type="button" className={`cbtn${rec ? " rec" : ""}`} onClick={() => void toggleVoice()} disabled={transcribing}
+                  title={t(rec ? "voice.stop" : "voice.start")} aria-label={t(rec ? "voice.stop" : "voice.start")} aria-pressed={!!rec}>
+            {transcribing ? <LoaderCircle size={15} className="spin" /> : rec ? <><Square size={11} /><span className="rec-t">{Math.floor(rec.secs / 60)}:{String(rec.secs % 60).padStart(2, "0")}</span><i className="lvl" style={{ transform: `scaleY(${0.25 + rec.level})` }} /></> : <Mic size={15} />}
+          </button>
           {running
             ? <button type="button" className="send stop" onClick={() => void ag.stop()} title={t("ag.stop")} aria-label={t("ag.stop")}><CircleStop size={16} /></button>
-            : <button type="button" className="send" onClick={() => void send()} disabled={!text.trim() || sending} title={t("ag.send")} aria-label={t("ag.send")}>{sending ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={16} />}</button>}
+            : <button type="button" className="send" onClick={() => void send()} disabled={(!text.trim() && !ready.length) || sending || uploading} title={t("ag.send")} aria-label={t("ag.send")}>{sending ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={16} />}</button>}
         </div>
       </div>
     </div>

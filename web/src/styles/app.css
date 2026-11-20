@@ -370,3 +370,19 @@ kbd, .pal-k { font: 11px var(--f-mono); padding: 1px 6px; border: 1px solid var(
 .job-steps .sp { flex: 1; }
 .sb-link { border: 0; background: none; cursor: pointer; font: inherit; } .sb-link:hover { text-decoration: underline; }
 .cmd-item { display: grid; gap: 1px; } .cmd-item .dim { font-size: 11px; }
+
+/* ---------- attachments and voice ---------- */
+.composer.drop { outline: 2px dashed var(--accent); outline-offset: -4px; }
+.att-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px 0; }
+.att-row.in-msg { padding: 4px 0 0; }
+.att { display: inline-flex; align-items: center; gap: 6px; max-width: 220px; height: 28px; padding: 0 6px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--bg-3); font-size: 11.5px; color: var(--ink-2); text-decoration: none; }
+.att img { width: 22px; height: 22px; object-fit: cover; border-radius: 4px; }
+.att .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.att button { border: 0; background: none; color: var(--muted); padding: 2px; display: inline-flex; border-radius: 4px; }
+.att button:hover { color: var(--ink); background: var(--bg-4); }
+.att.pending { opacity: .7; }
+.cbtn { display: inline-flex; align-items: center; gap: 5px; height: 28px; min-width: 28px; justify-content: center; padding: 0 6px; border: 0; border-radius: 7px; background: none; color: var(--muted); }
+.cbtn:hover { background: var(--bg-3); color: var(--ink); }
+.cbtn.rec { color: var(--err); background: color-mix(in srgb, var(--err) 12%, transparent); }
+.cbtn .rec-t { font: 11px var(--f-mono); }
+.cbtn .lvl { display: inline-block; width: 3px; height: 14px; border-radius: 2px; background: var(--err); transition: transform .1s; }

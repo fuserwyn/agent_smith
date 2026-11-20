@@ -71,3 +71,22 @@ test("typing / in the chat lists the commands", async ({ page }) => {
   await page.locator(".composer-in").press("Tab");
   await expect(page.locator(".composer-in")).toHaveValue("/swe ");
 });
+
+test("files can be attached to a message (picker, paste) and are shown with it", async ({ page }) => {
+  await open(page);
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  await page.locator(".composer input[type=file]").setInputFiles([
+    { name: "screen.png", mimeType: "image/png", buffer: png },
+    { name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("hello") },
+  ]);
+  await expect(page.locator(".composer .att:not(.pending)")).toHaveCount(2);
+  await expect(page.locator(".composer .att img")).toHaveCount(1);
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, "14-attachments.png") });
+  await page.locator(".composer .att").filter({ hasText: "notes.txt" }).getByRole("button").click();
+  await expect(page.locator(".composer .att")).toHaveCount(1);
+  await page.locator(".composer-in").fill("What is on this screenshot?");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".msg-user .att").last()).toContainText("screen.png");
+  await expect(page.locator(".composer .att")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /voice input|голосовой ввод/i })).toBeVisible();
+});

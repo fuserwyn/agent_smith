@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 
 Message = Dict[str, str]  # {"role": "system"|"user"|"assistant", "content": "..."}
 
@@ -64,5 +64,16 @@ def estimate_tokens(text: str) -> int:
     return len(text) // 3 + 1
 
 
+# rough cost of a non-text part (its base64 length says nothing about the tokens a model charges for it)
+PART_TOKENS = {"image_url": 1500, "input_audio": 3000, "file": 4000, "video_url": 8000}
+
+
+def estimate_content_tokens(content: Any) -> int:
+    if isinstance(content, list):  # multimodal message: text parts + a fixed estimate per media part
+        return sum(estimate_tokens(p.get("text", "")) if p.get("type") == "text" else PART_TOKENS.get(p.get("type"), 2000)
+                   for p in content if isinstance(p, dict))
+    return estimate_tokens(content or "")
+
+
 def estimate_messages_tokens(messages: List[Message]) -> int:
-    return sum(estimate_tokens(m.get("content", "")) + 4 for m in messages) + 3
+    return sum(estimate_content_tokens(m.get("content", "")) + 4 for m in messages) + 3
