@@ -113,6 +113,7 @@ class AgentStore {
         case "llm_request": cur = step; get(step).thinking = true; break;
         case "llm_response": {
           const s = get(step); s.thinking = false; s.inTok = Number(e.input_tokens ?? 0); s.outTok = Number(e.output_tokens ?? 0);
+          if (s.note?.startsWith("⏳") || s.note?.startsWith("↻")) s.note = null;  // the wait is over
           const text = String(e.text ?? "");
           s.thought = (text.match(/Thought:\s*([\s\S]*?)(?:```|$)/)?.[1] ?? text.split("```")[0] ?? "").trim();
           break;
@@ -127,6 +128,9 @@ class AgentStore {
         }
         case "sandbox_end": { const s = get(cur); s.running = false; s.output = String(e.output ?? ""); s.status = String(e.status ?? ""); break; }
         case "llm_fallback": get(cur || 1).note = `→ ${String(e.to ?? "")}`; break;
+        // provider rate limits: the client waits for the window (throttling) or retries; say so, it is not frozen
+        case "llm_throttle": get(cur || 1).note = `⏳ ${Math.round(Number(e.wait_s ?? 0))} s · rate limit of ${String(e.endpoint ?? "the provider")}`; break;
+        case "llm_retry": get(cur || 1).note = `↻ ${String(e.error ?? "retry").replace(/:\s*\{[\s\S]*$/, "").slice(0, 90)}`; break;
         case "llm_error": get(cur || 1).note = String(e.error ?? "LLM error"); get(cur || 1).thinking = false; break;
         case "loop_detected": get(step).note = "loop"; break;
       }

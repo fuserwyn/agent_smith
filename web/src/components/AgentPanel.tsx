@@ -381,7 +381,7 @@ export function AgentPanel() {
                   onChange={(e) => { const [provider, model] = e.target.value.split("|"); ag.setModel({ provider: provider!, model: model! }); }}>
             {choices.map(([prov, ms]) => (
               <optgroup key={prov} label={prov}>
-                {ms.map((m) => <option key={m.model} value={`${m.provider}|${m.model}`} disabled={!m.key_ok}>{modelLabel(m)}{m.key_ok ? "" : ` (${t("ag.noKey")})`}</option>)}
+                {ms.map((m) => <option key={m.model} value={`${m.provider}|${m.model}`} disabled={!m.key_ok} title={m.notes}>{modelLabel(m)}{m.key_ok ? "" : ` (${t("ag.noKey")})`}</option>)}
               </optgroup>
             ))}
           </select>

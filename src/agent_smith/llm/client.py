@@ -72,6 +72,16 @@ class LLMClient:
                         errors.append(f"{endpoint.label}: all keys cooling down")
                         break
                     self._sleep(wait)
+                # throttling: wait for the provider's window when this request cannot fit it (from its headers)
+                throttle = getattr(endpoint.provider, "throttle_wait", None)
+                pause = throttle(messages, max_tokens) if throttle else 0.0
+                if pause > 0:
+                    if remaining is not None and pause > remaining - 5:
+                        errors.append(f"{endpoint.label}: rate limit window resets in {pause:.0f}s, beyond the time budget")
+                        break
+                    log.info("throttling %s: waiting %.1fs for the rate-limit window", endpoint.label, pause)
+                    self._on_event("llm_throttle", {"endpoint": endpoint.label, "wait_s": pause})
+                    self._sleep(pause)
                 attempts += 1
                 requests += 1
                 self.total_requests += 1
