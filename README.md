@@ -2,6 +2,8 @@
 
 # Agent Smith
 
+**[FAQ — everything it can do](FAQ.md)** · [по-русски](FAQ.ru.md)
+
 ## Description
 
 Agent Smith is a code-agent framework written from scratch (no smolagents / LangGraph / LlamaIndex / CrewAI / AutoGen).
