@@ -115,3 +115,11 @@ def test_one_run_at_a_time_and_validation(project, tmp_path, monkeypatch):
         assert client.post("/api/agent/runs", json={"message": "hi", "mode": "ask"}, headers=H).status_code == 409
         app.state.agent.current = None
         assert client.post("/api/agent/runs", json={"message": "hi"}).status_code == 401
+
+
+def test_default_model_falls_back_to_the_custom_model_list(tmp_path, monkeypatch):
+    f = tmp_path / "models.json"
+    f.write_text('{"providers": [{"name": "local", "base_url": "http://127.0.0.1:9/v1", "key_env": null, "hosts": ["127.0.0.1"]}],'
+                 ' "models": [{"provider": "local", "model": "my-model"}], "fallbacks": [], "fallback_enabled": false}')
+    monkeypatch.setenv("AGENT_SMITH_MODELS_FILE", str(f))
+    assert AgentService.models()["default"] == {"provider": "local", "model": "my-model"}

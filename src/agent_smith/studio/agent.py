@@ -139,7 +139,12 @@ class AgentService:
     def models() -> Dict[str, Any]:
         from agent_smith import ui_jobs  # reads config/models.json and which keys exist (never their values)
         provider, model = ui_jobs.DEFAULTS["swebench"]
-        return {"models": ui_jobs.model_choices(), "default": {"provider": provider, "model": model}}
+        models = ui_jobs.model_choices()
+        if not any((m["provider"], m["model"]) == (provider, model) for m in models) and models:
+            # custom model list (AGENT_SMITH_MODELS_FILE): first model that has a key, else the first one
+            first = next((m for m in models if m["key_ok"]), models[0])
+            provider, model = first["provider"], first["model"]
+        return {"models": models, "default": {"provider": provider, "model": model}}
 
     def _pick(self, provider: Optional[str], model: Optional[str]) -> Dict[str, Any]:
         info = self.models()

@@ -8,7 +8,7 @@ const root = () => process.env.STUDIO_E2E_ROOT!;
 const SHOTS = process.env.STUDIO_SHOTS;
 
 // TODO(stage 3): the message is not shown after Enter in the browser yet — debug, then remove fixme
-test.fixme("the agent edits a file, the change is reviewed and undone", async ({ page }) => {
+test("the agent edits a file, the change is reviewed and undone", async ({ page }) => {
   await page.goto(`/?token=${TOKEN}`);
   await expect(page.locator(".conn.connected")).toBeVisible();
   const box = page.getByRole("textbox", { name: /message to the agent|сообщение агенту/i });
