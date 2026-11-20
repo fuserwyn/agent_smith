@@ -35,6 +35,7 @@ from agent_smith.sandbox import Sandbox
 from agent_smith.sandbox.manual import build_manual
 from agent_smith.studio.apps import TOOLS as APP_TOOLS, AppManager
 from agent_smith.studio.checkpoints import Checkpoints
+from agent_smith.studio.filetools import TOOLS as FILE_TOOLS, FileTools, specs as file_specs
 from agent_smith.studio.media import Media
 from agent_smith.studio.scenarios import TOOL as SCENARIO_TOOL, Scenarios
 from agent_smith.studio.terminal import TerminalManager
@@ -68,7 +69,8 @@ def studio_system_prompt(config, mcp, root: str, mode: str) -> str:
              "You are in AGENT mode: make the requested change directly with the tools (edit_file, run_command…). "
              "Make focused edits, keep the project's style, and verify your change when possible "
              "(run the relevant tests or a quick check with run_command). Create a new file with "
-             "edit_file(path, '', content): open(), os and subprocess are not available in your code.")
+             "write_file(path, content) (long files: the first part, then append_file in the next steps); "
+             "open(), os and subprocess are not available in your code.")
     return f"""You are Agent Smith, a careful senior software engineer working inside the user's project at {root}.
 You act by writing Python code that calls tools (Python functions). The project is only reachable through
 the tools, never with open() or imports.
@@ -290,6 +292,7 @@ class AgentService:
                 env, root = {"TESTBED_PATH": str(self.ws.root)}, str(self.ws.root)
             sink.emit("workspace", {"executor": "docker" if "SWEBENCH_CONTAINER" in env else "local", "root": root})
             llm = build_client(run.model, url, use_fallbacks=True, on_event=sink.emit)
+            llm.max_wait = 15.0  # interactive: a rate-limit wait longer than this moves on to the next model
             config = load_sandbox_config(None)
             mcp = MCPClient(stdio_command=default_server("mcp_tools_swebench.py"), env=server_env(env))
             with mcp.connect():
@@ -304,6 +307,10 @@ class AgentService:
                     if self.scenarios.unavailable() is None:  # Agent Smith's own benchmark runs
                         mcp.tools.append(self.scenarios.spec())
                         local[SCENARIO_TOOL] = lambda args: self.scenarios.call(args, run.id, cancelled)
+                    files = FileTools(self.ws)  # whole files, also in several steps (small output limits)
+                    mcp.tools.extend(file_specs())
+                    for tool in FILE_TOOLS:
+                        local[tool] = lambda args, tool=tool: files.call(tool, args)
                     if self.apps.unavailable() is None:  # build and run a project folder in Docker on a free port
                         mcp.tools.extend(self.apps.specs())
                         for tool in APP_TOOLS:

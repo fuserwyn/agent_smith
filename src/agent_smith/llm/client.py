@@ -45,6 +45,9 @@ class LLMClient:
         self._sleep = sleep
         self._on_event = on_event or (lambda kind, data: None)
         self.total_requests = 0
+        # interactive use: a rate-limit wait longer than this falls back to the next endpoint instead of waiting
+        # (None: wait, as benchmarks do — their time budget decides)
+        self.max_wait: Optional[float] = None
 
     @property
     def primary(self) -> Endpoint:
@@ -76,6 +79,9 @@ class LLMClient:
                 throttle = getattr(endpoint.provider, "throttle_wait", None)
                 pause = throttle(messages, max_tokens) if throttle else 0.0
                 if pause > 0:
+                    if self.max_wait is not None and pause > self.max_wait and ep_index + 1 < len(self.endpoints):
+                        errors.append(f"{endpoint.label}: rate limit window resets in {pause:.0f}s")
+                        break
                     if remaining is not None and pause > remaining - 5:
                         errors.append(f"{endpoint.label}: rate limit window resets in {pause:.0f}s, beyond the time budget")
                         break
@@ -108,6 +114,8 @@ class LLMClient:
                         break
                     if not (exc.rotate_key and len(endpoint.keys) > 1):
                         backoff = exc.retry_after or min(30.0, 1.5 * 2 ** (attempts - 1)) + random.random()
+                        if self.max_wait is not None and backoff > self.max_wait and ep_index + 1 < len(self.endpoints):
+                            break  # interactive: move on to the next model rather than wait
                         if remaining is not None:
                             backoff = min(backoff, max(0.0, remaining - 3))
                         self._sleep(backoff)

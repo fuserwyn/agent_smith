@@ -48,6 +48,9 @@ class FakeLLMServer:
                     self.end_headers()
                     self.wfile.write(json.dumps({"error": {"message": "scripted failure"}}).encode())
                     return
+                finish = "stop"
+                if isinstance(item, dict) and "text" in item:  # {"text": ..., "finish_reason": "length"}
+                    finish, item = item.get("finish_reason", "stop"), item["text"]
                 text = item
                 for s in body.get("stop") or []:
                     if s in text:
@@ -56,7 +59,7 @@ class FakeLLMServer:
                 payload = {
                     "id": "fake", "object": "chat.completion", "model": body.get("model"),
                     "choices": [{"index": 0, "message": {"role": "assistant", "content": text},
-                                 "finish_reason": "stop"}],
+                                 "finish_reason": finish}],
                     "usage": {"prompt_tokens": prompt_chars // 4 + 1, "completion_tokens": len(text) // 4 + 1},
                 }
                 data = json.dumps(payload).encode()

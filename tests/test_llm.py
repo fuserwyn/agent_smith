@@ -150,3 +150,15 @@ def test_a_wait_beyond_the_time_budget_falls_back_instead():
     with pytest.raises(LLMError, match="beyond the time budget"):
         c.chat([{"role": "user", "content": "hi"}], 100, deadline=time.monotonic() + 60)
     assert sleeps == []
+
+
+def test_interactive_client_falls_back_instead_of_waiting_long():
+    import time
+    with FakeLLMServer(["from the backup"]) as backup:
+        slow = OpenAICompatProvider("https://api.groq.com/openai/v1", "limited")
+        slow.tokens_left, slow.tokens_reset_at = 0, time.monotonic() + 58
+        sleeps = []
+        c = LLMClient([Endpoint(slow, KeyPool(["a"])), Endpoint(OpenAICompatProvider(backup.url, "m2"), KeyPool(["b"]))], sleep=sleeps.append)
+        c.max_wait = 15
+        res = c.chat([{"role": "user", "content": "x"}], 10)
+    assert res.text == "from the backup" and sleeps == [] and res.model_name == "m2"   # no 58 s wait

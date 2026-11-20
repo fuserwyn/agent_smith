@@ -180,6 +180,11 @@ class CodeAgent:
                     ev("cancelled", {"step": step_no})
                     break
                 extraction = extract_code(chat.text, self.known_tools)
+                if chat.finish_reason == "length":  # cut by the output limit: say so, or the model retries the same way
+                    extraction.notes.append(
+                        f"Your reply was cut off at the output limit ({chat.output_tokens} tokens), so its code was "
+                        f"incomplete. Write long content in several smaller steps (e.g. the first part of a file, then "
+                        f"the rest in the next steps).")
                 ev("extraction", {"step": step_no, "format": extraction.format, "code": extraction.code or "",
                                   "notes": extraction.notes})
                 result: Optional[ExecutionResult] = None

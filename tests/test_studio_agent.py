@@ -144,3 +144,22 @@ def test_a_finished_run_already_lists_its_changes(project, tmp_path, monkeypatch
         run = client.post("/api/agent/runs", json={"message": "subtract", "mode": "agent"}, headers=H).json()
         done = wait_done(client, run["id"])
         assert done["status"] == "done" and [c["path"] for c in done["changes"]] == ["calc.py"]
+
+
+def test_a_reply_cut_by_the_output_limit_is_reported_and_files_can_be_written_in_parts(project, tmp_path, monkeypatch):
+    cut = {"text": "Thought: big file.\n```python\nwrite_file('page.html', '''<html>\n" + "x" * 50, "finish_reason": "length"}
+    client, _app, srv = make_client(project, tmp_path, monkeypatch, [
+        cut,
+        step("print(write_file('/workspace/site/page.html', '<html>\\n'))"),
+        step("print(append_file('site/page.html', '</html>\\n'))\nprint(write_file('../escape.txt', 'no'))"),
+        step("final_answer('done')"),
+    ])
+    with client, srv:
+        run = client.post("/api/agent/runs", json={"message": "write a page", "mode": "agent"}, headers=H).json()
+        assert wait_done(client, run["id"])["status"] == "done"
+        assert "cut off at the output limit" in srv.requests[1]["messages"][-1]["content"]
+        assert (project / "site" / "page.html").read_text() == "<html>\n</html>\n"
+        obs = srv.requests[3]["messages"][-1]["content"]
+        assert "appended 8 chars to site/page.html" in obs and "write_file failed" in obs
+        assert not (tmp_path / "escape.txt").exists()
+        assert "append_file(" in srv.requests[0]["messages"][0]["content"]
