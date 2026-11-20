@@ -123,7 +123,7 @@ export function EditorArea() {
       {tab && (
         <div className="crumbs mono" aria-label={t("ed.path")}>
           {crumbs.map((c, i) => <span key={i}>{i > 0 && <span className="cs">›</span>}{c}</span>)}
-          {tab.kind !== "file" && <span className="crumb-tag">{tab.kind === "git" ? t("ed.vsHead") : t("ed.vsDisk")}</span>}
+          {tab.kind !== "file" && <span className="crumb-tag">{tab.kind === "git" ? t("ed.vsHead") : tab.kind === "agent" ? t("ed.vsAgent") : t("ed.vsDisk")}</span>}
         </div>
       )}
       {banner}
@@ -149,7 +149,7 @@ export function EditorArea() {
                  onClick={() => editors.activate(x.id)} onDoubleClick={() => editors.pin(x.id)}
                  onMouseDown={(e) => { if (e.button === 1) { e.preventDefault(); ui.closeTab(x.id); } }}>
               {x.kind === "file" ? <FileIcon name={x.path} sensitive={f?.sensitive} /> : <GitCompare size={14} className="fi" />}
-              <span className="tab-t">{ed.title(x)}{x.kind === "git" ? " (HEAD)" : x.kind === "disk" ? ` (${t("ed.disk")})` : ""}</span>
+              <span className="tab-t">{ed.title(x)}{x.kind === "git" ? " (HEAD)" : x.kind === "disk" ? ` (${t("ed.disk")})` : x.kind === "agent" ? ` (${t("ed.agentDiff")})` : ""}</span>
               <button type="button" className="tab-x" aria-label={t("ed.close")} onClick={(e) => { e.stopPropagation(); ui.closeTab(x.id); }}>
                 {f?.dirty && x.kind === "file" ? <span className="dirty-dot" /> : <X size={13} />}
               </button>

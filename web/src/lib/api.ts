@@ -28,6 +28,8 @@ export class ApiError extends Error {
   }
 }
 
+export function authHeaders(): Record<string, string> { return token ? { Authorization: `Bearer ${token}` } : {}; }
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -93,4 +95,31 @@ export const termApi = {
   status: () => api<TermStatus>("/api/terminals"),
   create: (cols: number, rows: number) => api<TermInfo>("/api/terminals", { method: "POST", body: JSON.stringify({ cols, rows }) }),
   kill: (id: string) => api<{ ok: boolean }>(`/api/terminals/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
+
+/* ---------- agent chat ---------- */
+export interface ModelChoice { provider: string; model: string; url: string; notes: string; key_env: string | null; key_ok: boolean; paid: boolean }
+export interface AgentChange { path: string; status: "added" | "modified" | "deleted" }
+export interface AgentRun {
+  id: string; mode: "ask" | "agent"; provider: string; model: string; message: string; started: number; ended: number | null;
+  status: "running" | "done" | "failed" | "stopped"; answer: string; error: string | null; checkpoint: string | null;
+  changes: AgentChange[]; steps: number; input_tokens: number; output_tokens: number;
+}
+export interface ChatMessage { role: "user" | "assistant"; text: string; run: string; mode?: "ask" | "agent"; status?: AgentRun["status"]; ts: number }
+export interface AgentState { messages: ChatMessage[]; runs: Record<string, AgentRun>; current: string | null }
+export type TraceEvent = { t: number; type: string; [k: string]: unknown };
+export const agentApi = {
+  models: () => api<{ models: ModelChoice[]; default: { provider: string; model: string } }>("/api/agent/models"),
+  state: () => api<AgentState>("/api/agent/state"),
+  start: (message: string, mode: "ask" | "agent", provider?: string, model?: string) =>
+    api<AgentRun>("/api/agent/runs", { method: "POST", body: JSON.stringify({ message, mode, provider, model }) }),
+  stop: (id: string) => api<{ ok: boolean }>(`/api/agent/runs/${id}/stop`, { method: "POST" }),
+  diff: (id: string, path: string) => api<GitDiff>(`/api/agent/runs/${id}/diff` + q({ path })),
+  undo: (id: string, paths?: string[]) => api<{ restored: string[]; changes: AgentChange[] }>(`/api/agent/runs/${id}/undo`, { method: "POST", body: JSON.stringify({ paths: paths ?? null }) }),
+  trace: async (id: string): Promise<TraceEvent[]> => {
+    const res = await fetch(`/api/agent/runs/${id}/trace`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return (await res.text()).split("\n").filter(Boolean).map((l) => { try { return JSON.parse(l) as TraceEvent; } catch { return null; } }).filter((x): x is TraceEvent => !!x);
+  },
+  clear: () => api<{ ok: boolean }>("/api/agent/clear", { method: "POST" }),
 };

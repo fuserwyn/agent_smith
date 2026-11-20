@@ -7,15 +7,15 @@
  * downloaded until the user asks to see them. */
 import { useSyncExternalStore } from "react";
 import type * as Mon from "monaco-editor";
-import { ApiError, fs, gitApi } from "./api";
+import { agentApi, ApiError, fs, gitApi } from "./api";
 import type { FsChange } from "./events";
 
 type Monaco = typeof Mon;
 let monacoP: Promise<Monaco> | null = null;
 export const loadMonaco = (): Promise<Monaco> => (monacoP ??= import("./monaco").then((m) => m.monaco));
 
-export type TabKind = "file" | "git" | "disk";
-export interface Tab { id: string; kind: TabKind; path: string; preview: boolean }
+export type TabKind = "file" | "git" | "disk" | "agent";
+export interface Tab { id: string; kind: TabKind; path: string; preview: boolean; run?: string }
 export interface FileState {
   path: string;
   loading: boolean;
@@ -34,7 +34,7 @@ export interface FileState {
 }
 export interface DiffState { loading: boolean; error: string | null; label: string }
 
-const tabId = (kind: TabKind, path: string) => `${kind}:${path}`;
+const tabId = (kind: TabKind, path: string, run?: string) => (run ? `${kind}:${run}:${path}` : `${kind}:${path}`);
 const base = (p: string) => p.split("/").pop() || p;
 
 class EditorStore {
@@ -69,23 +69,23 @@ class EditorStore {
   }
 
   /* ---------------- opening ---------------- */
-  async open(path: string, opts: { preview?: boolean; line?: number; col?: number; kind?: TabKind } = {}) {
+  async open(path: string, opts: { preview?: boolean; line?: number; col?: number; kind?: TabKind; run?: string } = {}) {
     const kind = opts.kind ?? "file";
-    const id = tabId(kind, path);
+    const id = tabId(kind, path, opts.run);
     const existing = this.tabs.find((t) => t.id === id);
     if (opts.line) this.reveal = { path, line: opts.line, col: opts.col ?? 1 };
     if (existing) {
       if (!opts.preview) existing.preview = false;
       this.active = id; this.emit();
     } else {
-      const tab: Tab = { id, kind, path, preview: !!opts.preview };
+      const tab: Tab = { id, kind, path, preview: !!opts.preview, run: opts.run };
       const idx = opts.preview ? this.tabs.findIndex((t) => t.preview && !this.files.get(t.path)?.dirty) : -1;
       if (idx >= 0) { const old = this.tabs[idx]!; this.tabs = [...this.tabs]; this.tabs[idx] = tab; this.release(old); }
       else this.tabs = [...this.tabs, tab];
       this.active = id; this.emit();
     }
     if (kind === "file") await this.ensureFile(path);
-    else await this.loadDiff(path, kind);
+    else await this.loadDiff(path, kind, opts.run);
   }
 
   async ensureFile(path: string, force = false) {
@@ -123,15 +123,15 @@ class EditorStore {
 
   revealSecret(path: string) { return this.ensureFile(path, true); }
 
-  private async loadDiff(path: string, kind: TabKind) {
-    const id = tabId(kind, path);
-    this.diffs.set(id, { loading: true, error: null, label: kind === "git" ? "HEAD" : "disk" });
+  private async loadDiff(path: string, kind: TabKind, run?: string) {
+    const id = tabId(kind, path, run);
+    this.diffs.set(id, { loading: true, error: null, label: kind === "git" ? "HEAD" : kind === "agent" ? "before" : "disk" });
     this.emit();
     try {
       const monaco = await loadMonaco();
       let left: string;
-      if (kind === "git") {
-        const d = await gitApi.diff(path);
+      if (kind === "git" || kind === "agent") {
+        const d = kind === "agent" && run ? await agentApi.diff(run, path) : await gitApi.diff(path);
         left = d.original;
         if (!d.deleted) await this.ensureFile(path);
         if (d.deleted && !this.models.has(path)) {  // nothing on disk: an empty right side
@@ -141,11 +141,11 @@ class EditorStore {
         left = (await fs.read(path)).content ?? "";
         await this.ensureFile(path);
       }
-      const uri = monaco.Uri.from({ scheme: kind === "git" ? "git-head" : "on-disk", path: "/" + path });
+      const uri = monaco.Uri.from({ scheme: kind === "git" ? "git-head" : kind === "agent" ? `before-${run}` : "on-disk", path: "/" + path });
       const prev = this.originals.get(id);
       if (prev) prev.setValue(left);
       else this.originals.set(id, monaco.editor.createModel(left, undefined, uri));
-      this.diffs.set(id, { loading: false, error: null, label: kind === "git" ? "HEAD" : "disk" });
+      this.diffs.set(id, { loading: false, error: null, label: kind === "git" ? "HEAD" : kind === "agent" ? "before" : "disk" });
     } catch (e) {
       this.diffs.set(id, { loading: false, error: e instanceof ApiError ? e.message : String(e), label: "" });
     }
@@ -219,6 +219,7 @@ class EditorStore {
         } catch { /* gone again or unreadable: the next event tells */ }
       }
       for (const kind of ["git", "disk"] as const) if (this.tabs.some((t) => t.id === tabId(kind, c.path))) void this.loadDiff(c.path, kind);
+      for (const t of this.tabs.filter((x) => x.kind === "agent" && x.path === c.path)) void this.loadDiff(c.path, "agent", t.run);
     }
   }
 

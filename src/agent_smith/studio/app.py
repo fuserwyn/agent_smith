@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import json
+import os
 import platform
 import shutil
 import subprocess
@@ -12,12 +14,13 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from agent_smith.config import PROJECT_ROOT
 from agent_smith.studio import __version__, git
+from agent_smith.studio.agent import AgentService
 from agent_smith.studio.events import EventHub
 from agent_smith.studio.security import GuardMiddleware
 from agent_smith.studio.terminal import DEFAULT_IMAGE, TerminalError, TerminalManager
@@ -53,6 +56,23 @@ class PathBody(BaseModel):
     path: str
 
 
+class AskBody(BaseModel):
+    message: str = Field(..., max_length=20000)
+    mode: str = Field("agent", pattern="^(ask|agent)$")
+    provider: Optional[str] = None
+    model: Optional[str] = None
+
+
+class UndoBody(BaseModel):
+    paths: Optional[list[str]] = None
+
+
+def default_state_dir(root: Path) -> Path:
+    """Studio data of a project (chat, traces, checkpoints): outside the project, per user."""
+    base = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+    return base / "agent-smith-studio" / hashlib.sha1(str(root).encode()).hexdigest()[:12]
+
+
 class TermBody(BaseModel):
     cols: int = Field(100, ge=2, le=1000)
     rows: int = Field(30, ge=2, le=500)
@@ -69,20 +89,31 @@ def _docker_state() -> Dict[str, Any]:
 
 
 def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST, *,
-               shell: str = "docker", image: str = DEFAULT_IMAGE) -> FastAPI:
+               shell: str = "docker", image: str = DEFAULT_IMAGE, state_dir: Optional[Path] = None) -> FastAPI:
     ws = Workspace(Path(workspace))
     hub = EventHub(ws)
     terms = TerminalManager(ws.root, mode=shell, image=image)
+    loop_box: Dict[str, asyncio.AbstractEventLoop] = {}
+
+    def publish_threadsafe(message: Dict[str, Any]) -> None:  # agent runs live in worker threads
+        loop = loop_box.get("loop")
+        if loop is not None and not loop.is_closed():
+            loop.call_soon_threadsafe(hub.publish, message)
+
+    agent = AgentService(ws, state_dir or default_state_dir(ws.root), terms, publish_threadsafe)
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
+        loop_box["loop"] = asyncio.get_running_loop()
         yield
+        for run_id in list(agent._cancel):
+            agent.stop(run_id)
         await hub.close()
         terms.close_all()
 
     app = FastAPI(title="Agent Smith Studio", version=__version__, docs_url=None, redoc_url=None, openapi_url=None,
                   lifespan=lifespan)
-    app.state.workspace, app.state.hub, app.state.terminals = ws, hub, terms
+    app.state.workspace, app.state.hub, app.state.terminals, app.state.agent = ws, hub, terms, agent
 
     @app.exception_handler(WorkspaceError)
     @app.exception_handler(TerminalError)
@@ -144,6 +175,42 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
     @app.get("/api/git/diff")
     def git_diff(path: str) -> Dict[str, Any]:
         return git.diff(ws, path)
+
+    # ---------------------------------------------------------------- agent chat
+    @app.get("/api/agent/models")
+    def agent_models() -> Dict[str, Any]:
+        return agent.models()
+
+    @app.get("/api/agent/state")
+    def agent_state() -> Dict[str, Any]:
+        return agent.state()
+
+    @app.post("/api/agent/runs")
+    def agent_start(body: AskBody) -> Dict[str, Any]:
+        return agent.start(body.message, body.mode, body.provider, body.model).public()
+
+    @app.post("/api/agent/runs/{run_id}/stop")
+    def agent_stop(run_id: str) -> Dict[str, Any]:
+        agent.get(run_id)
+        agent.stop(run_id)
+        return {"ok": True}
+
+    @app.get("/api/agent/runs/{run_id}/diff")
+    def agent_diff(run_id: str, path: str) -> Dict[str, Any]:
+        return agent.diff(run_id, path)
+
+    @app.post("/api/agent/runs/{run_id}/undo")
+    def agent_undo(run_id: str, body: UndoBody) -> Dict[str, Any]:
+        return agent.undo(run_id, body.paths)
+
+    @app.get("/api/agent/runs/{run_id}/trace", response_class=PlainTextResponse)
+    def agent_trace(run_id: str) -> str:
+        return agent.trace(run_id)
+
+    @app.post("/api/agent/clear")
+    def agent_clear() -> Dict[str, Any]:
+        agent.clear()
+        return {"ok": True}
 
     # ---------------------------------------------------------------- terminals
     @app.get("/api/terminals")

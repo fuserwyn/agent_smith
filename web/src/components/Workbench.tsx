@@ -2,8 +2,9 @@
  * Every split is draggable (react-resizable-panels) and the layout is remembered per viewer. */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Group, Panel, Separator, useDefaultLayout, type PanelImperativeHandle } from "react-resizable-panels";
-import { Activity, Bot, Files, ScrollText, Settings, SquareTerminal, Workflow } from "lucide-react";
+import { Activity, Files, ScrollText, Settings, SquareTerminal, Workflow } from "lucide-react";
 import { ActivityBar, type View } from "./ActivityBar";
+import { AgentPanel } from "./AgentPanel";
 import { EditorArea } from "./EditorArea";
 import { Explorer } from "./Explorer";
 import { ContextMenu, Dialog, Toaster, type DialogSpec, type MenuItem } from "./overlays";
@@ -166,9 +167,8 @@ export function Workbench({ workspace }: { workspace: string }) {
             </Group>
           </Panel>
           <Separator className="sep sep-v" />
-          <Panel id="agent" defaultSize="25" minSize={280} className="pane agent">
-            <PaneHeader title={t("panel.agent")} />
-            <EmptyState icon={<Bot size={26} />} title={t("agent.empty.title")} body={t("agent.empty.body")} note={t("agent.soon")} />
+          <Panel id="agent" defaultSize="27" minSize={300} className="pane agent">
+            <AgentPanel />
           </Panel>
         </Group>
       </div>

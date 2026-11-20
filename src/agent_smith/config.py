@@ -100,7 +100,8 @@ class ModelsConfig(BaseModel):
 
 
 def load_models_config(path: Optional[str | os.PathLike] = None) -> ModelsConfig:
-    path = Path(path) if path else PROJECT_ROOT / "config" / "models.json"
+    # AGENT_SMITH_MODELS_FILE: your own model list (e.g. a local Ollama), same format as config/models.json
+    path = Path(path or os.environ.get("AGENT_SMITH_MODELS_FILE") or PROJECT_ROOT / "config" / "models.json")
     if not path.is_file():
         return ModelsConfig()
     return ModelsConfig.model_validate(json.loads(path.read_text(encoding="utf-8")))

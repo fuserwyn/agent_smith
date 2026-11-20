@@ -64,7 +64,8 @@ class CodeAgent:
     def __init__(self, llm: LLMClient, sandbox: Sandbox, system_prompt: str, limits: Limits, benchmark: str,
                  task_id: str, settings: Optional[AgentSettings] = None, events: EventSink = NULL_SINK,
                  fallback_answer: Optional[Callable[[], Optional[str]]] = None, started: Optional[float] = None,
-                 answer_validator: Optional[Callable[[str], Optional[str]]] = None):
+                 answer_validator: Optional[Callable[[str], Optional[str]]] = None,
+                 cancel: Optional[Callable[[], bool]] = None):
         self.llm = llm
         self.sandbox = sandbox
         self.system_prompt = system_prompt
@@ -80,6 +81,8 @@ class CodeAgent:
         self.steps: List[StepMetrics] = []
         self.history: List[tuple] = []  # (assistant_text, observation_text)
         self.interrupted = False
+        # cooperative stop (e.g. the studio's Stop button): checked before each LLM call and before running its code
+        self.cancel = cancel
         self.loop_streak = 0  # consecutive exact repeats: raises the sampling temperature to break the loop
         self.known_tools = [t.name for t in sandbox.mcp.tools] if sandbox.mcp else []
 
@@ -134,6 +137,10 @@ class CodeAgent:
         error: Optional[str] = None
         try:
             while True:
+                if self.cancel is not None and self.cancel():
+                    error = "stopped by the user"
+                    ev("cancelled", {"step": self.budget.iterations})
+                    break
                 messages = self._messages(task_prompt)
                 estimate = self._estimate(messages)
                 ok, reason = self.budget.can_start_step(estimate)
@@ -163,6 +170,10 @@ class CodeAgent:
                                     "output_tokens": chat.output_tokens, "request_time_ms": chat.request_time_ms,
                                     "retries": chat.retries, "finish_reason": chat.finish_reason})
 
+                if self.cancel is not None and self.cancel():  # do not run code that arrived after Stop (tokens are counted)
+                    error = "stopped by the user"
+                    ev("cancelled", {"step": step_no})
+                    break
                 extraction = extract_code(chat.text, self.known_tools)
                 ev("extraction", {"step": step_no, "format": extraction.format, "code": extraction.code or "",
                                   "notes": extraction.notes})

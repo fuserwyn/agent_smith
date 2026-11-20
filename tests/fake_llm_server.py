@@ -18,8 +18,9 @@ from typing import Any, List, Union
 
 
 class FakeLLMServer:
-    def __init__(self, script: List[Union[str, dict]], model: str = "fake-model"):
+    def __init__(self, script: List[Union[str, dict]], model: str = "fake-model", port: int = 0, loop: bool = False):
         self.script = list(script)
+        self.loop = loop
         self.model = model
         self.requests: List[dict] = []
         self.auth_headers: List[str] = []
@@ -34,6 +35,8 @@ class FakeLLMServer:
                 server.requests.append(body)
                 server.auth_headers.append(self.headers.get("Authorization", ""))
                 item = server.script.pop(0) if server.script else "Thought: done\n```python\nfinal_answer('')\n```"
+                if server.loop:
+                    server.script.append(item)
                 if isinstance(item, dict) and "status" in item:
                     self.send_response(item["status"])
                     self.send_header("Content-Type", "application/json")
@@ -58,7 +61,7 @@ class FakeLLMServer:
                 self.end_headers()
                 self.wfile.write(data)
 
-        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
         self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}/v1"
 
     def __enter__(self) -> "FakeLLMServer":
@@ -68,3 +71,17 @@ class FakeLLMServer:
     def __exit__(self, *exc: Any) -> None:
         self.httpd.shutdown()
         self.httpd.server_close()
+
+
+if __name__ == "__main__":  # used by the studio end-to-end tests: a scripted model on a fixed port
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--port", type=int, required=True)
+    ap.add_argument("--script", required=True, help="JSON list of answers")
+    ap.add_argument("--loop", action="store_true", help="replay the script again and again")
+    a = ap.parse_args()
+    with open(a.script, encoding="utf-8") as fh:
+        srv = FakeLLMServer(json.load(fh), port=a.port, loop=a.loop)
+    print(f"fake LLM on {srv.url}", flush=True)
+    srv.httpd.serve_forever()
