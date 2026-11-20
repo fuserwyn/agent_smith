@@ -153,7 +153,17 @@ def _model(params: Dict[str, Any], bench: str) -> tuple:
     for m in model_choices():
         if m["provider"] == want_p and m["model"] == want_m:
             return m["model"], m["url"]
+    spec = load_models_config().provider_by_name("openrouter")
+    if want_p == "openrouter" and spec and "/" in want_m:  # any model of the OpenRouter catalog (studio picks)
+        return want_m, spec.base_url
     raise ActionError(f"unknown model {want_p}/{want_m} (not in config/models.json)")
+
+
+def _no_free_fallback(model: str) -> Dict[str, str]:
+    """A paid model runs alone: AGENT_FALLBACK=0 keeps the agent from answering with a free fallback model."""
+    known = {m["model"]: m["paid"] for m in model_choices()}
+    paid = known.get(model, not model.endswith(":free") and "/" in model and model not in known)
+    return {"AGENT_FALLBACK": "0"} if paid else {}
 
 
 def plan(action: str, params: Dict[str, Any], job_dir: Path) -> List[Step]:
@@ -169,7 +179,7 @@ def plan(action: str, params: Dict[str, Any], job_dir: Path) -> List[Step]:
                                "--output", f"../{rel}/task.json"], MOULINETTE, moul),
             Step("step_agent", ["uv", "run", "python", "-m", "agent_mbpp", "--task-file", f"{rel}/task.json",
                                 "--output", f"{rel}/solution.json", "--model-name", model, "--provider-url", url,
-                                "--env-file", ".env", "--trace-file", f"{rel}/events.jsonl"]),
+                                "--env-file", ".env", "--trace-file", f"{rel}/events.jsonl"], env=_no_free_fallback(model)),
             Step("step_validate", ["uv", "run", "moulinette_eval", "validate", "mbpp", f"../{rel}/task.json",
                                    f"../{rel}/solution.json"], MOULINETTE, {**moul, "DOCKER_HOST": docker_host()}),
         ]
@@ -183,7 +193,7 @@ def plan(action: str, params: Dict[str, Any], job_dir: Path) -> List[Step]:
                                "--output", f"../{rel}/task.json"], MOULINETTE, moul),
             Step("step_agent", ["uv", "run", "python", "-m", "agent_swebench", "--task-file", f"{rel}/task.json",
                                 "--output", f"{rel}/solution.json", "--model-name", model, "--provider-url", url,
-                                "--env-file", ".env", "--trace-file", f"{rel}/events.jsonl"]),
+                                "--env-file", ".env", "--trace-file", f"{rel}/events.jsonl"], env=_no_free_fallback(model)),
             Step("step_containers", ["docker", "ps", "-a", "--filter", "label=agent-smith"]),
             Step("step_validate", ["uv", "run", "moulinette_eval", "validate", "swebench", f"../{rel}/task.json",
                                    f"../{rel}/solution.json"], MOULINETTE, {**moul, "DOCKER_HOST": docker_host()}),

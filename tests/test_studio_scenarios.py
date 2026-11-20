@@ -145,3 +145,40 @@ def test_unknown_mbpp_ids_are_refused_with_the_nearest_ones(tmp_path, monkeypatc
     out = Scenarios(lambda e: None).call({"benchmark": "mbpp", "task_id": 5}, "r", lambda: False)
     assert out.is_error and "MBPP task 5 does not exist" in out.text and "Nearest ids: 2, 3, 4, 6, 7, 11" in out.text
     assert fake_repo == []                                                # nothing was started
+
+
+def test_a_paid_chat_model_runs_everything_itself(tmp_path, monkeypatch, fake_repo):
+    from agent_smith.llm import client as llm_client
+    from agent_smith.studio.agent import AgentService
+    built = []
+    real = llm_client.build_client
+
+    def spy(*a, **kw):
+        built.append(kw)
+        return real(*a, **kw)
+
+    monkeypatch.setattr("agent_smith.studio.agent.build_client", spy)
+    client, srv = make_client(tmp_path, monkeypatch, [step("print(run_agent_smith('mbpp', '11'))"), step("final_answer('ok')")])
+    paid = {"provider": "openrouter", "model": "acme/paid-1", "url": srv.url, "key_ok": True, "paid": True, "key_env": None, "notes": ""}
+    monkeypatch.setattr(AgentService, "models", staticmethod(lambda on_catalog=None: {"models": [paid], "default": {"provider": "openrouter", "model": "acme/paid-1"}}))
+    with client, srv:
+        run = client.post("/api/agent/runs", json={"message": "run mbpp 11", "mode": "agent"}, headers=H).json()
+        wait_done(client, run["id"])
+        assert built[-1]["no_fallbacks"] is True                                   # the chat model has no free fallback
+        assert fake_repo[-1] == ("mbpp", {"task_id": "11", "provider": "openrouter", "model": "acme/paid-1"})  # inner run too
+        cmd = client.post("/api/agent/runs", json={"message": "/mbpp 12", "mode": "agent", "provider": "openrouter", "model": "acme/paid-1"}, headers=H).json()
+        wait_done(client, cmd["id"])
+        assert fake_repo[-1][1]["model"] == "acme/paid-1"                          # /mbpp follows the paid model
+
+
+def test_paid_runs_disable_the_cli_fallback():
+    assert ui_jobs._no_free_fallback("anthropic/claude-haiku-5.5") == {"AGENT_FALLBACK": "0"}
+    assert ui_jobs._no_free_fallback("some/new-model") == {"AGENT_FALLBACK": "0"}  # catalog pick, not in config
+    assert ui_jobs._no_free_fallback("qwen/qwen3.8-27b") == {} and ui_jobs._no_free_fallback("x/y:free") == {}
+
+
+def test_build_client_without_fallbacks(monkeypatch):
+    from agent_smith.llm import build_client
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    monkeypatch.setenv("AGENT_FALLBACK", "1")
+    assert len(build_client("anthropic/claude-haiku-5.5", "https://openrouter.ai/api/v1", use_fallbacks=True, no_fallbacks=True).endpoints) == 1

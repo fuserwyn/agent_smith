@@ -124,6 +124,7 @@ class Run:
     output_tokens: int = 0
     trace: str = ""
     attachments: List[Dict[str, Any]] = field(default_factory=list)  # uploads given with the message
+    paid: bool = False  # a paid model was chosen: the whole turn stays on it (no free fallback)
 
     def public(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -235,13 +236,17 @@ class AgentService:
         if mode not in ("ask", "agent"):
             raise WorkspaceError(400, "mode must be ask or agent")
         command = parse_command(message)
+        if command and not command.get("model") and provider and model:  # /mbpp, /swe follow a paid chat model
+            chosen = next((x for x in self.models()["models"] if (x["provider"], x["model"]) == (provider, model)), None)
+            if chosen and chosen.get("paid"):
+                command["model"] = model
         m = ({"provider": "agent-smith", "model": command.get("model") or "default model", "url": ""} if command
              else self._pick(provider, model))
         with self._lock:
             if self.current:
                 raise WorkspaceError(409, "the agent is already working")
             run = Run(id=uuid.uuid4().hex[:12], mode=mode, provider=m["provider"], model=m["model"], message=message,
-                      attachments=files)
+                      attachments=files, paid=bool(m.get("paid")))
             run.trace = str(self.state_dir / "runs" / f"{run.id}.jsonl")
             self.runs[run.id] = run
             self.current = run.id
@@ -291,7 +296,8 @@ class AgentService:
             else:
                 env, root = {"TESTBED_PATH": str(self.ws.root)}, str(self.ws.root)
             sink.emit("workspace", {"executor": "docker" if "SWEBENCH_CONTAINER" in env else "local", "root": root})
-            llm = build_client(run.model, url, use_fallbacks=True, on_event=sink.emit)
+            # a paid model chosen in the chat: every request of the turn goes to it, never to a free fallback
+            llm = build_client(run.model, url, use_fallbacks=not run.paid, no_fallbacks=run.paid, on_event=sink.emit)
             llm.max_wait = 15.0  # interactive: a rate-limit wait longer than this moves on to the next model
             config = load_sandbox_config(None)
             mcp = MCPClient(stdio_command=default_server("mcp_tools_swebench.py"), env=server_env(env))
@@ -306,7 +312,8 @@ class AgentService:
                     cancelled = self._cancel[run.id].is_set
                     if self.scenarios.unavailable() is None:  # Agent Smith's own benchmark runs
                         mcp.tools.append(self.scenarios.spec())
-                        local[SCENARIO_TOOL] = lambda args: self.scenarios.call(args, run.id, cancelled)
+                        local[SCENARIO_TOOL] = lambda args: self.scenarios.call(  # inner runs follow a paid chat model
+                            {**args, "model": args.get("model") or (run.model if run.paid else None)}, run.id, cancelled)
                     files = FileTools(self.ws)  # whole files, also in several steps (small output limits)
                     mcp.tools.extend(file_specs())
                     for tool in FILE_TOOLS:

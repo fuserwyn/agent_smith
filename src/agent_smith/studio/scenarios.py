@@ -90,7 +90,10 @@ class Scenarios:
         elif action == "swebench":
             params["task_id"] = DEFAULT_SWE
         if args.get("model"):
-            match = [m for m in ui_jobs.model_choices() if m["model"] == str(args["model"]).strip()]
+            want = str(args["model"]).strip()
+            match = [m for m in ui_jobs.model_choices() if m["model"] == want]
+            if not match and "/" in want and ui_jobs.load_models_config().provider_by_name("openrouter"):
+                match = [{"provider": "openrouter", "model": want}]  # any OpenRouter model (e.g. picked in its tab)
             if not match:
                 return out(f"unknown model {args['model']!r}; models: "
                            + ", ".join(m["model"] for m in ui_jobs.model_choices() if m["key_ok"]), True)

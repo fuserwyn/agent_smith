@@ -133,7 +133,7 @@ class LLMClient:
         raise LLMError("all LLM attempts failed: " + "; ".join(errors[-5:]), retryable=False)
 
 
-def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False,
+def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False, no_fallbacks: bool = False,
                  models_config: Optional[ModelsConfig] = None,
                  on_event: Optional[Callable[[str, dict], None]] = None) -> LLMClient:
     """Create a client for ``--model-name`` / ``--provider-url`` with keys from the environment."""
@@ -148,7 +148,8 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
                                                extra_body=spec.extra_body if spec else None),
                           KeyPool(keys), spec.name if spec else "")]
     # fallback_enabled in config/models.json turns this on by default; AGENT_FALLBACK=0 turns it off (tests, debugging)
-    if use_fallbacks or (cfg.fallback_enabled and os.environ.get("AGENT_FALLBACK", "1") != "0"):
+    # no_fallbacks: the caller chose this model on purpose (e.g. a paid one): never answer with another model
+    if not no_fallbacks and (use_fallbacks or (cfg.fallback_enabled and os.environ.get("AGENT_FALLBACK", "1") != "0")):
         for fb in cfg.fallbacks:
             fspec = cfg.provider_by_name(fb.provider)
             if not fspec or (fspec.base_url.rstrip("/") == provider_url.rstrip("/") and fb.model == model_name):
