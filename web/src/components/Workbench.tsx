@@ -2,14 +2,15 @@
  * Every split is draggable (react-resizable-panels) and the layout is remembered per viewer. */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Group, Panel, Separator, useDefaultLayout, type PanelImperativeHandle } from "react-resizable-panels";
-import { Activity, Bot, Files, Plus, ScrollText, Settings, SquareTerminal, Workflow } from "lucide-react";
+import { Activity, Bot, Files, ScrollText, Settings, SquareTerminal, Workflow } from "lucide-react";
 import { ActivityBar, type View } from "./ActivityBar";
 import { EditorArea } from "./EditorArea";
 import { Explorer } from "./Explorer";
 import { ContextMenu, Dialog, Toaster, type DialogSpec, type MenuItem } from "./overlays";
 import { QuickOpen, invalidateFileIndex } from "./QuickOpen";
 import { GitPanel, SearchPanel } from "./SidePanels";
-import { EmptyState, IconButton, PaneHeader } from "./ui";
+import { TerminalPanel } from "./TerminalPanel";
+import { EmptyState, PaneHeader } from "./ui";
 import { gitApi, type GitFile, type GitStatus } from "../lib/api";
 import { editors } from "../lib/editors";
 import { useStudioEvents, type StudioEvent } from "../lib/events";
@@ -36,6 +37,8 @@ export function Workbench({ workspace }: { workspace: string }) {
   const [searchFocus, setSearchFocus] = useState(0);
   const [git, setGit] = useState<GitStatus | null>(null);
   const side = useRef<PanelImperativeHandle | null>(null);
+  const bottomPanel = useRef<PanelImperativeHandle | null>(null);
+  const [termFocus, setTermFocus] = useState(0);
   const outer = useDefaultLayout({ id: "studio-outer", storage });
   const center = useDefaultLayout({ id: "studio-center", storage });
 
@@ -84,6 +87,13 @@ export function Workbench({ workspace }: { workspace: string }) {
   /* ---------------- keyboard shortcuts + unsaved-changes guard ---------------- */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "`") {  // like VS Code: show and focus the terminal
+        e.preventDefault();
+        setBottom("terminal");
+        if (bottomPanel.current?.isCollapsed()) bottomPanel.current.expand();
+        setTermFocus((n) => n + 1);
+        return;
+      }
       if (!mod(e)) return;
       const k = e.key.toLowerCase();
       if (k === "p" && !e.shiftKey) { e.preventDefault(); setQuickOpen(true); }
@@ -129,7 +139,7 @@ export function Workbench({ workspace }: { workspace: string }) {
                 <EditorArea />
               </Panel>
               <Separator className="sep sep-h" />
-              <Panel id="bottom" defaultSize="30" minSize={90} collapsible collapsedSize={34} className="pane bottom">
+              <Panel id="bottom" panelRef={bottomPanel} defaultSize="30" minSize={90} collapsible collapsedSize={34} className="pane bottom">
                 <div className="ptabs" role="tablist">
                   {BOTTOM.map(({ id, key, Icon }) => (
                     <button key={id} type="button" role="tab" aria-selected={bottom === id} className="ptab" onClick={() => setBottom(id)}>
@@ -137,10 +147,10 @@ export function Workbench({ workspace }: { workspace: string }) {
                     </button>
                   ))}
                   <span className="ptabs-spacer" />
-                  {bottom === "terminal" && <IconButton label="+"><Plus size={15} /></IconButton>}
                 </div>
                 <div className="pbody">
-                  {bottom === "terminal" && <EmptyState icon={<SquareTerminal size={22} />} title={t("panel.terminal")} note={t("terminal.soon")} />}
+                  {/* kept mounted: terminals keep their screen while another tab is shown */}
+                  <div className="pbody-term" hidden={bottom !== "terminal"}><TerminalPanel visible={bottom === "terminal"} focusSignal={termFocus} /></div>
                   {bottom === "inside" && <EmptyState icon={<Workflow size={22} />} title={t("panel.inside")} note={t("inside.soon")} />}
                   {bottom === "output" && <EmptyState icon={<ScrollText size={22} />} title={t("panel.output")} />}
                 </div>

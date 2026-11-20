@@ -85,3 +85,12 @@ export const gitApi = {
   status: () => api<GitStatus>("/api/git/status"),
   diff: (path: string) => api<GitDiff>("/api/git/diff" + q({ path })),
 };
+
+/* ---------- terminals ---------- */
+export interface TermInfo { id: string; title: string; mode: "docker" | "local"; alive: boolean; exit_code: number | null; started: number }
+export interface TermStatus { mode: "docker" | "local"; available: boolean; reason: string | null; image: string | null; container: string | null; sessions: TermInfo[] }
+export const termApi = {
+  status: () => api<TermStatus>("/api/terminals"),
+  create: (cols: number, rows: number) => api<TermInfo>("/api/terminals", { method: "POST", body: JSON.stringify({ cols, rows }) }),
+  kill: (id: string) => api<{ ok: boolean }>(`/api/terminals/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};

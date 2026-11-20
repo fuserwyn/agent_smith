@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import platform
 import shutil
 import subprocess
@@ -19,6 +20,7 @@ from agent_smith.config import PROJECT_ROOT
 from agent_smith.studio import __version__, git
 from agent_smith.studio.events import EventHub
 from agent_smith.studio.security import GuardMiddleware
+from agent_smith.studio.terminal import DEFAULT_IMAGE, TerminalError, TerminalManager
 from agent_smith.studio.workspace import Workspace, WorkspaceError
 
 WEB_DIST = PROJECT_ROOT / "web" / "dist"
@@ -51,6 +53,11 @@ class PathBody(BaseModel):
     path: str
 
 
+class TermBody(BaseModel):
+    cols: int = Field(100, ge=2, le=1000)
+    rows: int = Field(30, ge=2, le=500)
+
+
 def _docker_state() -> Dict[str, Any]:
     if not shutil.which("docker"):
         return {"installed": False, "running": False}
@@ -61,22 +68,26 @@ def _docker_state() -> Dict[str, Any]:
     return {"installed": True, "running": ok}
 
 
-def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST) -> FastAPI:
+def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST, *,
+               shell: str = "docker", image: str = DEFAULT_IMAGE) -> FastAPI:
     ws = Workspace(Path(workspace))
     hub = EventHub(ws)
+    terms = TerminalManager(ws.root, mode=shell, image=image)
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
         yield
         await hub.close()
+        terms.close_all()
 
     app = FastAPI(title="Agent Smith Studio", version=__version__, docs_url=None, redoc_url=None, openapi_url=None,
                   lifespan=lifespan)
-    app.state.workspace, app.state.hub = ws, hub
+    app.state.workspace, app.state.hub, app.state.terminals = ws, hub, terms
 
     @app.exception_handler(WorkspaceError)
-    async def workspace_error(_request: Request, exc: WorkspaceError) -> JSONResponse:
-        return JSONResponse({"error": str(exc)}, status_code=exc.status)
+    @app.exception_handler(TerminalError)
+    async def known_error(_request: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse({"error": str(exc)}, status_code=getattr(exc, "status", 400))
 
     # ---------------------------------------------------------------- session
     @app.get("/api/health")
@@ -133,6 +144,72 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST)
     @app.get("/api/git/diff")
     def git_diff(path: str) -> Dict[str, Any]:
         return git.diff(ws, path)
+
+    # ---------------------------------------------------------------- terminals
+    @app.get("/api/terminals")
+    async def term_status() -> Dict[str, Any]:
+        return await asyncio.to_thread(terms.status)
+
+    @app.post("/api/terminals")
+    async def term_create(body: TermBody) -> Dict[str, Any]:
+        return (await terms.create(body.cols, body.rows)).info()
+
+    @app.delete("/api/terminals/{sid}")
+    async def term_kill(sid: str) -> Dict[str, Any]:
+        terms.kill(sid)
+        return {"ok": True}
+
+    @app.websocket("/ws/terminal/{sid}")
+    async def term_socket(socket: WebSocket, sid: str) -> None:
+        try:
+            s = terms.get(sid)
+        except TerminalError:  # refuse the handshake itself
+            await socket.close(code=4404, reason="no such terminal")
+            return
+        await socket.accept()
+        q: asyncio.Queue = asyncio.Queue()
+        s.listeners.add(q)
+
+        async def pump() -> None:  # shell output -> browser (binary frames: xterm decodes UTF-8 itself)
+            if s.buffer:
+                await socket.send_bytes(b"".join(s.buffer))
+            if s.exit_code is not None:
+                await socket.send_json({"type": "exit", "code": s.exit_code})
+                return
+            while True:
+                data = await q.get()
+                if data is None:
+                    await socket.send_json({"type": "exit", "code": s.exit_code})
+                    return
+                chunk = [data]
+                while not q.empty() and len(chunk) < 64:  # coalesce bursts (fast output)
+                    nxt = q.get_nowait()
+                    if nxt is None:
+                        q.put_nowait(None)
+                        break
+                    chunk.append(nxt)
+                await socket.send_bytes(b"".join(chunk))
+
+        sender = asyncio.create_task(pump())
+        try:
+            while True:
+                msg = await socket.receive()
+                if msg["type"] == "websocket.disconnect":
+                    break
+                text = msg.get("text")
+                if not text:
+                    continue
+                with contextlib.suppress(ValueError, KeyError, TypeError, TerminalError):
+                    m = json.loads(text)
+                    if m["type"] == "input" and isinstance(m.get("data"), str) and len(m["data"]) <= 65536:
+                        terms.write(sid, m["data"])
+                    elif m["type"] == "resize":
+                        terms.resize(sid, int(m["cols"]), int(m["rows"]))
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+        finally:
+            sender.cancel()
+            s.listeners.discard(q)
 
     # ---------------------------------------------------------------- live events
     @app.websocket("/ws/events")

@@ -37,7 +37,8 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `uv run --project .. --extra studio agent-studio "${root}" --port ${PORT} --no-browser`,
+    // local shell in tests (fast, no image pull); the Docker shell has its own test (STUDIO_DOCKER_TESTS=1)
+    command: `uv run --project .. --extra studio agent-studio "${root}" --port ${PORT} --no-browser --shell ${process.env.STUDIO_E2E_SHELL ?? "local"}`,
     env: { STUDIO_TOKEN: TOKEN },
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,

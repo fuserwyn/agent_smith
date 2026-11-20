@@ -36,6 +36,9 @@ def main(argv=None) -> int:
     p.add_argument("--port", type=int, default=8790)
     p.add_argument("--token", default=os.environ.get("STUDIO_TOKEN"), help="session token (default: random)")
     p.add_argument("--no-browser", action="store_true", help="do not open the browser")
+    p.add_argument("--shell", choices=("docker", "local"), default="docker",
+                   help="where terminals run: in a Docker container of the project (default) or directly on this machine")
+    p.add_argument("--image", default=None, help="Docker image for the project container (default python:3.11-slim)")
     args = p.parse_args(argv)
 
     workspace = Path(args.workspace).expanduser().resolve()
@@ -54,6 +57,7 @@ def main(argv=None) -> int:
         import uvicorn
 
         from agent_smith.studio.app import create_app
+        from agent_smith.studio.terminal import DEFAULT_IMAGE
     except ImportError:
         print("agent-studio: the studio dependencies are missing: uv sync --extra studio", file=sys.stderr)
         return 1
@@ -62,9 +66,13 @@ def main(argv=None) -> int:
     shown = f"[{args.host}]" if ":" in args.host else args.host
     url = f"http://{shown}:{args.port}/?token={token}"
     print(f"Agent Smith Studio — project {workspace}\n  open: {url}\n  (the token in the link is the key to this session; Ctrl+C stops the studio)")
+    if args.shell == "local":
+        print("  WARNING: --shell local — terminals run directly on this machine with your user's rights, "
+              "not in a container.", file=sys.stderr)
     if not args.no_browser:
         threading.Timer(1.0, webbrowser.open, (url,)).start()
-    uvicorn.run(create_app(workspace, token), host=args.host, port=args.port, log_level="warning")
+    app = create_app(workspace, token, shell=args.shell, image=args.image or DEFAULT_IMAGE)
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
     return 0
 
 
