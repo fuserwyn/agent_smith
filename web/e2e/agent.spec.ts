@@ -27,4 +27,15 @@ test("the agent edits a file, the change is reviewed and undone", async ({ page 
   await page.locator(".chg").getByRole("button", { name: /undo this file|откатить этот файл/i }).click();
   await expect(page.locator(".changes")).toHaveCount(0);
   expect(readFileSync(join(root(), "src/calc.py"), "utf8")).toContain("def sub(a, b):");
+
+  // replay the turn inside the observatory (bottom tab)
+  await page.getByRole("button", { name: /inside the agent|внутри агента/i }).last().click();
+  const obs = page.frameLocator(".inside-frame");
+  await expect(obs.locator("#diagram .node").first()).toBeVisible();
+  await expect(obs.locator("#sum-steps .sc")).toHaveCount(3);                         // the 3 steps of this turn
+  await page.getByRole("button", { name: /full screen|на весь экран/i }).click();
+  await expect(page.locator(".inside.max")).toBeVisible();
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, "11-inside.png") });
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".inside.max")).toHaveCount(0);
 });

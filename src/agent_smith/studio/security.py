@@ -26,7 +26,7 @@ SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 SECURITY_HEADERS: Tuple[Tuple[bytes, bytes], ...] = (
     (b"referrer-policy", b"no-referrer"),
     (b"x-content-type-options", b"nosniff"),
-    (b"x-frame-options", b"DENY"),
+    (b"x-frame-options", b"SAMEORIGIN"),  # the studio embeds its own observatory; other sites cannot
 )
 
 Scope = Dict[str, Any]

@@ -504,6 +504,8 @@ details.sys pre { border-top: 1px solid var(--line); }
 
 /* ---------- launcher ---------- */
 body[data-view="none"] .replay { display: none !important; }
+body.embed .wrap > header, body.embed #launcher, body.embed #banner, body.embed #taskcard { display: none !important; }
+body.embed .wrap { padding-top: 10px; }
 .choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; padding: 12px 14px; }
 .choice { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; text-align: left;
   border: 1px solid var(--line); background: var(--panel-2); border-radius: 10px; padding: 9px 11px; min-width: 0; }
@@ -1128,7 +1130,7 @@ en: {
   hc_env: "env", hc_install: "pip", hc_reset: "reset", hc_patch: "+test", hc_run: "tests", hc_restore: "undo",
   hn_title: "SWE-bench harness (what run_tests runs)", hn_short: "harness:", hn_mbpp: "MBPP harness (what run_tests runs)", hn_src: "The eval_script of task.json (moulinette), copied to /tmp/agent_eval.sh in the container and run with bash. The moulinette runs the same script on a fresh container to grade the patch.", hn_running: "◌ running the eval script in the container…", hn_moul: "Final grade by the moulinette: FAIL_TO_PASS tests must now pass, PASS_TO_PASS tests must still pass.", hs_env: "env", hs_install: "install", hs_reset: "reset tests", hs_patch: "test patch", hs_run: "run tests", hs_restore: "restore", hd_env: "conda env «testbed», cd /testbed", hd_install: "install the project with the agent's changes", hd_reset: "test files back to the base commit", hd_patch: "adds the test that catches the bug (+{add} −{del}) in {files}", hd_run: "the test command, between the Start/End Test Output markers", hd_restore: "test files restored: the patch never contains the tests",
   z_fit: "Fit", z_reset: "Reset layout", z_full: "Full screen", z_hint: "Drag boxes · drag the background to move · Ctrl/⌘ + wheel or pinch to zoom", d_grip: "Drag to resize", st_paused: "⏸ paused · waits for {t}", st_run: "▶ running", st_done: "✓ {s}",
-  env_src: "📄 tests from task.json (moulinette) → MCP server → code + asserts → new worker", env_hidden: "+ 1 hidden test: only the moulinette runs it", env_local: "local git repository · no Docker in this demo", env_img: "image", env_ctr: "container, no network", env_rm: "removed", env_none: "no command yet", env_eval: "▶ eval script from task.json: adds the test for the bug, runs the test file", ph_search: "search", ph_read: "read", ph_run: "run", ph_edit: "edit", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker paused on line {l}: it waits for {t}. Its timer is stopped until the result comes back.", i_paused_tag: "⏸ waits for {t} · {hop}", hp_call: "worker → host", hp_req: "host → MCP server", hp_srv: "server runs the tool", hp_tests: "tests run in a new sandbox", hp_repo: "command in the repository", hp_resp: "result → host",
+  env_src: "📄 tests from task.json (moulinette) → MCP server → code + asserts → new worker", env_hidden: "+ 1 hidden test: only the moulinette runs it", env_local: "local folder · no Docker container", env_img: "image", env_ctr: "container, no network", env_rm: "removed", env_none: "no command yet", env_eval: "▶ eval script from task.json: adds the test for the bug, runs the test file", ph_search: "search", ph_read: "read", ph_run: "run", ph_edit: "edit", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker paused on line {l}: it waits for {t}. Its timer is stopped until the result comes back.", i_paused_tag: "⏸ waits for {t} · {hop}", hp_call: "worker → host", hp_req: "host → MCP server", hp_srv: "server runs the tool", hp_tests: "tests run in a new sandbox", hp_repo: "command in the repository", hp_resp: "result → host",
   empty_trace: "No events in this trace.", empty_steps: "Steps appear here as the agent runs.",
   io_input: "Input", io_output: "Output", io_step: "step {n}", unchanged: "unchanged", nothing: "(nothing recorded)",
   tl_notconn: "Not connected yet: the tool list appears when the agent connects to the server.",
@@ -1457,7 +1459,7 @@ ru: {
   hc_env: "окр.", hc_install: "pip", hc_reset: "сброс", hc_patch: "+тест", hc_run: "тесты", hc_restore: "откат",
   hn_title: "Harness SWE-bench (что запускает run_tests)", hn_short: "harness:", hn_mbpp: "Harness MBPP (что запускает run_tests)", hn_src: "eval_script из task.json (moulinette): копируется в контейнер как /tmp/agent_eval.sh и запускается через bash. Moulinette запускает тот же скрипт в чистом контейнере, чтобы оценить патч.", hn_running: "◌ eval-скрипт выполняется в контейнере…", hn_moul: "Итоговая оценка moulinette: тесты FAIL_TO_PASS должны начать проходить, PASS_TO_PASS — проходить по-прежнему.", hs_env: "окружение", hs_install: "установка", hs_reset: "сброс тестов", hs_patch: "тест-патч", hs_run: "запуск тестов", hs_restore: "откат", hd_env: "conda-окружение «testbed», cd /testbed", hd_install: "установка проекта с правками агента", hd_reset: "тестовые файлы возвращаются к исходному коммиту", hd_patch: "добавляет тест, ловящий баг (+{add} −{del}) в {files}", hd_run: "команда тестов между маркерами Start/End Test Output", hd_restore: "тестовые файлы возвращаются: тесты никогда не попадают в патч",
   z_fit: "Вписать", z_reset: "Сбросить раскладку", z_full: "На весь экран", z_hint: "Блоки можно перетаскивать · фон — сдвиг · Ctrl/⌘ + колесо или щипок — масштаб", d_grip: "Потяните, чтобы изменить высоту", st_paused: "⏸ пауза · ждёт {t}", st_run: "▶ выполняется", st_done: "✓ {s}",
-  env_src: "📄 тесты из task.json (moulinette) → MCP-сервер → код + assert → новый воркер", env_hidden: "+ 1 скрытый тест: его запускает только moulinette", env_local: "локальный git-репозиторий (демо без Docker)", env_img: "образ", env_ctr: "контейнер без сети", env_rm: "удалён", env_none: "команд пока нет", env_eval: "▶ eval-скрипт из task.json: добавляет тест на баг и запускает тестовый файл", ph_search: "поиск", ph_read: "чтение", ph_run: "запуск", ph_edit: "правка", ph_tests: "тесты", ph_patch: "патч", i_paused: "⏸ Воркер на паузе на строке {l}: ждёт {t}. Его таймер остановлен, пока не вернётся результат.", i_paused_tag: "⏸ ждёт {t} · {hop}", hp_call: "воркер → хост", hp_req: "хост → MCP-сервер", hp_srv: "сервер выполняет инструмент", hp_tests: "тесты идут в новой песочнице", hp_repo: "команда в репозитории", hp_resp: "результат → хост",
+  env_src: "📄 тесты из task.json (moulinette) → MCP-сервер → код + assert → новый воркер", env_hidden: "+ 1 скрытый тест: его запускает только moulinette", env_local: "локальная папка · без Docker-контейнера", env_img: "образ", env_ctr: "контейнер без сети", env_rm: "удалён", env_none: "команд пока нет", env_eval: "▶ eval-скрипт из task.json: добавляет тест на баг и запускает тестовый файл", ph_search: "поиск", ph_read: "чтение", ph_run: "запуск", ph_edit: "правка", ph_tests: "тесты", ph_patch: "патч", i_paused: "⏸ Воркер на паузе на строке {l}: ждёт {t}. Его таймер остановлен, пока не вернётся результат.", i_paused_tag: "⏸ ждёт {t} · {hop}", hp_call: "воркер → хост", hp_req: "хост → MCP-сервер", hp_srv: "сервер выполняет инструмент", hp_tests: "тесты идут в новой песочнице", hp_repo: "команда в репозитории", hp_resp: "результат → хост",
   empty_trace: "В этой трассе нет событий.", empty_steps: "Шаги появятся здесь по мере работы агента.",
   io_input: "Вход", io_output: "Выход", io_step: "шаг {n}", unchanged: "без изменений", nothing: "(ничего не записано)",
   tl_notconn: "Ещё не подключено: список тулов появится, когда агент подключится к серверу.",
@@ -1786,7 +1788,7 @@ fr: {
   hc_env: "env", hc_install: "pip", hc_reset: "reset", hc_patch: "+test", hc_run: "tests", hc_restore: "undo",
   hn_title: "Harness SWE-bench (ce que lance run_tests)", hn_short: "harness :", hn_mbpp: "Harness MBPP (ce que lance run_tests)", hn_src: "L'eval_script du task.json (moulinette), copié dans le conteneur en /tmp/agent_eval.sh et lancé avec bash. La moulinette lance le même script dans un conteneur neuf pour noter le patch.", hn_running: "◌ le script d'évaluation tourne dans le conteneur…", hn_moul: "Note finale de la moulinette : les tests FAIL_TO_PASS doivent passer, les PASS_TO_PASS doivent toujours passer.", hs_env: "env", hs_install: "installation", hs_reset: "reset tests", hs_patch: "patch de test", hs_run: "tests", hs_restore: "restauration", hd_env: "environnement conda « testbed », cd /testbed", hd_install: "installe le projet avec les modifications de l'agent", hd_reset: "fichiers de test ramenés au commit de base", hd_patch: "ajoute le test qui détecte le bug (+{add} −{del}) dans {files}", hd_run: "la commande de tests, entre les marqueurs Start/End Test Output", hd_restore: "fichiers de test restaurés : le patch ne contient jamais les tests",
   z_fit: "Ajuster", z_reset: "Réinitialiser", z_full: "Plein écran", z_hint: "Glissez les blocs · glissez le fond pour déplacer · Ctrl/⌘ + molette ou pincement pour zoomer", d_grip: "Tirer pour redimensionner", st_paused: "⏸ en pause · attend {t}", st_run: "▶ en cours", st_done: "✓ {s}",
-  env_src: "📄 tests depuis task.json (moulinette) → serveur MCP → code + asserts → nouveau worker", env_hidden: "+ 1 test caché : seule la moulinette l'exécute", env_local: "dépôt git local · pas de Docker dans cette démo", env_img: "image", env_ctr: "conteneur sans réseau", env_rm: "supprimé", env_none: "aucune commande", env_eval: "▶ script d'évaluation de task.json : ajoute le test du bug, lance le fichier de tests", ph_search: "recherche", ph_read: "lecture", ph_run: "exécution", ph_edit: "édition", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker en pause à la ligne {l} : il attend {t}. Son minuteur est arrêté jusqu'au retour du résultat.", i_paused_tag: "⏸ attend {t} · {hop}", hp_call: "worker → hôte", hp_req: "hôte → serveur MCP", hp_srv: "le serveur exécute l'outil", hp_tests: "tests dans un nouveau bac à sable", hp_repo: "commande dans le dépôt", hp_resp: "résultat → hôte",
+  env_src: "📄 tests depuis task.json (moulinette) → serveur MCP → code + asserts → nouveau worker", env_hidden: "+ 1 test caché : seule la moulinette l'exécute", env_local: "dossier local · sans conteneur Docker", env_img: "image", env_ctr: "conteneur sans réseau", env_rm: "supprimé", env_none: "aucune commande", env_eval: "▶ script d'évaluation de task.json : ajoute le test du bug, lance le fichier de tests", ph_search: "recherche", ph_read: "lecture", ph_run: "exécution", ph_edit: "édition", ph_tests: "tests", ph_patch: "patch", i_paused: "⏸ Worker en pause à la ligne {l} : il attend {t}. Son minuteur est arrêté jusqu'au retour du résultat.", i_paused_tag: "⏸ attend {t} · {hop}", hp_call: "worker → hôte", hp_req: "hôte → serveur MCP", hp_srv: "le serveur exécute l'outil", hp_tests: "tests dans un nouveau bac à sable", hp_repo: "commande dans le dépôt", hp_resp: "résultat → hôte",
   empty_trace: "Aucun événement dans cette trace.", empty_steps: "Les étapes apparaissent ici pendant que l'agent travaille.",
   io_input: "Entrée", io_output: "Sortie", io_step: "étape {n}", unchanged: "inchangé", nothing: "(rien d'enregistré)",
   tl_notconn: "Pas encore connecté : la liste des outils apparaît quand l'agent se connecte au serveur.",
@@ -2248,7 +2250,7 @@ $("diagram-wrap").addEventListener("keydown", (ev) => {
 const REPO_VIEW = {
   swe:   {title: "Repository", sub: "Docker container · /testbed · no network", down: "commands", up: "stdout", info: "ni_repo",
           path: "src/agent_smith/tools/executor.py · docker_env.py"},
-  local: {title: "Repository", sub: "local git repo (demo)", down: "commands", up: "stdout", info: "ni_repo",
+  local: {title: "Repository", sub: "local folder (no container)", down: "commands", up: "stdout", info: "ni_repo",
           path: "src/agent_smith/tools/executor.py (LocalExecutor)"},
   mbpp:  {title: "Test sandbox", sub: "new worker · no MCP · 10 s", down: "code + tests", up: "PASS / FAIL", info: "ni_repo_mbpp",
           path: "src/agent_smith/tools/mbpp_tools.py (run_tests) · sandbox/host.py"},
@@ -3997,9 +3999,31 @@ for (const b of document.querySelectorAll(".choice[data-ic]")) b.prepend(icon(b.
 for (const b of document.querySelectorAll(".choice")) b.addEventListener("click", () => selectChoice(b.id));
 layoutEdges(); applyCam(); requestAnimationFrame(fitView);
 showNode("interp");
-loadDemo("mbpp");
+/* ---------- embedded in Agent Smith Studio (?embed=1) ----------
+   The studio (same origin) sends the trace of an agent turn with postMessage; this page only shows it. */
+const EMBED = new URLSearchParams(location.search).has("embed");
+if (EMBED) {
+  document.body.classList.add("embed");
+  setMode("detailed");
+  window.addEventListener("message", (ev) => {
+    if (ev.origin !== location.origin || !ev.data || ev.data.source !== "agent-smith-studio") return;
+    const d = ev.data;
+    if (d.theme === "light" || d.theme === "dark") document.documentElement.dataset.theme = d.theme;
+    if (d.lang && I18N[d.lang] && d.lang !== LANG) setLang(d.lang);
+    if (Array.isArray(d.events)) {
+      const following = d.live && (cursor < 0 || cursor >= events.length - 1);
+      if (d.reset || following) {
+        setRaw(d.events, d.live ? "live" : "file");
+        if (!d.live && events.length) go(events.length - 1);  // a finished turn opens on its final state; ⏮ replays it
+      }
+    }
+  });
+  window.parent.postMessage({ source: "agent-smith-observatory", ready: true }, location.origin);
+} else {
+  loadDemo("mbpp");
+  probeLive();
+}
 renderChoice();
 renderLaunchState();
-probeLive();
-if (!stored("as-tour-done")) setTimeout(tourStart, 700);
+if (!stored("as-tour-done") && !EMBED) setTimeout(tourStart, 700);
 </script>

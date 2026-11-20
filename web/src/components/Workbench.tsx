@@ -10,6 +10,7 @@ import { Explorer } from "./Explorer";
 import { ContextMenu, Dialog, Toaster, type DialogSpec, type MenuItem } from "./overlays";
 import { QuickOpen, invalidateFileIndex } from "./QuickOpen";
 import { GitPanel, SearchPanel } from "./SidePanels";
+import { InsidePanel } from "./InsidePanel";
 import { TerminalPanel } from "./TerminalPanel";
 import { EmptyState, PaneHeader } from "./ui";
 import { gitApi, type GitFile, type GitStatus } from "../lib/api";
@@ -43,6 +44,19 @@ export function Workbench({ workspace }: { workspace: string }) {
   const side = useRef<PanelImperativeHandle | null>(null);
   const bottomPanel = useRef<PanelImperativeHandle | null>(null);
   const [termFocus, setTermFocus] = useState(0);
+  const [insideReq, setInsideReq] = useState<{ run: string; n: number } | null>(null);
+  useEffect(() => {  // "Inside the agent" links in the chat
+    const on = (e: Event) => {
+      const run = (e as CustomEvent<{ run: string }>).detail?.run; if (!run) return;
+      setBottom("inside");
+      const bp = bottomPanel.current;
+      if (bp?.isCollapsed()) bp.expand();
+      if (bp && bp.getSize().asPercentage < 55) bp.resize("55%");  // the canvas needs room
+      setInsideReq((r) => ({ run, n: (r?.n ?? 0) + 1 }));
+    };
+    window.addEventListener("studio:inside", on);
+    return () => window.removeEventListener("studio:inside", on);
+  }, []);
   const outer = useDefaultLayout({ id: "studio-outer", storage });
   const center = useDefaultLayout({ id: "studio-center", storage });
 
@@ -160,7 +174,7 @@ export function Workbench({ workspace }: { workspace: string }) {
                 <div className="pbody">
                   {/* kept mounted: terminals keep their screen while another tab is shown */}
                   <div className="pbody-term" hidden={bottom !== "terminal"}><TerminalPanel visible={bottom === "terminal"} focusSignal={termFocus} /></div>
-                  {bottom === "inside" && <EmptyState icon={<Workflow size={22} />} title={t("panel.inside")} note={t("inside.soon")} />}
+                  <div className="pbody-term" hidden={bottom !== "inside"}><InsidePanel visible={bottom === "inside"} request={insideReq} /></div>
                   {bottom === "output" && <EmptyState icon={<ScrollText size={22} />} title={t("panel.output")} />}
                 </div>
               </Panel>

@@ -289,3 +289,13 @@ mark { background: color-mix(in srgb, var(--warn) 35%, transparent); color: inhe
 .send.stop { background: var(--err); color: #fff; }
 .mention { position: absolute; left: 8px; right: 8px; bottom: calc(100% + 6px); background: var(--bg-3); border: 1px solid var(--line-2); border-radius: var(--r); box-shadow: var(--shadow); padding: 4px; z-index: 5; }
 .mention .pal-item { font: 12px var(--f-mono); height: 26px; }
+
+/* ---------- inside the agent ---------- */
+.inside { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.inside-bar { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border-bottom: 1px solid var(--line); flex: none; font-size: 12px; }
+.model-sel.wide { max-width: 520px; flex: 1; }
+.live-dot { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ok); }
+.live-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); animation: pulse 1.2s ease-in-out infinite; }
+.inside-frame { flex: 1; width: 100%; border: 0; background: var(--bg); }
+.inside-bar .sp { flex: 1; }
+.inside.max { position: fixed; inset: 0; z-index: 45; background: var(--bg); }

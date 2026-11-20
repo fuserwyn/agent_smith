@@ -43,7 +43,7 @@ def test_state_changing_requests_need_the_csrf_header(client):
 def test_security_headers_and_public_page(client):
     r = client.get("/")
     assert r.status_code == 200 and "Agent Smith Studio" in r.text  # served without token: no data in it
-    assert r.headers["referrer-policy"] == "no-referrer" and r.headers["x-frame-options"] == "DENY"
+    assert r.headers["referrer-policy"] == "no-referrer" and r.headers["x-frame-options"] == "SAMEORIGIN"
 
 
 def test_session_describes_workspace_and_docker(client, tmp_path):

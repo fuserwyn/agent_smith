@@ -309,6 +309,14 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
             gone.cancel()
             hub.unsubscribe(q)
 
+    # ---------------------------------------------------------------- "Inside the agent" (the observatory UI)
+    @app.get("/observatory", response_class=HTMLResponse)
+    def observatory() -> str:  # static page, no data in it: the studio posts the trace into it
+        page = (PROJECT_ROOT / "ui" / "index.html").read_text(encoding="utf-8")
+        return ("<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' "
+                "content='width=device-width, initial-scale=1'><meta name='referrer' content='no-referrer'></head><body>"
+                + page + "</body></html>")
+
     # ---------------------------------------------------------------- web app
     if web_dist is not None and (web_dist / "index.html").is_file():
         app.mount("/", StaticFiles(directory=web_dist, html=True), name="web")
