@@ -1,14 +1,15 @@
-import { Activity, Files, GitBranch, Search, Settings } from "lucide-react";
+import { Activity, Files, GitBranch, Search, Settings, Sparkles } from "lucide-react";
 import type { Key } from "../lib/i18n";
 import { useT } from "../lib/i18n";
 
-export type View = "explorer" | "search" | "git" | "runs" | "settings";
+export type View = "explorer" | "search" | "git" | "runs" | "openrouter" | "settings";
 
 const TOP: { id: View; key: Key; Icon: typeof Files }[] = [
   { id: "explorer", key: "act.explorer", Icon: Files },
   { id: "search", key: "act.search", Icon: Search },
   { id: "git", key: "act.git", Icon: GitBranch },
   { id: "runs", key: "act.runs", Icon: Activity },
+  { id: "openrouter", key: "act.openrouter", Icon: Sparkles },
 ];
 
 /* VS Code-style activity bar: clicking the active view again folds the side panel. */

@@ -150,6 +150,14 @@ sandbox, MCP tools — event by event.*
   the image and serves it on `127.0.0.1:<free or requested port>` (memory / CPU / process limits, no capabilities), waits
   until it answers, and the agent checks it with `call_app` and `app_logs`. The chat shows the URL, the Apps tab the
   logs; Stop, or closing the studio, removes the container. Tested live with the default free model.
+- **OpenRouter tab.** One key, ~400 models: the key's balance, a full-width browser (search, kinds, "reads"
+  filters, prices, context), add any model to the chat, pick the default model for images, video, speech, voice
+  input, reading files and embeddings. Paid models measured on the studio task and on SWE-bench:
+  `scripts/eval_studio_models.py`, `benchmarks/studio/`, `benchmarks/swebench/paid-2026-11/` (Claude Haiku 5.5, the
+  studio's default chat model: SWE-bench 3/3 for $0.009 the three tasks).
+- **Attachments and voice.** Attach files, photos, audio, video (picker, drop, paste); a model that reads the kind
+  gets it natively, otherwise a cheap multimodal model describes it. The mic records, a model transcribes, the text
+  lands in the box.
 - **`agent_code/`.** Every run (CLI, exam, studio) keeps the code each step sent to the sandbox worker:
   `agent_code/runs/<benchmark>/<date>_<task>/step_NN.py` — thought as header, exact code, observation as a trailing comment
   — plus `task.md`. The folder ignores itself in git; `AGENT_SMITH_CODE_DIR=off` disables it.

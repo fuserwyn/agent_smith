@@ -13,6 +13,7 @@ import { ContextMenu, Dialog, Toaster, type DialogSpec, type MenuItem } from "./
 import { QuickOpen, invalidateFileIndex } from "./QuickOpen";
 import { GitPanel, SearchPanel } from "./SidePanels";
 import { AppsPanel } from "./AppsPanel";
+import { ModelBrowser, OpenRouterPanel } from "./OpenRouter";
 import { InsidePanel } from "./InsidePanel";
 import { TerminalPanel } from "./TerminalPanel";
 import { fs, gitApi, type GitFile, type GitStatus } from "../lib/api";
@@ -47,6 +48,7 @@ export function Workbench({ workspace, theme, onTheme, lang, onLang }: {
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [browser, setBrowser] = useState<{ kind: Parameters<typeof ModelBrowser>[0]["initialKind"] } | null>(null);
   const [searchFocus, setSearchFocus] = useState(0);
   const [git, setGit] = useState<GitStatus | null>(null);
   const side = useRef<PanelImperativeHandle | null>(null);
@@ -181,6 +183,7 @@ export function Workbench({ workspace, theme, onTheme, lang, onLang }: {
       { id: "git", group: g.v, label: t("act.git"), hint: kbd("⌘⇧G"), run: () => selectView("git") },
       { id: "runs", group: g.v, label: t("act.runs"), run: () => selectView("runs") },
       { id: "settings", group: g.v, label: t("act.settings"), run: () => selectView("settings") },
+      { id: "openrouter", group: g.v, label: t("or.browse"), run: () => { selectView("openrouter"); setBrowser({ kind: "all" }); } },
       { id: "inside", group: g.v, label: t("panel.inside"), run: () => showBottom("inside") },
       { id: "term", group: g.te, label: t("cmd.showTerminal"), hint: "Ctrl+`", run: () => { showBottom("terminal"); setTermFocus((n) => n + 1); } },
       { id: "term-new", group: g.te, label: t("term.new"), run: () => { showBottom("terminal"); window.dispatchEvent(new Event("studio:new-terminal")); } },
@@ -207,11 +210,13 @@ export function Workbench({ workspace, theme, onTheme, lang, onLang }: {
               {view === "search" && <SearchPanel focusSignal={searchFocus} />}
               {view === "git" && <GitPanel status={git} refresh={refreshGit} />}
               {view === "runs" && <RunsPanel />}
+              {view === "openrouter" && <OpenRouterPanel onBrowse={(k) => setBrowser({ kind: k ?? "all" })} />}
               {view === "settings" && <SettingsPanel theme={theme} onTheme={onTheme} lang={lang} onLang={onLang} />}
             </div>
           </Panel>
           <Separator className="sep sep-v" />
           <Panel id="main" minSize={320} className="pane-wrap">
+            {browser && <ModelBrowser initialKind={browser.kind} onClose={() => setBrowser(null)} />}
             <Group orientation="vertical" className="wb-group" defaultLayout={center.defaultLayout} onLayoutChanged={center.onLayoutChanged}>
               <Panel id="editor" minSize={120} className="pane editor">
                 <EditorArea />

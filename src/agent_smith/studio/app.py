@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from agent_smith.config import PROJECT_ROOT
+from agent_smith.config import PROJECT_ROOT, load_models_config
 from agent_smith.studio import __version__, git
 from agent_smith.studio.agent import AgentService
 from agent_smith.studio.events import EventHub
@@ -55,6 +55,11 @@ class RenameBody(BaseModel):
 
 class PathBody(BaseModel):
     path: str
+
+
+class PicksBody(BaseModel):
+    chat: List[str] = Field(default_factory=list, max_length=40)
+    media: Dict[str, str] = Field(default_factory=dict)
 
 
 class AskBody(BaseModel):
@@ -179,6 +184,26 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
     @app.get("/api/git/diff")
     def git_diff(path: str) -> Dict[str, Any]:
         return git.diff(ws, path)
+
+    # ---------------------------------------------------------------- OpenRouter tab
+    @app.get("/api/openrouter/catalog")
+    async def or_catalog() -> Dict[str, Any]:
+        from agent_smith.studio import openrouter
+        models = await asyncio.to_thread(openrouter.catalog)
+        return {"models": models, "picks": openrouter.load_picks(), "media_defaults": {
+            k: [e["model"] for e in (load_models_config().media.get(k) or [])] for k in openrouter.MEDIA_KINDS}}
+
+    @app.get("/api/openrouter/account")
+    async def or_account() -> Dict[str, Any]:
+        from agent_smith.studio import openrouter
+        return await asyncio.to_thread(openrouter.account)
+
+    @app.put("/api/openrouter/picks")
+    def or_picks(body: PicksBody) -> Dict[str, Any]:
+        from agent_smith.studio import openrouter
+        picks = openrouter.save_picks(body.chat, body.media)
+        agent.publish({"type": "models"})  # the chat's model picker reloads
+        return picks
 
     # ---------------------------------------------------------------- attachments and voice
     @app.post("/api/uploads")

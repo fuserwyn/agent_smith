@@ -90,6 +90,8 @@ class ModelsConfig(BaseModel):
     # non-text models (image, video, speech, transcribe, perceive, embeddings) -> list of {model, notes, …};
     # the first entry of each list is the default (all through OpenRouter)
     media: Dict[str, Any] = Field(default_factory=dict)
+    # default model of the studio's chat (the benchmarks keep their own free defaults)
+    chat_default: Optional[ModelSpec] = None
 
     def provider_by_name(self, name: str) -> Optional[ProviderSpec]:
         return next((p for p in self.providers if p.name == name), None)

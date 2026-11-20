@@ -25,7 +25,7 @@ from agent_smith.agent import AgentSettings, CodeAgent
 from agent_smith.agent.prompts import FORMAT_RULES
 from agent_smith.extraction import END_CODE
 from agent_smith.codelog import CodeLog, code_root
-from agent_smith.config import PROJECT_ROOT, load_env_file, load_sandbox_config
+from agent_smith.config import PROJECT_ROOT, load_env_file, load_models_config, load_sandbox_config
 from agent_smith.events import EventSink
 from agent_smith.llm import build_client
 from agent_smith.mcp_client import MCPClient
@@ -185,6 +185,17 @@ class AgentService:
         from agent_smith import ui_jobs  # reads config/models.json and which keys exist (never their values)
         provider, model = ui_jobs.DEFAULTS["swebench"]
         models = ui_jobs.model_choices()
+        chat = load_models_config().chat_default
+        if chat and any((m["provider"], m["model"]) == (chat.provider, chat.model) and m["key_ok"] for m in models):
+            provider, model = chat.provider, chat.model
+        # models picked in the OpenRouter tab (any of its catalog), after the configured ones
+        from agent_smith.studio.openrouter import load_picks
+        base = next((m for m in models if m["provider"] == "openrouter"), None)
+        have = {(m["provider"], m["model"]) for m in models}
+        for mid in load_picks()["chat"]:
+            if base and ("openrouter", mid) not in have:
+                models.append({**base, "model": mid, "notes": "picked in the OpenRouter tab", "paid": not mid.endswith(":free"),
+                               "picked": True})
         if not any((m["provider"], m["model"]) == (provider, model) for m in models) and models:
             # custom model list (AGENT_SMITH_MODELS_FILE): first model that has a key, else the first one
             first = next((m for m in models if m["key_ok"]), models[0])

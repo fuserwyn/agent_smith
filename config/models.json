@@ -336,5 +336,10 @@
         "notes": "code-specialised, $0.12 per 1M"
       }
     ]
+  },
+  "chat_default": {
+    "provider": "openrouter",
+    "model": "anthropic/claude-haiku-5.5",
+    "notes": "studio chat: SWE-bench 3/3 for $0.009 the three tasks (benchmarks/swebench/paid-2026-11); falls back to the free default without an OpenRouter key"
   }
 }

@@ -215,6 +215,22 @@ It is built for one person on their own machine and protected like Jupyter, only
 
 ## Models and cost
 
+### How do I pick among hundreds of models?
+The **OpenRouter tab**: your key's balance, then **All models** — a full-width browser of the whole catalog with
+search, kinds (text, images, video, audio, embeddings, free), "reads" filters (image, audio, video, PDF), prices and
+context. Add any model to the chat, or make it the default for images, video, speech, voice input, reading files or
+embeddings. Picks apply to every project.
+
+### Which paid model is worth it?
+Measured, not guessed: the same studio task for 11 paid models (all passed, $0.002 – $0.08 per task) and three real
+SWE-bench bugs for five of them (all 3/3). **Claude Haiku 5.5** — the studio's default chat model — solved the three
+SWE-bench bugs for **$0.009** in total, GPT-6 Luna for $0.007, Claude Sonnet 5.5 for $0.13.
+
+### Can I send it files, photos, my voice?
+Yes: attach (picker, drop, paste) files, photos, audio, video; a model that reads the kind gets it directly,
+otherwise a cheap multimodal model describes it first, so it works with every model. The microphone button records,
+a model transcribes, and the text lands in the box for you to edit.
+
 ### Is it free?
 By default, yes: free tiers of NVIDIA, Google AI Studio, Groq, Cohere, OpenRouter. Several keys per provider are
 rotated, with retries and fallback to backup models. A paid OpenRouter model is available, marked `$`.

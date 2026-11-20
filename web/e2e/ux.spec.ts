@@ -90,3 +90,14 @@ test("files can be attached to a message (picker, paste) and are shown with it",
   await expect(page.locator(".composer .att")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /voice input|голосовой ввод/i })).toBeVisible();
 });
+
+test("the OpenRouter tab lists the task defaults and opens the full-width model browser", async ({ page }) => {
+  await open(page);
+  await page.getByRole("button", { name: "OpenRouter" }).click();
+  await expect(page.locator(".or-role")).toHaveCount(6);                       // images, video, speech, voice, reading, embeddings
+  await page.locator(".or-browse").click();
+  await expect(page.locator(".or-page")).toBeVisible();
+  await expect(page.getByRole("tab", { name: /^All|^Все/ })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".or-page")).toHaveCount(0);
+});

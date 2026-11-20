@@ -127,6 +127,10 @@ class Media:
         return _SHARED["cat"]
 
     def default(self, kind: str) -> str:
+        from agent_smith.studio.openrouter import load_picks
+        picked = load_picks()["media"].get(kind)  # chosen in the OpenRouter tab
+        if picked:
+            return picked
         entries = load_models_config().media.get(kind) or []
         if not entries:
             raise WorkspaceError(400, f"no {kind} model configured (config/models.json, media.{kind})")

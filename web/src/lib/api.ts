@@ -103,6 +103,21 @@ export interface ModelChoice {
   provider: string; model: string; url: string; notes: string; key_env: string | null; key_ok: boolean; paid: boolean;
   inputs?: string[]; price?: { in: number; out: number } | null;  // from the OpenRouter catalog (what it reads, $ per 1M tokens)
 }
+/** OpenRouter tab: the whole catalog, the key's balance, the user's picks (chat models, media defaults). */
+export type MediaKind = "image" | "video" | "speech" | "transcribe" | "perceive" | "embeddings";
+export interface OrModel {
+  id: string; name: string; created: number; context: number; in: string[]; out: string[];
+  kinds: ("text" | "image" | "video" | "audio" | "embeddings")[]; free: boolean; tools: boolean; description: string;
+  price: { in: number | null; out: number | null; image_out: number | null; audio: number | null };
+}
+export interface OrPicks { chat: string[]; media: Partial<Record<MediaKind, string>> }
+export interface OrAccount { key: boolean; usage?: number | null; limit?: number | null; remaining?: number | null; balance?: number; credits?: number; used?: number; free_tier?: boolean; error?: string }
+export const openrouterApi = {
+  catalog: () => api<{ models: OrModel[]; picks: OrPicks; media_defaults: Record<MediaKind, string[]> }>("/api/openrouter/catalog"),
+  account: () => api<OrAccount>("/api/openrouter/account"),
+  savePicks: (p: OrPicks) => api<OrPicks>("/api/openrouter/picks", { method: "PUT", body: JSON.stringify(p) }),
+};
+
 /** A file given with a chat message (stored in the project under agent_code/uploads/). */
 export interface Attachment { id: string; name: string; path: string; mime: string; size: number; kind: "image" | "audio" | "video" | "pdf" | "text" | "file" }
 export const uploadsApi = {
