@@ -45,3 +45,10 @@ test("several terminals, each closable", async ({ page }) => {
   await page.locator(".term-tab.active .tab-x").click();
   await expect(page.locator(".term-tab")).toHaveCount(before);
 });
+
+test("app shortcuts still work while the terminal has the focus", async ({ page }) => {
+  await openTerminal(page);                       // focus is in xterm now
+  await page.keyboard.press("ControlOrMeta+P");   // Ctrl+P on Linux was swallowed by the shell (previous command)
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+});

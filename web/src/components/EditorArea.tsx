@@ -41,9 +41,7 @@ export function EditorArea() {
     };
     editor.current = mon.editor.create(host.current, opts);
     diffEditor.current = mon.editor.createDiffEditor(diffHost.current, { ...opts, renderSideBySide: true, originalEditable: false, minimap: { enabled: false } } as Mon.editor.IStandaloneDiffEditorConstructionOptions);
-    const save = () => { const p = editors.activeTab()?.path; if (p) void doSave(p); };
-    editor.current.addCommand(mon.KeyMod.CtrlCmd | mon.KeyCode.KeyS, save);
-    diffEditor.current.getModifiedEditor().addCommand(mon.KeyMod.CtrlCmd | mon.KeyCode.KeyS, save);
+    // Cmd/Ctrl+S is handled by the workbench (captured before Monaco), one save path for every focus
     // follow the app theme
     const obs = new MutationObserver(() => mon.editor.setTheme(themeName()));
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });

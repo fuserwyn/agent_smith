@@ -15,6 +15,7 @@ import { gitApi, type GitFile, type GitStatus } from "../lib/api";
 import { editors } from "../lib/editors";
 import { useStudioEvents, type StudioEvent } from "../lib/events";
 import { type Key, useT } from "../lib/i18n";
+import { toast } from "../lib/toast";
 import { UiContext, type UiApi } from "../lib/ui";
 
 type BottomTab = "terminal" | "inside" | "output";
@@ -25,7 +26,9 @@ const BOTTOM: { id: BottomTab; key: Key; Icon: typeof Files }[] = [
 ];
 
 const storage = (() => { try { localStorage.setItem("studio-probe", "1"); return localStorage; } catch { return undefined; } })();
-const mod = (e: KeyboardEvent) => e.metaKey || e.ctrlKey;
+// Cmd on macOS, Ctrl elsewhere — on a Mac, Ctrl+P / Ctrl+B / Ctrl+S stay with the terminal (shell history, cursor…)
+const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const mod = (e: KeyboardEvent) => (IS_MAC ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey);
 
 export function Workbench({ workspace }: { workspace: string }) {
   const t = useT();
@@ -84,34 +87,39 @@ export function Workbench({ workspace }: { workspace: string }) {
     if (v === "search") setSearchFocus((n) => n + 1);
   }, [view]);
 
-  /* ---------------- keyboard shortcuts + unsaved-changes guard ---------------- */
+  /* ---------------- keyboard shortcuts + unsaved-changes guard ----------------
+     Captured before the editor and the terminal see them (like VS Code's "commands to skip shell"):
+     in a terminal Ctrl+P would otherwise be "previous command" and the app shortcut would never fire. */
+  const saveActive = useCallback(async () => {
+    const p = editors.activeTab()?.path; if (!p) return;
+    try { if (await editors.save(p)) toast(t("ed.saved", { name: p.split("/").pop() ?? p }), "ok", 1800); }
+    catch (err) { toast(t("ed.saveFailed", { err: err instanceof Error ? err.message : String(err) }), "err", 6000); }
+  }, [t]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "`") {  // like VS Code: show and focus the terminal
-        e.preventDefault();
+      const k = e.key.toLowerCase();
+      let handled = true;
+      if (e.ctrlKey && !e.metaKey && e.key === "`") {  // show and focus the terminal
         setBottom("terminal");
         if (bottomPanel.current?.isCollapsed()) bottomPanel.current.expand();
         setTermFocus((n) => n + 1);
-        return;
-      }
-      if (!mod(e)) return;
-      const k = e.key.toLowerCase();
-      if (k === "p" && !e.shiftKey) { e.preventDefault(); setQuickOpen(true); }
-      else if (k === "s") { const p = editors.activeTab()?.path; if (p) { e.preventDefault(); void editors.save(p); } }
-      else if (k === "f" && e.shiftKey) { e.preventDefault(); selectView("search"); setSearchFocus((n) => n + 1); }
-      else if (k === "e" && e.shiftKey) { e.preventDefault(); selectView("explorer"); }
-      else if (k === "g" && e.shiftKey) { e.preventDefault(); selectView("git"); }
+      } else if (!mod(e) || e.altKey) handled = false;
+      else if (k === "p" && !e.shiftKey) setQuickOpen(true);
+      else if (k === "s" && !e.shiftKey) void saveActive();
+      else if (k === "f" && e.shiftKey) { selectView("search"); setSearchFocus((n) => n + 1); }
+      else if (k === "e" && e.shiftKey) selectView("explorer");
+      else if (k === "g" && e.shiftKey) selectView("git");
       else if (k === "b" && !e.shiftKey) {
-        e.preventDefault();
-        const p = side.current; if (!p) return;
-        if (p.isCollapsed()) { p.expand(); setView((v) => v ?? "explorer"); } else { p.collapse(); setView(null); }
-      }
+        const p = side.current;
+        if (p?.isCollapsed()) { p.expand(); setView((v) => v ?? "explorer"); } else if (p) { p.collapse(); setView(null); }
+      } else handled = false;
+      if (handled) { e.preventDefault(); e.stopPropagation(); }
     };
     const onUnload = (e: BeforeUnloadEvent) => { if (editors.dirtyPaths().length) { e.preventDefault(); e.returnValue = ""; } };
-    window.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
     window.addEventListener("beforeunload", onUnload);
-    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("beforeunload", onUnload); };
-  }, [selectView]);
+    return () => { window.removeEventListener("keydown", onKey, true); window.removeEventListener("beforeunload", onUnload); };
+  }, [selectView, saveActive]);
 
   const placeholder = (Icon: typeof Files, title: Key, note: Key) => (
     <div className="sidepanel"><PaneHeader title={t(title)} /><EmptyState icon={<Icon size={22} />} title={t(title)} note={t(note)} /></div>
