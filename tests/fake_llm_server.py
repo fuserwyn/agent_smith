@@ -13,14 +13,17 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, List, Union
 
 
 class FakeLLMServer:
-    def __init__(self, script: List[Union[str, dict]], model: str = "fake-model", port: int = 0, loop: bool = False):
+    def __init__(self, script: List[Union[str, dict]], model: str = "fake-model", port: int = 0, loop: bool = False,
+                 delay: float = 0.0):
         self.script = list(script)
         self.loop = loop
+        self.delay = delay  # seconds before each answer (demo recordings: the agent visibly "thinks")
         self.model = model
         self.requests: List[dict] = []
         self.auth_headers: List[str] = []
@@ -37,6 +40,8 @@ class FakeLLMServer:
                 item = server.script.pop(0) if server.script else "Thought: done\n```python\nfinal_answer('')\n```"
                 if server.loop:
                     server.script.append(item)
+                if server.delay:
+                    time.sleep(server.delay)
                 if isinstance(item, dict) and "status" in item:
                     self.send_response(item["status"])
                     self.send_header("Content-Type", "application/json")
@@ -80,8 +85,9 @@ if __name__ == "__main__":  # used by the studio end-to-end tests: a scripted mo
     ap.add_argument("--port", type=int, required=True)
     ap.add_argument("--script", required=True, help="JSON list of answers")
     ap.add_argument("--loop", action="store_true", help="replay the script again and again")
+    ap.add_argument("--delay", type=float, default=0.0, help="seconds before each answer")
     a = ap.parse_args()
     with open(a.script, encoding="utf-8") as fh:
-        srv = FakeLLMServer(json.load(fh), port=a.port, loop=a.loop)
+        srv = FakeLLMServer(json.load(fh), port=a.port, loop=a.loop, delay=a.delay)
     print(f"fake LLM on {srv.url}", flush=True)
     srv.httpd.serve_forever()

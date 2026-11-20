@@ -122,10 +122,18 @@ make studio-install                 # Python extra + web packages (once)
 make studio P=~/code/my-project     # builds the web app if needed, opens http://127.0.0.1:8790/?token=…
 ```
 
-| Agent chat: review the diff of a turn, undo a file or the whole turn | Inside the agent: replay a turn on the architecture canvas |
+![The agent adds a function: its steps stream in, the open file updates, the change is reviewed as a diff](web/screenshots/agent.gif)
+
+*The agent at work: each step (thought + tool call) streams into the chat, the open file updates live,
+and the turn ends with a reviewable diff that can be undone per file or as a whole.*
+
+![The same turn replayed inside the agent](web/screenshots/inside-the-agent.gif)
+
+*Inside the agent: the same turn replayed on the architecture canvas — LLM call, code extraction,
+sandbox, MCP tools — event by event.*
+
+| Terminal in the project's Docker container | Command palette (⌘K): every action, searchable |
 |---|---|
-| ![agent review](web/screenshots/agent-review.png) | ![inside the agent](web/screenshots/inside-the-agent.png) |
-| **Terminal** in the project's Docker container | **Command palette** (⌘K): every action, searchable |
 | ![terminal](web/screenshots/terminal.png) | ![command palette](web/screenshots/command-palette.png) |
 
 - **Ask / Agent modes.** Ask only gets read tools; Agent mode takes a checkpoint first (a shadow git repo
@@ -142,7 +150,7 @@ make studio P=~/code/my-project     # builds the web app if needed, opens http:/
   in a browser with a scripted LLM (CI runs them on every push).
 
 Stack: FastAPI + uvicorn, React 19 + TypeScript + Vite, Monaco, xterm.js. Development: `make studio-dev P=…`
-(Vite hot reload), `cd web && npm run e2e`.
+(Vite hot reload), `cd web && npm run e2e`, `make studio-gif` (re-records these GIFs with a scripted model).
 
 ## System architecture
 

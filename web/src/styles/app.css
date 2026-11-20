@@ -324,3 +324,12 @@ kbd, .pal-k { font: 11px var(--f-mono); padding: 1px 6px; border: 1px solid var(
 .set-model.off { color: var(--muted); } .set-model .ok { color: var(--ok); }
 .set-note { margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.5; }
 .set-keys { display: grid; gap: 5px; } .set-keys > div { display: flex; gap: 10px; align-items: center; font-size: 12px; } .set-keys kbd { min-width: 92px; text-align: center; }
+
+/* chat column never grows wider than the panel: grid tracks default to min-content (a long nowrap
+   step title or tool argument used to push the whole turn out of view) */
+.chat { overflow-x: hidden; }
+.chat > * { min-width: 0; }
+.turn, .md, .step-d { grid-template-columns: minmax(0, 1fr); }
+.msg-user { align-self: flex-end; }
+.tchip .tn { flex: none; }
+.md code { overflow-wrap: anywhere; }

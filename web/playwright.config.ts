@@ -44,7 +44,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `uv run --project .. python ../tests/fake_llm_server.py --port ${LLM_PORT} --script e2e/fixtures/agent-script.json --loop`,
+      command: `uv run --project .. python ../tests/fake_llm_server.py --port ${LLM_PORT} --script ${process.env.STUDIO_E2E_LLM_SCRIPT ?? "e2e/fixtures/agent-script.json"} --loop --delay ${process.env.STUDIO_E2E_LLM_DELAY ?? 0}`,
       port: LLM_PORT,
       reuseExistingServer: false,
       timeout: 60_000,

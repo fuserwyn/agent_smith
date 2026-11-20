@@ -17,7 +17,7 @@ ARGS  = --student-path . --moulinette-path $(MOULINETTE) --env-file $(ENV) $(if 
 
 .DEFAULT_GOAL := help
 .PHONY: help check install up down test sandbox mbpp swe exam clean clean-logs clean-all school purge rm-env \
-        studio studio-dev studio-build studio-install
+        studio studio-dev studio-build studio-install studio-gif
 
 help: ## this list
 	@echo "Agent Smith"
@@ -88,6 +88,14 @@ studio: ## open the studio on a project  (P=folder, default .)
 
 studio-dev: ## studio with hot reload (API :8790 + Vite :5173)
 	$(SH) ./scripts/studio_dev.sh $(P)
+
+studio-gif: ## re-record the README GIFs (web/screenshots/*.gif)
+	@rm -rf /tmp/studio-gif && $(MAKE) studio-build
+	cd web && STUDIO_GIF=/tmp/studio-gif STUDIO_E2E_LLM_SCRIPT=e2e/fixtures/demo-script.json STUDIO_E2E_LLM_DELAY=1.6 \
+	  npx playwright test e2e/demo.spec.ts
+	uv run -q --no-project --with pillow==11.3.0 python scripts/make_gif.py /tmp/studio-gif /tmp/studio-gif/out 900 128
+	cp /tmp/studio-gif/out/agent.gif web/screenshots/agent.gif
+	cp /tmp/studio-gif/out/inside.gif web/screenshots/inside-the-agent.gif
 
 # ---- 42 school computers
 school: ## set up here, heavy data in sgoinfre  (M=moulinette folder/archive if not found)

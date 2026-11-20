@@ -52,6 +52,7 @@ test("no Content Security Policy violation while using the editor, terminal and 
   await open(page);
   await page.keyboard.press("ControlOrMeta+P");
   await page.getByRole("dialog").getByRole("textbox").fill("calc");
+  await expect(page.getByRole("option", { name: /calc\.py/ })).toBeVisible();  // the file index loads asynchronously
   await page.keyboard.press("Enter");
   await expect(page.locator(".monaco-host").first().locator(".view-lines")).toContainText("def add");
   await page.getByRole("tab", { name: /terminal|терминал/i }).first().click();
