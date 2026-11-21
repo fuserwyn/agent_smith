@@ -231,6 +231,36 @@
     },
     {
       "provider": "openrouter",
+      "model": "qwen/qwen3.8-flash",
+      "notes": "paid: Qwen3.8 Flash: cheap and fast, 1M context, reads images/video",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen3.8-omni-flash",
+      "notes": "paid: Qwen3.8 Omni Flash: also reads audio, 1M context",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen3.8-max-0902",
+      "notes": "paid: Qwen3.8 Max (0902): the strong one, 1M context",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen3.8-2.4t-a95b",
+      "notes": "paid: Qwen3.8 2.4T A95B: largest open-weight, text only",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen3.8-max-prime",
+      "notes": "paid: Qwen3.8 Max Prime: top of the line, expensive",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
       "model": "openai/gpt-oss-120b",
       "notes": "PAID $0.09/$0.36: open-weights OpenAI model",
       "paid": true
