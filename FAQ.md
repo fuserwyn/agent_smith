@@ -246,6 +246,11 @@ picker, and the button next to the input always says which one the next message 
 
 OpenRouter's own free tier (`:free` models, $0 routers) is not used: OpenRouter in the studio means your paid key.
 
+Groq is in both tabs: **Groq · free key** (your free Groq key, its limits) and **Groq · via OpenRouter** (the same
+fast Groq hardware billed to your OpenRouter key, no free-tier limits). The second pins the model to Groq
+(`openai/gpt-oss-120b@groq` → OpenRouter `provider.only = ["groq"]`); OpenRouter offers gpt-oss-120b and gpt-oss-20b on
+Groq, not qwen3.8-27b.
+
 ### Which models can I pick?
 Any OpenAI-compatible model in `config/models.json` (your own list via `AGENT_SMITH_MODELS_FILE`). In the studio,
 models without a key are shown but disabled, and Settings tells you which variable to add.

@@ -107,6 +107,35 @@ def catalog() -> List[Dict[str, Any]]:
     return out
 
 
+_ROUTES: Dict[str, Optional[Dict[str, float]]] = {}  # "vendor/model@host" -> that host's price ($ per 1M) or None
+
+
+def route_prices(ids: List[str], on_ready: Optional[Any] = None) -> Dict[str, Dict[str, float]]:
+    """Prices of OpenRouter models pinned to one host (``vendor/model@host``), from the model's endpoints.
+    Returns what is known now; the missing ones are fetched in the background, then ``on_ready()`` is called."""
+    missing = [i for i in ids if i not in _ROUTES]
+    if missing and not os.environ.get("AGENT_SMITH_OFFLINE"):
+        with _LOCK:
+            for i in missing:
+                _ROUTES[i] = None
+
+        def fetch() -> None:
+            for mid in missing:
+                model, _, host = mid.rpartition("@")
+                try:
+                    eps = httpx.get(f"{API}/models/{model}/endpoints", timeout=20).json()["data"]["endpoints"]
+                    ep = next(e for e in eps if (e.get("tag") or "").split("/")[0] == host
+                              or str(e.get("provider_name", "")).lower() == host)
+                    _ROUTES[mid] = {"in": _price(ep["pricing"], "prompt") or 0.0, "out": _price(ep["pricing"], "completion") or 0.0}
+                except (httpx.HTTPError, ValueError, KeyError, TypeError, StopIteration):
+                    with _LOCK:
+                        _ROUTES.pop(mid, None)  # retried on the next listing
+            if on_ready:
+                on_ready()
+        threading.Thread(target=fetch, daemon=True).start()
+    return {i: p for i, p in _ROUTES.items() if i in ids and p}
+
+
 def account() -> Dict[str, Any]:
     """Balance of the key (numbers only; the key itself never leaves the server)."""
     keys = keys_from_env("OPENROUTER_API_KEY")

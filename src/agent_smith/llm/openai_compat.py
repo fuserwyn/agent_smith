@@ -63,6 +63,8 @@ def live_limits(base_url: str, model: str) -> Optional[Dict[str, Any]]:
 
 
 class OpenAICompatProvider:
+    KEEP = ("provider",)  # extra_body keys that are never dropped on a 400 (OpenRouter routing)
+
     def __init__(self, base_url: str, model: str, extra_headers: Optional[Dict[str, str]] = None,
                  transport: Optional[httpx.BaseTransport] = None, extra_body: Optional[Dict[str, Any]] = None):
         self.base_url = base_url.rstrip("/")
@@ -126,12 +128,14 @@ class OpenAICompatProvider:
             payload["stop"] = stop[:4]  # many providers accept at most 4 stop sequences
         payload.update(self.extra_body)
         resp = self._post(payload, headers, timeout)
-        if resp.status_code in (400, 422) and self.extra_body:
+        optional = [k for k in self.extra_body if k not in self.KEEP]
+        if resp.status_code in (400, 422) and optional:
             # Some models reject provider-specific options (e.g. "reasoning cannot be disabled"):
-            # drop them for this model and retry once.
-            for key in self.extra_body:
+            # drop them for this model and retry once. The routing ("provider": which host may serve
+            # the request) is a choice of the user, not an option: it is never dropped.
+            for key in optional:
                 payload.pop(key, None)
-            self.extra_body = {}
+                self.extra_body.pop(key, None)
             resp = self._post(payload, headers, timeout)
         self._learn(resp)
         result = self._parse(resp, messages)

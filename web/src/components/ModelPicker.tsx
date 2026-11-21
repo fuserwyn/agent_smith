@@ -19,9 +19,20 @@ const VENDOR: Record<string, string> = {
 const PROVIDER: Record<string, string> = { groq: "Groq", gemini: "Google AI Studio", nvidia: "NVIDIA", cohere: "Cohere", ollama: "Ollama" };
 const READS: Record<string, string> = { image: "📷", audio: "🎧", video: "🎬", file: "📄" };
 
-const group = (m: ModelChoice) => (m.provider === "openrouter" ? VENDOR[m.model.split("/")[0]!] ?? m.model.split("/")[0]! : PROVIDER[m.provider] ?? m.provider);
+const HOST: Record<string, string> = { groq: "Groq", cerebras: "Cerebras", sambanova: "SambaNova", together: "Together" };
+/** group of a model in the list: who serves it (and, for OpenRouter, the vendor or the pinned host) */
+const groupOf = (m: ModelChoice, t: ReturnType<typeof useT>) => {
+  if (m.provider !== "openrouter") return t("tier.freeKey", { p: PROVIDER[m.provider] ?? m.provider });
+  const host = m.model.split("@")[1];
+  if (host) return t("tier.viaOR", { p: HOST[host] ?? host });
+  return VENDOR[m.model.split("/")[0]!] ?? m.model.split("/")[0]!;
+};
 const cost = (m: ModelChoice) => (m.price ? m.price.in + m.price.out * 3 : Number.MAX_VALUE);
-const shortName = (m: ModelChoice) => (m.provider === "openrouter" ? m.model.split("/").slice(1).join("/") || m.model : m.model.split("/").pop()!);
+const shortName = (m: ModelChoice) => {
+  const [id, host] = m.model.split("@");
+  const name = m.provider === "openrouter" ? id!.split("/").slice(1).join("/") || id! : id!.split("/").pop()!;
+  return host ? `${name} · ${HOST[host] ?? host}` : name;
+};
 const k = (n: number) => (n >= 10_000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`);
 
 /** "990 req · 5.2k tok left", "used up today", or "" before the provider has answered once */
@@ -58,10 +69,10 @@ export function ModelPicker() {
 
   const groups = useMemo(() => {
     const g = new Map<string, ModelChoice[]>();
-    for (const m of ag.models.filter((x) => tierOf(x) === tab)) g.set(group(m), [...(g.get(group(m)) ?? []), m]);
+    for (const m of ag.models.filter((x) => tierOf(x) === tab)) g.set(groupOf(m, t), [...(g.get(groupOf(m, t)) ?? []), m]);
     const sorted = [...g].map(([name, ms]) => [name, [...ms].sort((a, b) => cost(a) - cost(b) || a.model.localeCompare(b.model))] as const);
     return sorted.sort((a, b) => Math.min(...a[1].map(cost)) - Math.min(...b[1].map(cost)) || a[0].localeCompare(b[0]));
-  }, [ag.models, tab]);
+  }, [ag.models, tab, t]);
   const count = (tier: Tier) => ag.models.filter((m) => tierOf(m) === tier && m.key_ok).length;
   const choose = (m: ModelChoice) => { if (!m.key_ok) return; ag.setModel({ provider: m.provider, model: m.model }); setOpen(false); };
   const tier = tierOf(cur);
@@ -98,7 +109,10 @@ export function ModelPicker() {
             {!groups.length && <div className="mp-empty">{t(tab === "paid" ? "or.noKey" : "tier.noneFree")}</div>}
             {groups.map(([name, ms]) => (
               <div key={name} className="mp-group">
-                <div className="mp-gh">{name}{tab === "free" && ms[0]?.limits && <span className="mp-lim">{ms[0].limits}</span>}</div>
+                <div className="mp-gh">{name}
+                  {tab === "free" && ag.models.some((x) => x.provider === "openrouter" && x.model.endsWith("@" + ms[0]!.provider)) && (
+                    <button type="button" className="mp-jump" onClick={() => setTab("paid")}>{t("tier.samePaid")}</button>)}
+                  {tab === "free" && ms[0]?.limits && <span className="mp-lim">{ms[0].limits}</span>}</div>
                 {ms.map((m) => {
                   const sel = cur === m;
                   return (

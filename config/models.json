@@ -237,6 +237,18 @@
     },
     {
       "provider": "openrouter",
+      "model": "openai/gpt-oss-120b@groq",
+      "notes": "paid, served by Groq through your OpenRouter key (fast; no free-tier limits)",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
+      "model": "openai/gpt-oss-20b@groq",
+      "notes": "paid, served by Groq through your OpenRouter key (fastest, cheapest)",
+      "paid": true
+    },
+    {
+      "provider": "openrouter",
       "model": "nvidia/nemotron-3-ultra-550b-a55b",
       "notes": "PAID $0.5/$2.2: the free-tier NVIDIA model, without quotas",
       "paid": true

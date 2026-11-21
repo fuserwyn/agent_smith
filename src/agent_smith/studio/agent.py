@@ -213,13 +213,17 @@ class AgentService:
             cat = _M.shared_catalog(block=False, on_ready=on_catalog) if on_catalog else {}
         except Exception:  # noqa: BLE001 - the picker works without it
             pass
+        from agent_smith.studio.openrouter import route_prices
+        routed = [m["model"] for m in models if m["provider"] == "openrouter" and "@" in m["model"]]
+        hosts = route_prices(routed, on_ready=on_catalog) if (routed and on_catalog) else {}
         out = []
         for m in models:
-            info = cat.get(m["model"]) if m["provider"] == "openrouter" else None
-            if info and not (info["price"]["in"] or info["price"]["out"]):
+            info = cat.get(m["model"].split("@")[0]) if m["provider"] == "openrouter" else None
+            if info and "@" not in m["model"] and not (info["price"]["in"] or info["price"]["out"]):
                 continue  # $0 in the catalog (a router or a preview): not a paid model, not shown as one
             m["inputs"] = info["in"] if info else ["text"]
-            m["price"] = info["price"] if info else None
+            m["price"] = hosts.get(m["model"]) if "@" in m["model"] else (info["price"] if info else None)
+            m["route"] = m["model"].split("@")[1] if "@" in m["model"] else None
             m["live"] = None if m["tier"] == "paid" else live_limits(m["url"], m["model"])
             out.append(m)
         usable = [m for m in out if m["key_ok"]]

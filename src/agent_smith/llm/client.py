@@ -133,6 +133,14 @@ class LLMClient:
         raise LLMError("all LLM attempts failed: " + "; ".join(errors[-5:]), retryable=False)
 
 
+def openrouter_route(model_name: str) -> Optional[tuple]:
+    """``vendor/model@provider`` -> (``vendor/model``, ``provider``): pin an OpenRouter model to one host."""
+    if "@" not in model_name:
+        return None
+    model, _, host = model_name.rpartition("@")
+    return (model, host) if model and host and "/" in model and host.replace("-", "").isalnum() else None
+
+
 def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False, no_fallbacks: bool = False,
                  models_config: Optional[ModelsConfig] = None,
                  on_event: Optional[Callable[[str, dict], None]] = None) -> LLMClient:
@@ -144,8 +152,12 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
     if not keys and spec is not None and spec.key_env:
         raise SystemExit(f"error: no API key found. Set {spec.key_env} (or {spec.key_env}_2.., "
                          f"{spec.key_env}S=k1,k2) in the environment or .env file.")
-    endpoints = [Endpoint(OpenAICompatProvider(provider_url, model_name, spec.extra_headers if spec else None,
-                                               extra_body=spec.extra_body if spec else None),
+    model_id, extra_body = model_name, dict(spec.extra_body) if spec else {}
+    route = openrouter_route(model_name) if spec and spec.name == "openrouter" else None
+    if route:  # "openai/gpt-oss-120b@groq": that model on OpenRouter, served by Groq only (billed to the OpenRouter key)
+        model_id, extra_body["provider"] = route[0], {"only": [route[1]], "allow_fallbacks": False}
+    endpoints = [Endpoint(OpenAICompatProvider(provider_url, model_id, spec.extra_headers if spec else None,
+                                               extra_body=extra_body or None),
                           KeyPool(keys), spec.name if spec else "")]
     # fallback_enabled in config/models.json turns this on by default; AGENT_FALLBACK=0 turns it off (tests, debugging)
     # no_fallbacks: the caller chose this model on purpose (e.g. a paid one): never answer with another model

@@ -1,5 +1,7 @@
 """OpenRouter tab: picks are global, a picked model shows up in the chat picker, a picked media model is used."""
 
+import json
+
 import pytest
 
 pytest.importorskip("fastapi")
@@ -100,3 +102,38 @@ def test_live_limits_are_remembered_for_the_free_picker():
     assert "tokens_left" not in live                                       # its window already reset: stale, dropped
     assert oc.live_limits("https://api.example.test/v1", "other") is None
     oc.LIVE_LIMITS.clear()
+
+
+def test_a_model_pinned_to_groq_goes_through_openrouter_and_keeps_its_route(monkeypatch):
+    import httpx
+
+    from agent_smith.llm.client import build_client, openrouter_route
+    assert openrouter_route("openai/gpt-oss-120b@groq") == ("openai/gpt-oss-120b", "groq")
+    assert openrouter_route("openai/gpt-oss-120b") is None and openrouter_route("x@groq") is None
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
+    sent = []
+
+    def handler(request):
+        body = json.loads(request.content)
+        sent.append(body)
+        if "reasoning" in body:  # gpt-oss: "reasoning cannot be disabled"
+            return httpx.Response(400, json={"error": {"message": "Reasoning is mandatory for this endpoint"}})
+        return httpx.Response(200, json={"choices": [{"message": {"content": "OK"}, "finish_reason": "stop"}],
+                                         "usage": {"prompt_tokens": 3, "completion_tokens": 1}, "provider": "Groq"})
+
+    llm = build_client("openai/gpt-oss-120b@groq", "https://openrouter.ai/api/v1", no_fallbacks=True)
+    prov = llm.endpoints[0].provider
+    prov._client = httpx.Client(transport=httpx.MockTransport(handler))
+    assert llm.chat([{"role": "user", "content": "hi"}], max_tokens=10).text == "OK"
+    assert [b["model"] for b in sent] == ["openai/gpt-oss-120b"] * 2               # the id OpenRouter knows
+    assert all(b["provider"] == {"only": ["groq"], "allow_fallbacks": False} for b in sent)  # route kept on retry
+    assert "reasoning" not in sent[-1] and len(llm.endpoints) == 1                  # paid: no fallback
+
+
+def test_groq_is_in_both_tiers_with_clear_labels(client):
+    c, _ = client
+    models = c.get("/api/agent/models", headers=H).json()["models"]
+    free = [m for m in models if m["provider"] == "groq"]
+    paid = [m for m in models if m["model"].endswith("@groq")]
+    assert free and all(m["tier"] == "free" for m in free)                 # your free Groq key, its limits
+    assert paid and all(m["tier"] == "paid" and m["provider"] == "openrouter" and m["route"] == "groq" for m in paid)

@@ -6,6 +6,9 @@ export const LANGS: readonly Lang[] = ["en", "ru", "fr"];
 
 const en = {
   "tier.free": "Free",
+  "tier.samePaid": "no limits: paid via OpenRouter →",
+  "tier.freeKey": "{p} · free key",
+  "tier.viaOR": "{p} · via OpenRouter",
   "tier.paid": "Paid",
   "tier.freeSub": "provider limits",
   "tier.paidSub": "your key · per token",
@@ -308,6 +311,9 @@ type Dict = Record<Key, string>;
 
 const ru: Dict = {
   "tier.free": "Бесплатно",
+  "tier.samePaid": "без лимитов: платно через OpenRouter →",
+  "tier.freeKey": "{p} · бесплатный ключ",
+  "tier.viaOR": "{p} · через OpenRouter",
   "tier.paid": "Платно",
   "tier.freeSub": "лимиты провайдеров",
   "tier.paidSub": "твой ключ · за токены",
@@ -608,6 +614,9 @@ const ru: Dict = {
 
 const fr: Dict = {
   "tier.free": "Gratuit",
+  "tier.samePaid": "sans limites : payant via OpenRouter →",
+  "tier.freeKey": "{p} · clé gratuite",
+  "tier.viaOR": "{p} · via OpenRouter",
   "tier.paid": "Payant",
   "tier.freeSub": "limites des fournisseurs",
   "tier.paidSub": "ta clé · au token",
