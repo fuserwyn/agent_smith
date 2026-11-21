@@ -16,14 +16,14 @@ OUT="$ROOT/benchmarks/swebench/$RUN_NAME"
 # The moulinette's Docker SDK needs the socket of the current Docker context (Docker Desktop on macOS).
 export DOCKER_HOST="${DOCKER_HOST:-$(docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null)}"
 CACHE="$ROOT/cache"
-TASKS=(${TASKS:-sympy__sympy-14711 sympy__sympy-13480 pydata__xarray-4629})
+# One model per run: never answer with a fallback model (the numbers must belong to the model named in the table).
+export AGENT_FALLBACK=0
+TASKS=(${TASKS:-sympy__sympy-14711 sympy__sympy-13480 pydata__xarray-4629 django__django-11066 sympy__sympy-18189
+             scikit-learn__scikit-learn-13439 django__django-11099 django__django-13658})
 # "provider_url|model" pairs — edit to the models you benchmark (free tiers only).
 MODELS=(${MODELS:-
-  "https://openrouter.ai/api/v1|nvidia/nemotron-3-ultra-550b-a55b:free"
-  "https://openrouter.ai/api/v1|cohere/north-mini-code:free"
-  "https://openrouter.ai/api/v1|nvidia/nemotron-3.5-lightning:free"
-  "https://openrouter.ai/api/v1|nvidia/nemotron-3.5-super-vl:free"
-  "https://openrouter.ai/api/v1|dots-studio/dots-3-note-preview:free"
+  "https://integrate.api.nvidia.com/v1|nvidia/nemotron-3.5-lightning-30b-a3b"
+  "https://integrate.api.nvidia.com/v1|nvidia/nemotron-3-ultra-550b-a55b"
 })
 
 mkdir -p "$CACHE" "$OUT"
@@ -48,4 +48,4 @@ for task in "${TASKS[@]}"; do
     echo "    leftover containers: $(docker ps -aq --filter label=agent-smith | wc -l | tr -d ' ')"
   done
 done
-(cd "$ROOT" && uv run python scripts/benchmark_table.py "$OUT")
+[[ -n "${NO_TABLE:-}" ]] || (cd "$ROOT" && uv run python scripts/benchmark_table.py "$OUT")

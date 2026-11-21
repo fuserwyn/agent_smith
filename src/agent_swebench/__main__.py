@@ -14,6 +14,7 @@ import os
 import sys
 import tempfile
 import time
+from dataclasses import replace
 from typing import Optional
 
 from agent_smith.agent import AgentSettings, CodeAgent
@@ -37,11 +38,30 @@ SWE_SETTINGS = AgentSettings(
 )
 
 
+ABLATIONS = {
+    "no-patch-check": "accept any final_answer, even one that is not a patch (no answer_validator)",
+    "full-history": "keep every old observation at full length (no compression of steps older than 3)",
+    "no-budget": "no budget line (iterations/tokens/time left) after each observation",
+}
+
+
+def settings_for(ablations) -> AgentSettings:
+    settings = replace(SWE_SETTINGS)
+    if "full-history" in ablations:
+        settings.old_observation_chars = settings.observation_max_chars
+    if "no-budget" in ablations:
+        settings.show_budget = False
+    return settings
+
+
 def main(argv=None) -> int:
     parser = common_parser("agent_swebench", "Fix a SWE-bench issue with the Agent Smith code agent")
     parser.add_argument("--keep-network", action="store_true", help="do not start the container with --network none")
     parser.add_argument("--prompt-variant", choices=["full", "minimal"], default="full",
                         help="system prompt variant (minimal = no method section; ablation study)")
+    parser.add_argument("--ablation", action="append", default=[], choices=sorted(ABLATIONS),
+                        help="turn one agent mechanism off, for the benchmark report's ablations (repeatable): "
+                             + "; ".join(f"{k}: {v}" for k, v in sorted(ABLATIONS.items())))
     args = parser.parse_args(argv)
     events = setup(args)
     raw, task_error = read_task(args.task_file)
@@ -94,9 +114,9 @@ def main(argv=None) -> int:
 
                     with Sandbox(config, mcp, event_hook=events.emit, trace_execution=bool(args.trace_file)) as sandbox:
                         agent = CodeAgent(llm, sandbox, swebench_system_prompt(config, mcp, REPO_ROOT, args.prompt_variant), limits,
-                                          "swebench", task.instance_id, settings=SWE_SETTINGS, events=events,
+                                          "swebench", task.instance_id, settings=settings_for(args.ablation), events=events,
                                           fallback_answer=current_patch, started=started,
-                                          answer_validator=patch_only)
+                                          answer_validator=None if "no-patch-check" in args.ablation else patch_only)
                         output = agent.run(swebench_task_prompt(task, REPO_ROOT))
                         if agent.interrupted:
                             raise KeyboardInterrupt
