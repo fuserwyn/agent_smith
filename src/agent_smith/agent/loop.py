@@ -40,7 +40,7 @@ class AgentSettings:
     safety_seconds: float = 8.0
     input_estimate_margin: float = 1.1
     stop_sequences: Optional[List[str]] = None  # None: the extractor's STOP_SEQUENCES (benchmarks)
-    # long open-ended runs (studio): only the last N steps are sent, older ones become a one-line note, so the
+    # long open-ended runs: only the last N steps are sent, older ones become a one-line note, so the
     # request stays inside the model's context window (None: every step, as in the benchmarks)
     max_history_steps: Optional[int] = None
 
@@ -86,7 +86,7 @@ class CodeAgent:
         self.steps: List[StepMetrics] = []
         self.history: List[tuple] = []  # (assistant_text, observation_text)
         self.interrupted = False
-        # cooperative stop (e.g. the studio's Stop button): checked before each LLM call and before running its code
+        # cooperative stop (e.g. a Stop button of a UI): checked before each LLM call and before running its code
         self.cancel = cancel
         self.loop_streak = 0  # consecutive exact repeats: raises the sampling temperature to break the loop
         self.known_tools = [t.name for t in sandbox.mcp.tools] if sandbox.mcp else []

@@ -4,7 +4,6 @@
 #   ./scripts/mock_exam.sh <mbpp|swebench|sandbox|all> --student-path . --moulinette-path ./moulinette --env-file .env \
 #       [--model-name M --provider-url URL]            (same model for every part)
 #       [--mbpp-model-name M --mbpp-provider-url URL]  (MBPP only; default qwen/qwen3.8-27b on Groq)
-#       [--paid]   paid OpenRouter model for every part (deepseek/deepseek-v4-flash; outside the free-tier rule)
 #
 # When a free key runs out of quota the agent moves to the next key, then to the free providers listed in
 # `fallbacks` of config/models.json (fallback_enabled: true; only providers with a key in .env).
@@ -19,7 +18,7 @@ set -uo pipefail
 
 TYPE="${1:-all}"; shift || true
 STUDENT="."; MOULINETTE="./moulinette"; ENV_FILE=".env"
-# Defaults = recommended free exam setup (docs/DEFENSE.*.md, section 1a).
+# Defaults = the free models of benchmark_defaults in config/models.json (Groq for MBPP, NVIDIA for SWE-bench).
 MBPP_MODEL="qwen/qwen3.8-27b"; MBPP_URL="https://api.groq.com/openai/v1"
 MODEL="nvidia/nemotron-3.5-lightning-30b-a3b"; URL="https://integrate.api.nvidia.com/v1"; TASKS=""
 while [[ $# -gt 0 ]]; do
@@ -32,8 +31,6 @@ while [[ $# -gt 0 ]]; do
     --mbpp-model-name) MBPP_MODEL="$2"; shift 2 ;;
     --mbpp-provider-url) MBPP_URL="$2"; shift 2 ;;
     --tasks) TASKS="$2"; shift 2 ;;
-    --paid) MODEL="deepseek/deepseek-v4-flash"; MBPP_MODEL="$MODEL"; URL="https://openrouter.ai/api/v1"; MBPP_URL="$URL"; shift
-            echo "WARNING: paid OpenRouter model ($MODEL) — the subject requires free tiers only" >&2 ;;   # SWE-bench only: space-separated instance ids instead of a random selection
     *) echo "unknown option $1"; exit 2 ;;
   esac
 done

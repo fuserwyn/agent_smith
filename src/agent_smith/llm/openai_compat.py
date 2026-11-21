@@ -42,7 +42,7 @@ def parse_duration(text: Optional[str]) -> Optional[float]:
     return h * 3600 + mi * 60 + s + ms / 1000
 
 
-# What each (provider URL, model) last told us about its limits, for the studio's model picker: remaining
+# What each (provider URL, model) last told us about its limits, for a model picker: remaining
 # requests / tokens in the current window (wall-clock reset time) and whether its quota ran out today.
 LIVE_LIMITS: Dict[tuple, Dict[str, Any]] = {}
 

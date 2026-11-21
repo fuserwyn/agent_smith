@@ -112,6 +112,16 @@
       "notes": "free (build.nvidia.com), fast"
     },
     {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "notes": "free on OpenRouter (:free models: 50 requests/day without credits): the NVIDIA lightning model"
+    },
+    {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "notes": "free on OpenRouter (:free): the NVIDIA ultra model"
+    },
+    {
       "provider": "gemini",
       "model": "gemini-3.5-flash",
       "notes": "free (AI Studio), reasoning off"
@@ -150,180 +160,6 @@
       "provider": "cohere",
       "model": "command-a-03-2025",
       "notes": "free trial key: 1000 calls/month, 20/min"
-    },
-    {
-      "provider": "openrouter",
-      "model": "deepseek/deepseek-v4-flash",
-      "notes": "PAID $0.09/$0.18: cheap strong coder",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "anthropic/claude-opus-5.5",
-      "notes": "PAID $4/$20 per 1M: top quality, hardest tasks",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "anthropic/claude-sonnet-5.5",
-      "notes": "PAID $2/$10: near-top agentic coding, best quality per dollar at the top · Swift app (macOS+iOS) compiles: 3/3 first try, 3/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "openai/gpt-6.2-sol",
-      "notes": "PAID $2/$10: price-performance leader on coding-agent boards (no stop: cut client-side) · Swift app (macOS+iOS) compiles: 3/3 first try, 3/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "google/gemini-4-hydrogen",
-      "notes": "PAID $1.5/$7.5: reads text, images, audio, video, PDF · Swift app (macOS+iOS) compiles: 3/3 first try, 3/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "qwen/qwen4-max",
-      "notes": "PAID $1.42/$4.27: strong open model, images and video in",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "deepseek/deepseek-v4.1-flash",
-      "notes": "PAID $0.3/$1.2: cheap strong coder · Swift app (macOS+iOS) compiles: 0/3 first try, 1/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "moonshotai/kimi-k3.1-pro",
-      "notes": "PAID $0.25/$8.8: long agentic runs · Swift app (macOS+iOS) compiles: 3/3 first try, 3/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "z-ai/glm-5.3",
-      "notes": "PAID $0.07/$1.4: very cheap, text only",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "anthropic/claude-haiku-5.5",
-      "notes": "PAID $0.1/$0.5: cheapest Claude, fast · Swift app (macOS+iOS) compiles: 2/3 first try, 3/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "openai/gpt-6-luna",
-      "notes": "PAID $0.1/$0.5: lowest cost per task (no stop: cut client-side) · Swift app (macOS+iOS) compiles: 0/3 first try, 3/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "minimax/minimax-m3.1-flash",
-      "notes": "PAID $0.075/$0.3: cheapest, images and video in",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "qwen/qwen3.8-27b",
-      "notes": "PAID $0.06/$1.96 via OpenRouter: the Groq model without Groq's free 8k tokens/min cap",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "qwen/qwen3.8-flash",
-      "notes": "paid: Qwen3.8 Flash: cheap and fast, 1M context, reads images/video · Swift app (macOS+iOS) compiles: 0/3 first try, 3/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "qwen/qwen3.8-omni-flash",
-      "notes": "paid: Qwen3.8 Omni Flash: also reads audio, 1M context",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "qwen/qwen3.8-max-0902",
-      "notes": "paid: Qwen3.8 Max (0902): the strong one, 1M context",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "qwen/qwen3.8-2.4t-a95b",
-      "notes": "paid: Qwen3.8 2.4T A95B: largest open-weight, text only",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "qwen/qwen3.8-max-prime",
-      "notes": "paid: Qwen3.8 Max Prime: top of the line, expensive",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "openai/gpt-oss-120b",
-      "notes": "PAID $0.09/$0.36: open-weights OpenAI model",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "openai/gpt-oss-120b@groq",
-      "notes": "paid, served by Groq through your OpenRouter key (fast; no free-tier limits)",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "openai/gpt-oss-20b@groq",
-      "notes": "paid, served by Groq through your OpenRouter key (fastest, cheapest)",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "nvidia/nemotron-3-ultra-550b-a55b",
-      "notes": "PAID $0.5/$2.2: the free-tier NVIDIA model, without quotas",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "google/gemini-3.5-flash-lite",
-      "notes": "PAID $0.3/$2.5: reads images, audio, video, PDF",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "google/gemini-3.5-flash",
-      "notes": "PAID $1.5/$9: reads images, audio, video, PDF",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "nvidia/nemotron-3.5-lightning",
-      "notes": "PAID $0.07/$0.2: the fast NVIDIA model, without quotas",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "deepseek/deepseek-v4-pro",
-      "notes": "paid: DeepSeek V4 Pro: strong agentic coder, cheap · Swift app (macOS+iOS) compiles: 1/3 first try, 2/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "qwen/qwen3-coder-next",
-      "notes": "paid: Qwen3 Coder Next: cheap coder for web / backend (weak on Swift)",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "openai/gpt-6.1-terra",
-      "notes": "paid: GPT-6.1 Terra: mid-price OpenAI · Swift app (macOS+iOS) compiles: 0/3 first try, 3/3 after one fix",
-      "paid": true
-    },
-    {
-      "provider": "openrouter",
-      "model": "google/gemini-4-argon",
-      "notes": "paid: Gemini 4 Argon: strong on Swift / Apple APIs · Swift app (macOS+iOS) compiles: 2/3 first try, 3/3 after one fix",
-      "paid": true
     }
   ],
   "fallbacks": [
@@ -346,92 +182,45 @@
   "benchmark_defaults": {
     "_doc": "Model used by agent_mbpp / agent_swebench when --model-name / --provider-url are not given: the first entry whose provider has a key in the environment (all free tiers).",
     "mbpp": [
-      {"provider": "groq", "model": "qwen/qwen3.8-27b"},
-      {"provider": "nvidia", "model": "nvidia/nemotron-3.5-lightning-30b-a3b"},
-      {"provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free"},
-      {"provider": "gemini", "model": "gemini-3.5-flash-lite"},
-      {"provider": "cohere", "model": "north-mini-code-1.0"}
+      {
+        "provider": "groq",
+        "model": "qwen/qwen3.8-27b"
+      },
+      {
+        "provider": "nvidia",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b"
+      },
+      {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3.5-lightning:free"
+      },
+      {
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite"
+      },
+      {
+        "provider": "cohere",
+        "model": "north-mini-code-1.0"
+      }
     ],
     "swebench": [
-      {"provider": "nvidia", "model": "nvidia/nemotron-3.5-lightning-30b-a3b"},
-      {"provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free"},
-      {"provider": "gemini", "model": "gemini-3.5-flash-lite"},
-      {"provider": "nvidia", "model": "nvidia/nemotron-3-ultra-550b-a55b"}
-    ]
-  },
-  "fallback_enabled": true,
-  "media": {
-    "_doc": "Models for non-text work, all through OpenRouter (key OPENROUTER_API_KEY). The first entry of each list is the default. Prices from the OpenRouter catalog, checked 2026-11-20.",
-    "image": [
       {
-        "model": "google/gemini-3.1-flash-image",
-        "notes": "default: good quality, ~$0.07 per image (tested)"
+        "provider": "nvidia",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b"
       },
       {
-        "model": "google/gemini-3.1-flash-lite-image",
-        "notes": "cheaper, ~half the price"
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3.5-lightning:free"
       },
       {
-        "model": "google/gemini-3-pro-image",
-        "notes": "best quality, ~4x the price"
-      }
-    ],
-    "video": [
-      {
-        "model": "google/gemini-omni-1.2-flash",
-        "notes": "the only video generator on OpenRouter; $1.5/$9 per 1M tokens"
-      }
-    ],
-    "speech": [
-      {
-        "model": "openai/gpt-audio-mini",
-        "voice": "alloy",
-        "notes": "default text-to-speech, ~$0.0004 per sentence (tested)"
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite"
       },
       {
-        "model": "openai/gpt-audio",
-        "voice": "alloy",
-        "notes": "better voice, ~4x the price"
-      }
-    ],
-    "transcribe": [
-      {
-        "model": "google/gemini-3.1-flash-lite",
-        "notes": "default speech-to-text, <1 s, ~$0.0001 per sentence (tested)"
-      },
-      {
-        "model": "mistralai/voxtral-small-24b-2507",
-        "notes": "speech-specialised alternative"
-      }
-    ],
-    "perceive": [
-      {
-        "model": "google/gemini-3.1-flash-lite",
-        "notes": "describes images, audio, video, PDF for a chat model that cannot read them"
-      },
-      {
-        "model": "google/gemini-4-hydrogen",
-        "notes": "stronger, ~6x the price"
-      }
-    ],
-    "embeddings": [
-      {
-        "model": "qwen/qwen3-embedding-8b",
-        "notes": "default: 4096 dims, 40k context, $0.01 per 1M tokens (tested)"
-      },
-      {
-        "model": "nvidia/nemotron-3.5-embed-8b:free",
-        "notes": "free"
-      },
-      {
-        "model": "mongodb/voyage-code-4",
-        "notes": "code-specialised, $0.12 per 1M"
+        "provider": "nvidia",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b"
       }
     ]
   },
-  "chat_default": {
-    "provider": "openrouter",
-    "model": "anthropic/claude-haiku-5.5",
-    "notes": "studio chat: SWE-bench 3/3 for $0.009 the three tasks (benchmarks/swebench/paid-2026-11); falls back to the free default without an OpenRouter key"
-  }
+  "fallback_enabled": true
 }

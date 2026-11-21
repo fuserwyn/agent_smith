@@ -119,26 +119,19 @@ def test_embedded_file_mode_commands_match_the_server_recipes():
     assert "docker context inspect" in stored["swebench"]["steps"][-1]["command"]
 
 
-def test_paid_model_is_flagged_and_free_fallback_is_on():
+def test_only_free_models_and_free_fallbacks():
     from agent_smith.config import load_models_config
     models = ui_jobs.model_choices()
-    paid = [m for m in models if m["paid"]]
-    assert paid and all(m["provider"] == "openrouter" for m in paid)
-    paid_pairs = {(m["provider"], m["model"]) for m in paid}
-    assert ui_jobs.DEFAULTS["mbpp"] not in paid_pairs and ui_jobs.DEFAULTS["swebench"] not in paid_pairs  # defaults stay free
-    assert not any(m["model"].endswith(":free") for m in models if m["provider"] == "openrouter")  # no free OpenRouter
-    cmd = ui_jobs.preview("mbpp", {"provider": "openrouter", "model": paid[0]["model"]})["steps"][1]["command"]
-    assert f"--model-name {paid[0]['model']} --provider-url https://openrouter.ai/api/v1" in cmd
+    assert models and not any(m["paid"] for m in models)  # the evaluation requires free tiers only
     cfg = load_models_config()
-    assert cfg.fallback_enabled and not any(f.paid for f in cfg.fallbacks)  # running out of quota never lands on paid
+    assert cfg.fallback_enabled and not any(f.paid for f in cfg.fallbacks)
+    for bench in ("mbpp", "swebench"):  # every default exists in the model list
+        assert all(any(m["provider"] == d["provider"] and m["model"] == d["model"] for m in models)
+                   for d in cfg.benchmark_defaults[bench])
 
 
-def test_mock_exam_free_by_default_paid_on_request():
-    free = ui_jobs.preview("exam", {})["steps"][0]["command"]
-    assert free.startswith("./scripts/mock_exam.sh all") and "--paid" not in free
-    assert ui_jobs.preview("exam", {"tier": "paid"})["steps"][0]["command"].endswith(" --paid")
-    with pytest.raises(ui_jobs.ActionError):
-        ui_jobs.preview("exam", {"tier": "gold"})
+def test_mock_exam_runs_the_free_models():
+    assert ui_jobs.preview("exam", {})["steps"][0]["command"].startswith("./scripts/mock_exam.sh all")
 
 
 def test_rootless_podman_gets_root_owned_copies_and_docker_is_untouched(tmp_path):

@@ -16,15 +16,12 @@ PLAN.md
 agent_code/
 .school.env
 
-# Agent Smith Studio web app (built by `make studio-build`)
-web/node_modules/
-web/dist/
-web/test-results/
-web/playwright-report/
-
 # make school: caches and state kept next to the clone on sgoinfre (Hugging Face datasets, uv, Python)
 hf/
 uv-cache/
 uv-python/
 state/
 logs/
+
+# local leftovers of the Studio (lives on the agent-smith-studio branch)
+web/

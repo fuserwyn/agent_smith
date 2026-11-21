@@ -81,7 +81,7 @@ class FakeLLMServer:
         self.httpd.server_close()
 
 
-if __name__ == "__main__":  # used by the studio end-to-end tests: a scripted model on a fixed port
+if __name__ == "__main__":  # used by end-to-end tests: a scripted model on a fixed port
     import argparse
 
     ap = argparse.ArgumentParser()

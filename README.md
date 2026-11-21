@@ -2,8 +2,6 @@
 
 # Agent Smith
 
-**[FAQ — everything it can do](FAQ.md)** · [in Russian](FAQ.ru.md)
-
 ## Description
 
 Agent Smith is a code-agent framework written from scratch (no smolagents / LangGraph / LlamaIndex / CrewAI / AutoGen).
@@ -46,7 +44,7 @@ make purge                            # after the defense: images, sgoinfre data
 The clone and the API keys (`~/.agent_smith.env`, mode 600) stay in home (~10 MB). Python 3.10, the uv cache, both
 virtualenvs, `runs/`, `evaluations/`, `cache/` and, when Docker keeps them in home, the Docker images go to
 `/sgoinfre/goinfre/Perso/$USER/agent_smith` (symlinks, so every command is unchanged). Dependencies install in parallel, the
-Docker images (MBPP validation image and the six SWE-bench exam tasks) are pulled in the background, and the sandbox
+Docker images (MBPP validation image and the subject's three starter SWE-bench tasks) are pulled in the background, and the sandbox
 security tests run at the end. `--help` lists the options.
 
 **Sandbox**
@@ -66,13 +64,19 @@ An MCP server can be started over HTTP with `python mcp_tools_mbpp.py --http --p
 
 ```bash
 cd moulinette && uv run moulinette_eval dump mbpp --output ../cache/mbpp_task.json && cd ..
-uv run python -m agent_mbpp --task-file cache/mbpp_task.json --output cache/mbpp_solution.json \
-    --model-name "qwen/qwen3-coder:free" --provider-url "https://openrouter.ai/api/v1"
+uv run python -m agent_mbpp --task-file cache/mbpp_task.json --output cache/mbpp_solution.json
 cd moulinette && uv run moulinette_eval validate mbpp ../cache/mbpp_task.json ../cache/mbpp_solution.json
 
 uv run python -m agent_swebench --task-file cache/swebench_task.json --output cache/swebench_solution.json \
-    --model-name "qwen/qwen3-coder:free" --provider-url "https://openrouter.ai/api/v1"
+    --model-name "nvidia/nemotron-3.5-lightning-30b-a3b" --provider-url "https://integrate.api.nvidia.com/v1"
 ```
+
+`--model-name` / `--provider-url` are optional (the official exam scripts do not pass them): without them the agent
+takes the first free model of `benchmark_defaults` in `config/models.json` whose provider has a key in the
+environment. MBPP: Groq `qwen/qwen3.8-27b` → NVIDIA `nemotron-3.5-lightning` → OpenRouter
+`nvidia/nemotron-3.5-lightning:free` → Gemini → Cohere. SWE-bench: NVIDIA `nemotron-3.5-lightning` → OpenRouter
+`nvidia/nemotron-3.5-lightning:free` → Gemini (Groq's free 8k tokens/minute cannot hold a SWE-bench prompt).
+One NVIDIA, OpenRouter or Gemini key is enough for both benchmarks.
 
 **Free LLM without quota: a self-hosted model** (the subject allows self-hosted models):
 
@@ -106,7 +110,7 @@ When served by `uv run agent-ui`, the **What to show** panel also lists the real
 `benchmarks/`, `evaluations/`, `runs/`) and can launch an MBPP task, a SWE-bench task, the sandbox security tests or the
 full mock exam. Every choice shows the exact commands it runs, ready to copy into a terminal. The server only runs fixed
 recipes (`src/agent_smith/ui_jobs.py`) built from validated parameters (models from `config/models.json`, task ids by
-pattern or exam pool), refuses launches unless it listens on localhost, and requires an `X-Agent-Smith` header plus a
+pattern), refuses launches unless it listens on localhost, and requires an `X-Agent-Smith` header plus a
 local Host/Origin on every POST, so another web page cannot trigger a run. Runs launched from the page are saved in
 `runs/ui/<time>-<action>/` (task, solution, trace, `validation.txt`, `output.log`, `commands.sh`).
 
@@ -114,65 +118,9 @@ API keys: `<PROVIDER>_API_KEY`, `<PROVIDER>_API_KEY_2…_9` or `<PROVIDER>_API_K
 (`OPENROUTER`, `GROQ`, `GEMINI`, `MISTRAL`, `TOGETHER`, `CEREBRAS`, `NVIDIA`; `LLM_API_KEY` for any other
 OpenAI-compatible URL). Keys are never written in code or config.
 
-## Agent Smith Studio (mini-IDE)
-
-A local web IDE around the agent: file explorer, Monaco editor, real terminal, git, and a chat where
-Agent Smith reads and edits your project — with every step visible and every change reviewable.
-
-```bash
-make studio-install                 # Python extra + web packages (once)
-make studio P=~/code/my-project     # builds the web app if needed, opens http://127.0.0.1:8790/?token=…
-```
-
-![The agent adds a function: its steps stream in, the open file updates, the change is reviewed as a diff](web/screenshots/agent.gif)
-
-*The agent at work: each step (thought + tool call) streams into the chat, the open file updates live,
-and the turn ends with a reviewable diff that can be undone per file or as a whole.*
-
-![The same turn replayed inside the agent](web/screenshots/inside-the-agent.gif)
-
-*Inside the agent: the same turn replayed on the architecture canvas — LLM call, code extraction,
-sandbox, MCP tools — event by event.*
-
-| Terminal in the project's Docker container | Command palette (⌘K): every action, searchable |
-|---|---|
-| ![terminal](web/screenshots/terminal.png) | ![command palette](web/screenshots/command-palette.png) |
-
-- **Ask / Agent modes.** Ask only gets read tools; Agent mode takes a checkpoint first (a shadow git repo
-  outside the project), then shows changed files with a diff, and undoes per file or per turn. Stop works mid-run.
-- **Inside the agent.** The observatory is embedded as a bottom tab: live while the agent works, step by step afterwards.
-- **Agent Smith runs from the chat.** "Run Agent Smith on MBPP task 2" → the chat agent calls the tool
-  `run_agent_smith(benchmark, task_id, model)` (offered like its MCP tools, Agent mode only). The studio runs the
-  real pipeline (moulinette dump → `agent_mbpp` / `agent_swebench` → validation), shows its progress and verdict in the
-  chat, and switches "Inside the agent" to the inner agent, live. Only these fixed recipes can run.
-- **Apps the agent builds and runs.** "Write a simple server in Docker and run it on a free port" → the agent writes
-  the whole project in `agent_code/apps/<name>/` (code, Dockerfile, dependencies) and calls `run_app`: the studio builds
-  the image and serves it on `127.0.0.1:<free or requested port>` (memory / CPU / process limits, no capabilities), waits
-  until it answers, and the agent checks it with `call_app` and `app_logs`. The chat shows the URL, the Apps tab the
-  logs; Stop, or closing the studio, removes the container. Tested live with the default free model.
-- **OpenRouter tab.** One key, ~400 models: the key's balance, a full-width browser (search, kinds, "reads"
-  filters, prices, context), add any model to the chat, pick the default model for images, video, speech, voice
-  input, reading files and embeddings. Paid models measured on the studio task and on SWE-bench:
-  `scripts/eval_studio_models.py`, `benchmarks/studio/`, `benchmarks/swebench/paid-2026-11/` (Claude Haiku 5.5, the
-  studio's default chat model: SWE-bench 3/3 for $0.009 the three tasks).
-- **Attachments and voice.** Attach files, photos, audio, video (picker, drop, paste); a model that reads the kind
-  gets it natively, otherwise a cheap multimodal model describes it. The mic records, a model transcribes, the text
-  lands in the box.
-- **`agent_code/`.** Every run (CLI, exam, studio) keeps the code each step sent to the sandbox worker:
-  `agent_code/runs/<benchmark>/<date>_<task>/step_NN.py` — thought as header, exact code, observation as a trailing comment
-  — plus `task.md`. The folder ignores itself in git; `AGENT_SMITH_CODE_DIR=off` disables it.
-- **Terminal.** `docker exec` into a per-project container (only the project folder is mounted, your uid);
-  `--shell local` is opt-in and shown in the status bar. API keys are stripped from every shell environment.
-- **Security.** Bound to loopback only, session token (like Jupyter), Host / Origin checks against DNS rebinding,
-  `X-Studio` header against CSRF, strict Content-Security-Policy, path jail (no `..`, no symlink escape),
-  `.env`-like files open only after confirmation. Keys live in Agent Smith's `.env` and never reach the browser.
-- **Editor.** Tabs, save with conflict detection (file changed on disk → compare / overwrite / reload),
-  quick open (⌘P), search in files, git status and diffs, live file-system events, EN / RU / FR, light and dark.
-- **Tested.** Python tests for the API, jail, terminal and agent; 18 Playwright scenarios drive the real server
-  in a browser with a scripted LLM (CI runs them on every push).
-
-Stack: FastAPI + uvicorn, React 19 + TypeScript + Vite, Monaco, xterm.js. Development: `make studio-dev P=…`
-(Vite hot reload), `cd web && npm run e2e`, `make studio-gif` (re-records these GIFs with a scripted model).
+**Code of every step**: each run keeps the code each step sent to the sandbox worker in
+`agent_code/runs/<benchmark>/<date>_<task>/step_NN.py` (thought as header, exact code, observation as a trailing
+comment) plus `task.md`. The folder ignores itself in git; `AGENT_SMITH_CODE_DIR=off` disables it.
 
 ## System architecture
 
@@ -369,7 +317,21 @@ each assertion with got/expected values. Task context comes from `MBPP_TASK_FILE
 
 ## Evaluation guide
 
-Run commands are in [Instructions](#instructions). A full local rehearsal of the three exam scripts:
+The official exam scripts run as given, without model arguments (the free default model is chosen from the keys
+in `.env`, see [Instructions](#instructions)):
+
+```bash
+./exams/exam_sandbox.sh   --student-path ./student --moulinette-path ./moulinette --env-file .env
+./exams/exam_mbpp.sh      --student-path ./student --moulinette-path ./moulinette --env-file .env
+./exams/exam_swebench.sh  --student-path ./student --moulinette-path ./moulinette --env-file .env
+./exams/exam_anticheat.sh --student-path ./student
+```
+
+A specific model can still be forced with `--model-name M --provider-url URL`. The SWE-bench container is removed on
+a normal exit, Ctrl+C, SIGTERM and also `kill -9` of the agent: a reaper process (`src/agent_smith/container_reaper.py`)
+watches the agent's pid and removes the container once it is gone.
+
+A local rehearsal without the official scripts:
 `./scripts/mock_exam.sh all --student-path . --moulinette-path ./moulinette --env-file .env`
 (results in `evaluations/`). On macOS the moulinette's Docker SDK needs
 `export DOCKER_HOST=unix://$HOME/.docker/run/docker.sock`.
@@ -441,8 +403,5 @@ intermediary metrics, ablation and conclusions. Runs are produced by `scripts/ru
 
 **Use of AI.** An AI assistant (Claude) was used to review the subject against the project plan, to draft the
 initial implementation of the modules listed above, the test-suite and the visualiser, and to draft this README.
-Agent Smith Studio (`src/agent_smith/studio/`, `web/`), an addition beyond the subject, was built with Claude Code:
-the web IDE, the chat around the agent, the model picker, the evaluation scripts for models and this README's Studio
-sections.
 All design decisions (process isolation, audit hook, budget policy, tool output formats) were reviewed and must
 be understood and defended by the author; the tests in `tests/` document the expected behaviour of each part.

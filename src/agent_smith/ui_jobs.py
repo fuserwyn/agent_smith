@@ -153,7 +153,7 @@ def _model(params: Dict[str, Any], bench: str) -> tuple:
         if m["provider"] == want_p and m["model"] == want_m:
             return m["model"], m["url"]
     spec = load_models_config().provider_by_name("openrouter")
-    if want_p == "openrouter" and spec and "/" in want_m:  # any model of the OpenRouter catalog (studio picks)
+    if want_p == "openrouter" and spec and "/" in want_m:  # any model of the OpenRouter catalog
         return want_m, spec.base_url
     raise ActionError(f"unknown model {want_p}/{want_m} (not in config/models.json)")
 
@@ -202,11 +202,7 @@ def plan(action: str, params: Dict[str, Any], job_dir: Path) -> List[Step]:
     if action == "sandbox":
         return [Step("step_sandbox", ["./scripts/mock_exam.sh", "sandbox", *common])]
     if action == "exam":
-        tier = params.get("tier") or "free"
-        if tier not in ("free", "paid"):
-            raise ActionError("tier must be 'free' or 'paid'")
-        # paid: mock_exam.sh --paid switches every part to the paid OpenRouter model
-        return [Step("step_exam", ["./scripts/mock_exam.sh", "all", *common, *(["--paid"] if tier == "paid" else [])])]
+        return [Step("step_exam", ["./scripts/mock_exam.sh", "all", *common])]
     raise ActionError(f"unknown action {action!r}")
 
 

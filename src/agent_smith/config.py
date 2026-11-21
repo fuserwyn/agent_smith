@@ -79,7 +79,7 @@ class ModelSpec(BaseModel):
     provider: str
     model: str
     notes: str = ""
-    paid: bool = Field(default=False, description="Costs money (purchased credits): hidden behind the paid switch in the UI")
+    paid: bool = Field(default=False, description="Costs money (purchased credits); every model listed here is free")
 
 
 class ModelsConfig(BaseModel):
@@ -88,11 +88,6 @@ class ModelsConfig(BaseModel):
     fallbacks: List[ModelSpec] = Field(default_factory=list)
     fallback_enabled: bool = Field(
         default=False, description="Use `fallbacks` even without --fallback (only providers with a key in env)")
-    # non-text models (image, video, speech, transcribe, perceive, embeddings) -> list of {model, notes, …};
-    # the first entry of each list is the default (all through OpenRouter)
-    media: Dict[str, Any] = Field(default_factory=dict)
-    # default model of the studio's chat (the benchmarks keep their own free defaults)
-    chat_default: Optional[ModelSpec] = None
     # agent_mbpp / agent_swebench without --model-name/--provider-url: {"mbpp": [...], "swebench": [...]},
     # the first entry whose provider has a key in the environment is used
     benchmark_defaults: Dict[str, Any] = Field(default_factory=dict)
