@@ -7,26 +7,32 @@ Guarantees that a valid ``solution.json`` is written even if something crashes
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import signal
 import sys
 import time
 from pathlib import Path
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Tuple
 
 from agent_smith.codelog import CodeLog, code_root
-from agent_smith.config import PROJECT_ROOT, load_env_file
+from agent_smith.config import PROJECT_ROOT, load_env_file, load_models_config
 from agent_smith.events import EventSink
 from agent_smith.models import SolutionOutput
+
+
+class InputError(Exception):
+    """Bad input (task file, model choice, keys): reported in ``error`` with one line, no traceback."""
 
 
 def common_parser(prog: str, description: str) -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog=prog, description=description)
     p.add_argument("--task-file", required=True, help="task JSON dumped by the moulinette")
     p.add_argument("--output", required=True, help="where to write solution.json")
-    p.add_argument("--model-name", required=True, help='e.g. "qwen/qwen3-coder:free"')
-    p.add_argument("--provider-url", required=True, help='e.g. "https://openrouter.ai/api/v1"')
+    p.add_argument("--model-name", help='e.g. "qwen/qwen3.8-27b" (default: the first free model of '
+                   '`benchmark_defaults` in config/models.json whose provider has a key in the environment)')
+    p.add_argument("--provider-url", help='e.g. "https://api.groq.com/openai/v1" (default: see --model-name)')
     p.add_argument("--env-file", help="load API keys from this .env file")
     p.add_argument("--sandbox-config", help="SandboxConfig JSON (default: built-in defaults)")
     p.add_argument("--max-iterations", type=int, help="override max_iterations (cannot exceed the hard limit)")
@@ -47,6 +53,47 @@ def setup(args: argparse.Namespace) -> EventSink:
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     # agent_code/runs/<benchmark>/<run>/step_NN.py: the code each step sent to the sandbox worker (git-ignored)
     return EventSink(args.trace_file, listeners=[CodeLog(code_root())])
+
+
+def pick_model(args: argparse.Namespace, benchmark: str) -> Tuple[str, str]:
+    """``--model-name`` / ``--provider-url``, or the free default of this benchmark for the keys in the environment."""
+    if args.model_name and args.provider_url:
+        return args.model_name, args.provider_url
+    cfg = load_models_config()
+    if args.provider_url:  # a provider without a model: its first default
+        spec = cfg.provider_for_url(args.provider_url)
+        entry = next((e for e in cfg.benchmark_defaults.get(benchmark) or []
+                      if spec and e.get("provider") == spec.name), None)
+        if entry:
+            return entry["model"], args.provider_url
+        raise InputError(f"--provider-url {args.provider_url} needs --model-name (no default model for it)")
+    if args.model_name:  # a model without a provider: the provider listing it in config/models.json
+        spec = next((cfg.provider_by_name(m.provider) for m in cfg.models if m.model == args.model_name), None)
+        if spec:
+            return args.model_name, spec.base_url
+        raise InputError(f"--model-name {args.model_name} needs --provider-url (model not in config/models.json)")
+    picked = cfg.default_model(benchmark)
+    if picked is None:
+        envs = sorted({cfg.provider_by_name(e["provider"]).key_env for e in cfg.benchmark_defaults.get(benchmark) or []
+                       if cfg.provider_by_name(e["provider"])} - {None})
+        raise InputError("no API key found for any default model: set one of " + ", ".join(envs)
+                         + " in the environment or .env file, or pass --model-name and --provider-url")
+    logging.getLogger("agent").info("default model for %s: %s @ %s", benchmark, *picked)
+    return picked
+
+
+def read_task(path: str) -> Tuple[Dict, Optional[str]]:
+    """The task JSON, or ({}, error message): a missing or broken file must not crash the CLI."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        if not isinstance(data, dict):
+            return {}, f"task file {path} does not contain a JSON object"
+        return data, None
+    except FileNotFoundError:
+        return {}, f"task file not found: {path}"
+    except (OSError, ValueError) as exc:
+        return {}, f"cannot read task file {path}: {exc}"
 
 
 def server_env(extra: Dict[str, str]) -> Dict[str, str]:
@@ -78,6 +125,10 @@ def run_cli(benchmark: str, task_id: str, args: argparse.Namespace, started: flo
     except SystemExit as exc:
         output = _failure(benchmark, task_id, started, f"terminated (SystemExit {exc.code})")
         exit_code = exc.code if isinstance(exc.code, int) else 1
+    except InputError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        output = _failure(benchmark, task_id, started, str(exc))
+        exit_code = 2
     except Exception as exc:  # noqa: BLE001 - must never crash without an output file
         logging.getLogger("agent").exception("agent failed")
         output = _failure(benchmark, task_id, started, f"{type(exc).__name__}: {exc}")

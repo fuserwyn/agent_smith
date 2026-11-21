@@ -4,7 +4,7 @@ Run (stdio, default):      python mcp_tools_mbpp.py
 Run (streamable HTTP):     python mcp_tools_mbpp.py --http --port 8000   -> http://127.0.0.1:8000/mcp
 
 Task context comes from the environment: ``MBPP_TASK_FILE`` = path to the task
-JSON dumped by the moulinette. Without it, ``run_tests`` needs explicit tests.
+JSON dumped by the moulinette. Without it, ``run_tests`` needs an explicit ``test_list``.
 """
 
 from __future__ import annotations
@@ -30,14 +30,15 @@ report = instrumented("agent-smith-mbpp", "mbpp_tools", lambda: mbpp_tools.OPS, 
 
 @mcp.tool()
 @report
-def run_tests(code: str, tests: Optional[List[str]] = None) -> str:
+def run_tests(code: str, test_list: Optional[List[str]] = None) -> str:
     """Run the task's test assertions against a candidate solution.
 
     `code` is the COMPLETE solution source (needed imports + the function), as a string.
-    `tests` is optional: by default the task's public tests are used.
-    Returns 'ALL TESTS PASSED (n/n)' or 'TESTS FAILED (k/n passed)' with got/expected values.
+    `test_list` is optional: assert statements; by default the task's public tests are used.
+    Returns a JSON string {"success": bool, "passed": int, "total": int, "output": str}; `output` starts with
+    'ALL TESTS PASSED (n/n)' or 'TESTS FAILED (k/n passed)' and shows got/expected for each failing test.
     """
-    return mbpp_tools.run_tests(code, tests)
+    return mbpp_tools.as_json(mbpp_tools.run_tests(code, test_list))
 
 
 @mcp.resource("mbpp://task", description="The current MBPP task (JSON)")

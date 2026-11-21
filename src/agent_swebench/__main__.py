@@ -10,7 +10,6 @@ The container is removed when the agent finishes (also on errors / SIGTERM).
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 import tempfile
@@ -24,7 +23,7 @@ from agent_smith.docker_env import DockerEnv
 from agent_smith.llm import build_client
 from agent_smith.mcp_client import MCPClient
 from agent_smith.models import SWEBENCH_LIMITS, SandboxConfig, SolutionOutput, SWEBenchTaskInput
-from agent_smith.runner import common_parser, default_server, run_cli, server_env, setup
+from agent_smith.runner import InputError, common_parser, default_server, pick_model, read_task, run_cli, server_env, setup
 from agent_smith.sandbox import Sandbox
 
 REPO_ROOT = "/testbed"
@@ -45,19 +44,20 @@ def main(argv=None) -> int:
                         help="system prompt variant (minimal = no method section; ablation study)")
     args = parser.parse_args(argv)
     events = setup(args)
-    with open(args.task_file, encoding="utf-8") as fh:
-        raw = json.load(fh)
+    raw, task_error = read_task(args.task_file)
     task_id = str(raw.get("instance_id", "unknown"))
     started = time.monotonic()
 
     def body() -> SolutionOutput:
         nonlocal started
+        if task_error:
+            raise InputError(task_error)
         task = SWEBenchTaskInput.model_validate(raw)
         config: SandboxConfig = load_sandbox_config(args.sandbox_config)
         limits = SWEBENCH_LIMITS.model_copy()
         if args.max_iterations:
             limits.max_iterations = min(args.max_iterations, SWEBENCH_LIMITS.max_iterations)
-        llm = build_client(args.model_name, args.provider_url, use_fallbacks=args.fallback, on_event=events.emit)
+        llm = build_client(*pick_model(args, "swebench"), use_fallbacks=args.fallback, on_event=events.emit)
 
         docker = DockerEnv(task.docker_image, task.instance_id, network="bridge" if args.keep_network else "none")
         events.emit("docker_pull", {"image": task.docker_image})

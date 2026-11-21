@@ -36,13 +36,13 @@ from tests.fake_llm_server import FakeLLMServer  # noqa: E402
 UI = ROOT / "ui" / "index.html"
 
 MBPP_SCRIPT = [
-    'Thought: Pair the two lists element-wise and combine each pair.\n```python\ncode = r"""\n'
+    'Thought: Pair the two lists element-wise and combine each pair.\n```python\nimport json\ncode = r"""\n'
     'def sub_list(nums1, nums2):\n    return list(map(lambda x, y: x + y, nums1, nums2))\n"""\n'
-    'result = run_tests(code)\nprint(result)\nif result.startswith("ALL TESTS PASSED"):\n    final_answer(code)\n'
+    'result = json.loads(run_tests(code))\nprint(result["output"])\nif result["success"]:\n    final_answer(code)\n'
     '```<end_code>',
-    'Thought: The tests show sums instead of differences: the lambda must subtract.\n```python\ncode = r"""\n'
+    'Thought: The tests show sums instead of differences: the lambda must subtract.\n```python\nimport json\ncode = r"""\n'
     'def sub_list(nums1, nums2):\n    return list(map(lambda x, y: x - y, nums1, nums2))\n"""\n'
-    'result = run_tests(code)\nprint(result)\nif result.startswith("ALL TESTS PASSED"):\n    final_answer(code)\n'
+    'result = json.loads(run_tests(code))\nprint(result["output"])\nif result["success"]:\n    final_answer(code)\n'
     '```<end_code>',
 ]
 

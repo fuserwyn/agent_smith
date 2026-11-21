@@ -93,6 +93,17 @@ class ModelsConfig(BaseModel):
     media: Dict[str, Any] = Field(default_factory=dict)
     # default model of the studio's chat (the benchmarks keep their own free defaults)
     chat_default: Optional[ModelSpec] = None
+    # agent_mbpp / agent_swebench without --model-name/--provider-url: {"mbpp": [...], "swebench": [...]},
+    # the first entry whose provider has a key in the environment is used
+    benchmark_defaults: Dict[str, Any] = Field(default_factory=dict)
+
+    def default_model(self, benchmark: str) -> Optional[tuple]:
+        """(model, provider_url) of the first free default of ``benchmark`` whose provider has a key, else None."""
+        for entry in self.benchmark_defaults.get(benchmark) or []:
+            spec = self.provider_by_name(entry.get("provider", ""))
+            if spec and (not spec.key_env or keys_from_env(spec.key_env)):
+                return entry["model"], spec.base_url
+        return None
 
     def provider_by_name(self, name: str) -> Optional[ProviderSpec]:
         return next((p for p in self.providers if p.name == name), None)

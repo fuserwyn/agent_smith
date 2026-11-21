@@ -9,6 +9,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import re
 import time
 from typing import List, Optional
 
@@ -98,3 +99,11 @@ def run_tests(code: str, tests: Optional[List[str]] = None, test_imports: Option
     verdict = (f"ALL TESTS PASSED ({passed}/{len(tests)})" if passed == len(tests) and len(tests) > 0
                and result.status == "ok" else f"TESTS FAILED ({passed}/{len(tests)} passed)")
     return f"{verdict}\n{report}".rstrip()
+
+
+def as_json(report: str) -> str:
+    """The MCP result of ``run_tests``: ``{"success", "passed", "total", "output"}`` (``output`` = the readable report)."""
+    m = re.match(r"(?:ALL TESTS PASSED \((\d+)/(\d+)\)|TESTS FAILED \((\d+)/(\d+) passed\))", report)
+    passed, total = (int(m.group(1) or m.group(3)), int(m.group(2) or m.group(4))) if m else (0, 0)
+    return json.dumps({"success": report.startswith("ALL TESTS PASSED"), "passed": passed, "total": total,
+                       "output": report})

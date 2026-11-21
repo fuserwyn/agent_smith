@@ -16,8 +16,8 @@ from agent_smith.sandbox import Sandbox
 from tests.conftest import FIXTURES, ROOT
 from tests.fake_llm_server import FakeLLMServer
 
-GOOD = ('Thought: subtract.\n```python\ncode = r"""\ndef sub_list(a, b):\n    return [x - y for x, y in zip(a, b)]\n'
-        '"""\nresult = run_tests(code)\nprint(result)\nif result.startswith("ALL TESTS PASSED"):\n'
+GOOD = ('Thought: subtract.\n```python\nimport json\ncode = r"""\ndef sub_list(a, b):\n    return [x - y for x, y in zip(a, b)]\n'
+        '"""\nresult = json.loads(run_tests(code))\nprint(result["output"])\nif result["success"]:\n'
         '    final_answer(code)\n```<end_code>\nObservation: (hallucinated, must be cut by the stop sequence)')
 BAD = GOOD.replace("x - y", "x + y")
 

@@ -343,6 +343,22 @@
       "notes": "free; small prompts only"
     }
   ],
+  "benchmark_defaults": {
+    "_doc": "Model used by agent_mbpp / agent_swebench when --model-name / --provider-url are not given: the first entry whose provider has a key in the environment (all free tiers).",
+    "mbpp": [
+      {"provider": "groq", "model": "qwen/qwen3.8-27b"},
+      {"provider": "nvidia", "model": "nvidia/nemotron-3.5-lightning-30b-a3b"},
+      {"provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free"},
+      {"provider": "gemini", "model": "gemini-3.5-flash-lite"},
+      {"provider": "cohere", "model": "north-mini-code-1.0"}
+    ],
+    "swebench": [
+      {"provider": "nvidia", "model": "nvidia/nemotron-3.5-lightning-30b-a3b"},
+      {"provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free"},
+      {"provider": "gemini", "model": "gemini-3.5-flash-lite"},
+      {"provider": "nvidia", "model": "nvidia/nemotron-3-ultra-550b-a55b"}
+    ]
+  },
   "fallback_enabled": true,
   "media": {
     "_doc": "Models for non-text work, all through OpenRouter (key OPENROUTER_API_KEY). The first entry of each list is the default. Prices from the OpenRouter catalog, checked 2026-11-20.",

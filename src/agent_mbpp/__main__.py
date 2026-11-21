@@ -19,7 +19,7 @@ from agent_smith.config import load_sandbox_config
 from agent_smith.llm import build_client
 from agent_smith.mcp_client import MCPClient
 from agent_smith.models import MBPP_LIMITS, MBPPTaskInput, SolutionOutput
-from agent_smith.runner import common_parser, default_server, run_cli, server_env, setup
+from agent_smith.runner import InputError, common_parser, default_server, pick_model, read_task, run_cli, server_env, setup
 from agent_smith.sandbox import Sandbox
 
 MBPP_SETTINGS = AgentSettings(
@@ -31,14 +31,23 @@ MBPP_SETTINGS = AgentSettings(
     keep_recent_steps=2,
     safety_seconds=10.0,
     idle_hint=("Nothing was tested or submitted. Put the full solution in a string `code`, call "
-               "result = run_tests(code), print(result), and if it passed call final_answer(code) — in ONE block."),
+               "result = json.loads(run_tests(code)), print(result['output']), and if result['success'] call "
+               "final_answer(code) — in ONE block."),
 )
+
+
+def _passed(result: str) -> bool:
+    """A run_tests result (JSON from the MCP server) that passed every test."""
+    try:
+        return bool(json.loads(result).get("success"))
+    except (ValueError, AttributeError):
+        return result.startswith("ALL TESTS PASSED")
 
 
 def best_candidate(sandbox: Sandbox) -> Optional[str]:
     """Fallback when final_answer was never called: last code that passed run_tests, else the last tried."""
     tried = [c for c in sandbox.tool_log if c.name == "run_tests" and isinstance(c.args.get("code"), str)]
-    passed = [c for c in tried if c.result.startswith("ALL TESTS PASSED")]
+    passed = [c for c in tried if _passed(c.result)]
     pick = (passed or tried or [None])[-1]
     return pick.args["code"] if pick else None
 
@@ -47,17 +56,18 @@ def main(argv=None) -> int:
     started = time.monotonic()
     args = common_parser("agent_mbpp", "Solve an MBPP task with the Agent Smith code agent").parse_args(argv)
     events = setup(args)
-    with open(args.task_file, encoding="utf-8") as fh:
-        raw = json.load(fh)
+    raw, task_error = read_task(args.task_file)
     task_id = str(raw.get("task_id", "unknown"))
 
     def body() -> SolutionOutput:
+        if task_error:
+            raise InputError(task_error)
         task = MBPPTaskInput.model_validate(raw)
         config = load_sandbox_config(args.sandbox_config)
         limits = MBPP_LIMITS.model_copy()
         if args.max_iterations:
             limits.max_iterations = min(args.max_iterations, MBPP_LIMITS.max_iterations)
-        llm = build_client(args.model_name, args.provider_url, use_fallbacks=args.fallback, on_event=events.emit)
+        llm = build_client(*pick_model(args, "mbpp"), use_fallbacks=args.fallback, on_event=events.emit)
 
         with tempfile.TemporaryDirectory(prefix="agent-mbpp-") as tmp:
             task_path = os.path.join(tmp, "task.json")

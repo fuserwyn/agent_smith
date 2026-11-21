@@ -21,14 +21,15 @@ def mbpp_system_prompt(config: SandboxConfig, mcp) -> str:
 (the example solves another task: write the Thought and the function for YOUR task):
 Thought: <one sentence: the idea of your solution>.
 ```python
+import json
 code = r"""
 from collections import Counter
 def most_common(xs):
     return Counter(xs).most_common(1)[0][0]
 """
-result = run_tests(code)
-print(result)
-if result.startswith("ALL TESTS PASSED"):
+result = json.loads(run_tests(code))
+print(result["output"])
+if result["success"]:
     final_answer(code)
 ```<end_code>
 Never reply with only a function definition: it is not tested and not submitted.
