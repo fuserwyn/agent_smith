@@ -184,3 +184,33 @@ def test_build_client_without_fallbacks(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "k")
     monkeypatch.setenv("AGENT_FALLBACK", "1")
     assert len(build_client("anthropic/claude-haiku-5.5", "https://openrouter.ai/api/v1", use_fallbacks=True, no_fallbacks=True).endpoints) == 1
+
+
+def test_free_and_paid_never_mix_in_runs_started_from_the_chat(tmp_path, monkeypatch, fake_repo):
+    from agent_smith.studio.scenarios import Scenarios
+    sc = Scenarios(lambda e: None)
+    # a free turn may not start a paid run (an OpenRouter model, in config or from the catalog)…
+    for paid in ("anthropic/claude-haiku-5.5", "acme/some-catalog-model"):
+        out = sc.call({"benchmark": "mbpp", "task_id": "11", "model": paid}, "free-turn", lambda: False, tier="free")
+        assert out.is_error and fake_repo == [], out.text
+    assert "free and paid never mix" in sc.call({"benchmark": "mbpp", "model": "anthropic/claude-haiku-5.5"}, "t", lambda: False, tier="free").text
+    # …a paid turn may not start a free one…
+    out = sc.call({"benchmark": "mbpp", "task_id": "11", "model": "gemini-3.5-flash"}, "paid-turn", lambda: False, tier="paid")
+    assert out.is_error and "free and paid never mix" in out.text and fake_repo == []
+    # …and a model id that exists in both (qwen: Groq free / OpenRouter paid) resolves to the turn's tier
+    sc.call({"benchmark": "mbpp", "task_id": "11", "model": "qwen/qwen3.8-27b"}, "t1", lambda: False, tier="free")
+    assert fake_repo[-1][1]["provider"] == "groq"
+    sc.call({"benchmark": "mbpp", "task_id": "11", "model": "qwen/qwen3.8-27b"}, "t2", lambda: False, tier="paid")
+    assert fake_repo[-1][1]["provider"] == "openrouter"
+
+
+def test_free_tier_media_never_touch_the_openrouter_key(tmp_path, monkeypatch):
+    from agent_smith.studio.media import Media
+    from agent_smith.studio.workspace import Workspace
+    m = Media(Workspace(tmp_path), tmp_path / "state")
+    monkeypatch.setattr(Media, "_post", lambda *a, **k: (_ for _ in ()).throw(AssertionError("OpenRouter used on Free")))
+    monkeypatch.setattr(Media, "_free_transcribe", lambda self, audio, fmt, hint: "hello")
+    assert m.transcribe(b"RIFF....", "wav", "en", tier="free") == "hello"
+    info = m.save_upload("clip.mp4", "video/mp4", b"\x00" * 100)
+    text, parts = m.for_turn([info["id"]], "gemini-3.5-flash", "gemini", lambda s: None, tier="free")
+    assert "Free tier" in text and parts == []                           # video: not sent anywhere paid

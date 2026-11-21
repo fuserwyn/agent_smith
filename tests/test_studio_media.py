@@ -18,13 +18,13 @@ H = {"Authorization": f"Bearer {TOKEN}", "X-Studio": "1"}
 PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
 
 
-def make(tmp_path, monkeypatch, script, model="fake-model", provider="fake"):
+def make(tmp_path, monkeypatch, script, model="fake-model", provider="fake", paid=False):
     project = tmp_path / "proj"
     project.mkdir()
     srv = FakeLLMServer(script)
     srv.__enter__()
     monkeypatch.setattr(AgentService, "models", staticmethod(lambda: {
-        "models": [{"provider": provider, "model": model, "url": srv.url, "key_ok": True, "paid": False, "key_env": None, "notes": ""}],
+        "models": [{"provider": provider, "model": model, "url": srv.url, "key_ok": True, "paid": paid, "key_env": None, "notes": ""}],
         "default": {"provider": provider, "model": model}}))
     app = create_app(project, TOKEN, web_dist=None, shell="local", state_dir=tmp_path / "state")
     return TestClient(app, base_url="http://127.0.0.1:8790"), srv, project, app
@@ -63,8 +63,8 @@ def test_uploads_are_stored_in_the_project_and_served_safely(tmp_path, monkeypat
 
 def test_a_text_model_gets_a_description_a_vision_model_the_image(tmp_path, monkeypatch):
     described = []
-    monkeypatch.setattr(media_mod.Media, "describe", lambda self, info: described.append(info["name"]) or "A red error dialog: 'Disk full'.")
-    client, srv, _, app = make(tmp_path, monkeypatch, ["Thought: ok.\n```python\nfinal_answer('seen')\n```"] * 2)
+    monkeypatch.setattr(media_mod.Media, "describe", lambda self, info, tier="paid": described.append((info["name"], tier)) or "A red error dialog: 'Disk full'.")
+    client, srv, _, app = make(tmp_path, monkeypatch, ["Thought: ok.\n```python\nfinal_answer('seen')\n```"] * 2, paid=True)
     with client, srv:
         img = up(client, "err.png", PNG, "image/png")
         data = up(client, "data.csv", b"a,b\n1,2\n", "text/csv")
@@ -73,14 +73,14 @@ def test_a_text_model_gets_a_description_a_vision_model_the_image(tmp_path, monk
         assert run["status"] == "done" and [a["name"] for a in run["attachments"]] == ["err.png", "data.csv"]
         task = srv.requests[0]["messages"][1]["content"]
         assert isinstance(task, str) and "Disk full" in task and "read_file('agent_code/uploads/" in task   # text-only model
-        assert described == ["err.png"]
+        assert described == [("err.png", "paid")]                    # a paid turn: the paid perceive model
         # the same with a model the catalog says reads images: the image goes in natively
         monkeypatch.setattr(media_mod.Media, "catalog", lambda self: {"fake-model": {"in": ["text", "image"], "out": ["text"], "price": None}})
         rid = client.post("/api/agent/runs", json={"message": "and now?", "mode": "ask", "attachments": [img["id"]]}, headers=H).json()["id"]
         wait(client, rid)
         task = srv.requests[1]["messages"][1]["content"]
         assert isinstance(task, list) and task[1]["type"] == "image_url" and task[1]["image_url"]["url"].startswith("data:image/png;base64,")
-        assert described == ["err.png"]                                                         # not described again
+        assert described == [("err.png", "paid")]                                                         # not described again
         msgs = client.get("/api/agent/state", headers=H).json()["messages"]
         assert msgs[0]["attachments"][0]["kind"] == "image"
         assert client.post("/api/agent/runs", json={"message": "x", "attachments": ["nope"]}, headers=H).status_code == 404

@@ -61,7 +61,9 @@ class Scenarios:
         ])
 
     # ------------------------------------------------------------------ call
-    def call(self, args: Dict[str, Any], chat_run: str, cancelled: Callable[[], bool]) -> ToolOutcome:
+    def call(self, args: Dict[str, Any], chat_run: str, cancelled: Callable[[], bool],
+             tier: Optional[str] = None) -> ToolOutcome:
+        """``tier`` ("free" / "paid"): the tier of the chat turn; the run it starts stays in it (never mixed)."""
         request = {"jsonrpc": "2.0", "method": "tools/call", "params": {"name": TOOL, "arguments": args}}
         t0 = time.monotonic()
 
@@ -89,14 +91,20 @@ class Scenarios:
                                f"Nearest ids: {', '.join(map(str, sorted(near)))}. Or omit task_id for the default task.", True)
         elif action == "swebench":
             params["task_id"] = DEFAULT_SWE
+        in_tier = (lambda m: tier is None or (m["provider"] == "openrouter" and m["paid"]) == (tier == "paid"))
         if args.get("model"):
             want = str(args["model"]).strip()
-            match = [m for m in ui_jobs.model_choices() if m["model"] == want]
-            if not match and "/" in want and ui_jobs.load_models_config().provider_by_name("openrouter"):
+            every = [m for m in ui_jobs.model_choices() if m["model"] == want]
+            match = [m for m in every if in_tier(m)]
+            if not every and tier != "free" and "/" in want and ui_jobs.load_models_config().provider_by_name("openrouter"):
                 match = [{"provider": "openrouter", "model": want}]  # any OpenRouter model (e.g. picked in its tab)
+            if every and not match:
+                return out(f"model {want!r} is {'free' if tier == 'paid' else 'paid'}, but this chat turn is on the "
+                           f"{tier.capitalize()} tier: free and paid never mix. Use a {tier} model (or omit model); "
+                           "the user can switch the tier in the chat's model picker.", True)
             if not match:
-                return out(f"unknown model {args['model']!r}; models: "
-                           + ", ".join(m["model"] for m in ui_jobs.model_choices() if m["key_ok"]), True)
+                return out(f"unknown model {args['model']!r}; {tier or 'available'} models: "
+                           + ", ".join(m["model"] for m in ui_jobs.model_choices() if m["key_ok"] and in_tier(m)), True)
             params.update(provider=match[0]["provider"], model=match[0]["model"])
         try:
             snap = self.jobs.start(action, params)

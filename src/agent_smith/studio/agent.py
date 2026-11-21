@@ -261,12 +261,13 @@ class AgentService:
         if mode not in ("ask", "agent"):
             raise WorkspaceError(400, "mode must be ask or agent")
         command = parse_command(message)
-        if command and not command.get("model") and provider and model:  # /mbpp, /swe follow a paid chat model
-            chosen = next((x for x in self.models()["models"] if (x["provider"], x["model"]) == (provider, model)), None)
-            if chosen and chosen.get("paid"):
-                command["model"] = model
-        m = ({"provider": "agent-smith", "model": command.get("model") or "default model", "url": ""} if command
-             else self._pick(provider, model))
+        # the tier the user chose in the picker (Free / Paid) holds for everything the turn starts
+        chosen = (next((x for x in self.models()["models"] if (x["provider"], x["model"]) == (provider, model)), None)
+                  if provider and model else None)
+        if command and not command.get("model") and chosen and chosen.get("paid"):  # /mbpp, /swe follow a paid model
+            command["model"] = model
+        m = ({"provider": "agent-smith", "model": command.get("model") or "default model", "url": "",
+              "paid": bool(chosen and chosen.get("paid"))} if command else self._pick(provider, model))
         with self._lock:
             if self.current:
                 raise WorkspaceError(409, "the agent is already working")
@@ -338,7 +339,8 @@ class AgentService:
                     if self.scenarios.unavailable() is None:  # Agent Smith's own benchmark runs
                         mcp.tools.append(self.scenarios.spec())
                         local[SCENARIO_TOOL] = lambda args: self.scenarios.call(  # inner runs follow a paid chat model
-                            {**args, "model": args.get("model") or (run.model if run.paid else None)}, run.id, cancelled)
+                            {**args, "model": args.get("model") or (run.model if run.paid else None)}, run.id, cancelled,
+                            tier="paid" if run.paid else "free")
                     files = FileTools(self.ws)  # whole files, also in several steps (small output limits)
                     mcp.tools.extend(file_specs())
                     for tool in FILE_TOOLS:
@@ -354,7 +356,8 @@ class AgentService:
                     agent = CodeAgent(llm, sandbox, studio_system_prompt(config, mcp, root, run.mode), LIMITS, "studio", run.id,
                                       settings=SETTINGS, events=sink, cancel=self._cancel[run.id].is_set)
                     extra, parts = (self.media.for_turn([f["id"] for f in run.attachments], run.model, run.provider,
-                                                        lambda s: sink.emit("attachments", {"note": s}))
+                                                        lambda s: sink.emit("attachments", {"note": s}),
+                                                        tier="paid" if run.paid else "free")
                                     if run.attachments else ("", []))
                     out = agent.run(self._task_prompt(run, history) + extra, attachments=parts)
             run.answer = (out.solution or "").strip()
@@ -394,7 +397,7 @@ class AgentService:
             if reason:
                 run.error = f"cannot run Agent Smith here: {reason}"
                 return
-            out = self.scenarios.call(args, run.id, self._cancel[run.id].is_set)
+            out = self.scenarios.call(args, run.id, self._cancel[run.id].is_set, tier="paid" if run.paid else "free")
             head, _, rest = out.text.partition("\n")
             run.answer = f"**{head}**" + (f"\n\n```text\n{rest.strip()}\n```" if rest.strip() else "")
             final = "stopped" if self._cancel[run.id].is_set() else ("failed" if out.is_error else "done")

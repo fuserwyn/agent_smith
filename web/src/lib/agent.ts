@@ -127,7 +127,8 @@ class AgentStore {
           break;
         }
         case "sandbox_end": { const s = get(cur); s.running = false; s.output = String(e.output ?? ""); s.status = String(e.status ?? ""); break; }
-        case "llm_fallback": get(cur || 1).note = `→ ${String(e.to ?? "")}`; break;
+        // Free tier only (a paid turn has no fallback): the model hit its provider's limit, another free one continues
+        case "llm_fallback": get(cur || 1).note = `↪ ${String(e.from ?? "")} hit its free limit → continues on ${String(e.to ?? "")} (free)`; break;
         // provider rate limits: the client waits for the window (throttling) or retries; say so, it is not frozen
         case "llm_throttle": get(cur || 1).note = `⏳ ${Math.round(Number(e.wait_s ?? 0))} s · rate limit of ${String(e.endpoint ?? "the provider")}`; break;
         case "llm_retry": get(cur || 1).note = `↻ ${String(e.error ?? "retry").replace(/:\s*\{[\s\S]*$/, "").slice(0, 90)}`; break;

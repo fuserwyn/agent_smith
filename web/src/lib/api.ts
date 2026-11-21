@@ -134,8 +134,9 @@ export const uploadsApi = {
   url: (id: string) => `/api/uploads/${id}?token=${encodeURIComponent(token ?? "")}`,
 };
 export const voiceApi = {
-  transcribe: async (wav: Blob, lang: string): Promise<string> => {
-    const res = await fetch("/api/voice", { method: "POST", body: wav, headers: { ...authHeaders(), "X-Studio": "1", "Content-Type": "audio/wav", "X-Language": lang } });
+  /** tier: the chat's (Free: Groq Whisper on the free key; Paid: the OpenRouter transcribe model) */
+  transcribe: async (wav: Blob, lang: string, tier: "free" | "paid"): Promise<string> => {
+    const res = await fetch("/api/voice", { method: "POST", body: wav, headers: { ...authHeaders(), "X-Studio": "1", "Content-Type": "audio/wav", "X-Language": lang, "X-Tier": tier } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? res.statusText);
     return (data as { text: string }).text;

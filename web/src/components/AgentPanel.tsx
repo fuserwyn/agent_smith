@@ -13,7 +13,7 @@ import { useUi } from "../lib/ui";
 import { AppLink } from "./AppsPanel";
 import { jobLabel } from "./InsidePanel";
 import { Markdown } from "./Markdown";
-import { ModelPicker } from "./ModelPicker";
+import { ModelPicker, tierOf } from "./ModelPicker";
 import { WarnIcon } from "./overlays";
 import { fuzzy } from "./QuickOpen";
 import { fs } from "../lib/api";
@@ -246,7 +246,8 @@ export function AgentPanel() {
       const r = rec.r;
       setRec(null); setTranscribing(true);
       try {
-        const said = await voiceApi.transcribe(await r.stop(), document.documentElement.lang || "");
+        const cur = ag.models.find((m) => ag.model && m.provider === ag.model.provider && m.model === ag.model.model);
+        const said = await voiceApi.transcribe(await r.stop(), document.documentElement.lang || "", tierOf(cur));
         if (said) setText((v) => (v.trim() ? v.trimEnd() + " " : "") + said);
         box.current?.focus();
       } catch (e) { toast(t("voice.failed", { e: e instanceof Error ? e.message : String(e) }), "err", 7000); }

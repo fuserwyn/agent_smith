@@ -167,17 +167,56 @@ class Media:
         return self.ws.resolve(self.get(uid)["path"])
 
     # ------------------------------------------------------------------ voice
-    def transcribe(self, audio: bytes, fmt: str = "wav", language_hint: str = "") -> str:
+    def transcribe(self, audio: bytes, fmt: str = "wav", language_hint: str = "", tier: str = "paid") -> str:
         if not audio:
             raise WorkspaceError(400, "empty recording")
         if len(audio) > MAX_NATIVE:
             raise WorkspaceError(413, "recording too long")
+        if tier == "free":  # free tier: Groq's Whisper on the free Groq key, never the OpenRouter key
+            return self._free_transcribe(audio, fmt, language_hint)
         prompt = ("Transcribe this audio exactly, in the language spoken. Reply with the transcript only, no quotes, "
                   "no comments." + (f" Likely language: {language_hint}." if language_hint else ""))
         data = self._post("/chat/completions", {"model": self.default("transcribe"), "temperature": 0, "messages": [{
             "role": "user", "content": [{"type": "text", "text": prompt},
                                         {"type": "input_audio", "input_audio": {"data": base64.b64encode(audio).decode(), "format": fmt}}]}]})
         return (data["choices"][0]["message"].get("content") or "").strip()
+
+    # ------------------------------------------------------------------ free tier (the free keys, never OpenRouter)
+    FREE_STT = ("groq", "whisper-large-v3-turbo")
+    FREE_PERCEIVE = ("gemini", "gemini-3.5-flash")  # reads images and audio on the free AI Studio key
+
+    @staticmethod
+    def _free_provider(name: str):
+        from agent_smith.config import load_models_config
+        spec = load_models_config().provider_by_name(name)
+        keys = keys_from_env(spec.key_env) if spec else []
+        return (spec, keys[0]) if spec and keys else (None, None)
+
+    def _free_transcribe(self, audio: bytes, fmt: str, language_hint: str) -> str:
+        spec, key = self._free_provider(self.FREE_STT[0])
+        if not spec:
+            raise WorkspaceError(400, "voice on the Free tier uses Groq's Whisper: add GROQ_API_KEY=... to the .env "
+                                      "(or switch the chat to Paid)")
+        data = {"model": self.FREE_STT[1], "temperature": "0", "response_format": "json"}
+        if len(language_hint) == 2:
+            data["language"] = language_hint
+        r = httpx.post(spec.base_url.rstrip("/") + "/audio/transcriptions", data=data, timeout=120,
+                       files={"file": (f"voice.{fmt}", audio, f"audio/{fmt}")}, headers={"Authorization": f"Bearer {key}"})
+        if r.status_code != 200:
+            raise WorkspaceError(502, f"Groq Whisper answered {r.status_code}: {r.text[:200]}")
+        return (r.json().get("text") or "").strip()
+
+    def _free_describe(self, info: Dict[str, Any], ask: str) -> Optional[str]:
+        """Image / audio described by the free Gemini key; None when the free tier cannot read this kind."""
+        if info["kind"] not in ("image", "audio"):
+            return None
+        spec, key = self._free_provider(self.FREE_PERCEIVE[0])
+        part = self.part(info) if spec else None
+        if not part:
+            return None
+        from agent_smith.llm.client import build_client
+        llm = build_client(self.FREE_PERCEIVE[1], spec.base_url, no_fallbacks=True)
+        return llm.chat([{"role": "user", "content": [{"type": "text", "text": ask}, part]}], max_tokens=4000).text.strip()
 
     # ------------------------------------------------------------------ attachments for a chat turn
     def part(self, info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -197,8 +236,9 @@ class Media:
             return {"type": "file", "file": {"filename": info["name"], "file_data": f"data:application/pdf;base64,{b64}"}}
         return None
 
-    def describe(self, info: Dict[str, Any]) -> str:
-        """Text for a model that cannot read the attachment: a description / transcript by the perceive model."""
+    def describe(self, info: Dict[str, Any], tier: str = "paid") -> str:
+        """Text for a model that cannot read the attachment: a description / transcript by the perceive model
+        (Free tier: the free Gemini key, images and audio only)."""
         part = self.part(info)
         if part is None:
             return f"(too large to read: {info['size'] // 1024 // 1024} MB)"
@@ -208,13 +248,22 @@ class Media:
                "video": "Describe this video for someone who cannot watch it: what happens, step by step, with all visible "
                         "or spoken text verbatim.",
                "pdf": "Extract the content of this document as Markdown: headings, text, tables (verbatim where possible)."}
+        if tier == "free":
+            text = self._free_describe(info, ask[info["kind"]])
+            return text if text is not None else (
+                f"(not read: on the Free tier only images and audio are described, by the free Gemini key; "
+                f"process the file with your tools, or the user can switch the chat to Paid)")
         data = self._post("/chat/completions", {"model": self.default("perceive"), "temperature": 0, "messages": [{
             "role": "user", "content": [{"type": "text", "text": ask[info["kind"]]}, part]}]}, timeout=300)
         return (data["choices"][0]["message"].get("content") or "").strip()
 
-    def for_turn(self, ids: List[str], model: str, provider: str, note) -> tuple:
-        """-> (text to add to the prompt, native content parts). ``note(str)`` reports progress to the trace."""
-        caps = self.catalog().get(model, {}).get("in", ["text"])  # by OpenRouter model id; unknown: text only
+    def for_turn(self, ids: List[str], model: str, provider: str, note, tier: str = "paid") -> tuple:
+        """-> (text to add to the prompt, native content parts). ``note(str)`` reports progress to the trace.
+        ``tier``: the chat turn's; on "free" nothing goes through the OpenRouter key."""
+        if tier == "free":
+            caps = ["text", "image", "audio"] if provider == "gemini" else ["text"]  # free Gemini reads them natively
+        else:
+            caps = self.catalog().get(model, {}).get("in", ["text"])  # by OpenRouter model id; unknown: text only
         need = {"image": "image", "audio": "audio", "video": "video", "pdf": "file"}
         lines, parts = [], []
         for uid in ids:
@@ -230,8 +279,9 @@ class Media:
                     parts.append(part)
                     lines.append(f"- {where}: attached to this message, you can see it directly.")
                     continue
-            note(f"reading {info['name']} with {self.default('perceive')} (the chat model cannot read {info['kind']})")
-            text = self.describe(info)
+            reader = self.FREE_PERCEIVE[1] + " (free key)" if tier == "free" else self.default("perceive")
+            note(f"reading {info['name']} with {reader} (the chat model cannot read {info['kind']})")
+            text = self.describe(info, tier)
             lines.append(f"- {where}: described by a multimodal model (you cannot see it directly):\n"
                          + "\n".join("    " + ln for ln in text.splitlines()))
         prompt = ("\n\nThe user attached files (saved in the project; the paths work with your tools):\n" + "\n".join(lines)) if lines else ""
