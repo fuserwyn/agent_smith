@@ -374,6 +374,32 @@ Run commands are in [Instructions](#instructions). A full local rehearsal of the
 (results in `evaluations/`). On macOS the moulinette's Docker SDK needs
 `export DOCKER_HOST=unix://$HOME/.docker/run/docker.sock`.
 
+### SWE-bench validation on 42 machines (rootless podman)
+
+On the school machines `docker` is a **rootless podman**, and there the moulinette's SWE-bench validation fails for
+any solution, before a single test runs:
+
+```
+Error validating solution: 500 Server Error … /containers/<id>/archive?path=%2Ftmp: Internal Server Error
+("copier: put: error setting ownership of "/tmp/patch.diff" to 44530196:44530196: lchown /tmp/patch.diff: invalid argument")
+Correctness: FAILED
+```
+
+- **Cause.** The moulinette (SWE-bench's `copy_to_container`) sends the patch as a tar archive through Docker's
+  `put_archive`; the archive's entries carry the owner of the file on the host, i.e. your 42 UID (8 digits). A rootless
+  podman only maps your UID (to root) and a 65,536-ID subuid range, so it cannot give the file that owner and refuses
+  the copy. It does not depend on the agent or on the patch: the agent's own run reports `SUCCESS` (in `stdout.log`),
+  and the metrics validation passes; only the copy into the validation container fails.
+- **Check** (read-only): `podman unshare cat /proc/self/uid_map` — the line `0 <your UID> 1` with no other mapping of
+  your UID means the copy cannot work. Fixing it needs root (a wider `/etc/subuid` / `/etc/subgid`); podman's
+  `ignore_chown_errors` does not apply to this copy.
+- **Re-validate the same evaluation** (no new agent run): `scripts/revalidate_podman.sh evaluations/swebench/<date>`.
+  It runs the **unchanged** moulinette `validate` on the `task.json` / `solution.json` the exam script produced, with
+  `scripts/podman_compat/sitecustomize.py` on `PYTHONPATH`, which records the archive entries as root (podman maps
+  root to you). Only the owner recorded in the archive changes; the verdict goes to `<task>/validation_podman.txt`.
+  On a machine with Docker the same exam passes as is, and `make up` / `scripts/mock_exam.sh` load this layer
+  themselves when `DOCKER_HOST` is a podman socket.
+
 ## Benchmark results and analysis
 
 Full report: [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md) — setup, model × task table, provider reliability,
