@@ -2,7 +2,7 @@
 
 # Agent Smith
 
-**[FAQ — everything it can do](FAQ.md)** · [по-русски](FAQ.ru.md)
+**[FAQ — everything it can do](FAQ.md)** · [in Russian](FAQ.ru.md)
 
 ## Description
 
@@ -376,8 +376,32 @@ Run commands are in [Instructions](#instructions). A full local rehearsal of the
 
 ## Benchmark results and analysis
 
-See [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md). Runs are produced by `scripts/run_benchmark.sh` and the tables by
+Full report: [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md) — setup, model × task table, provider reliability,
+intermediary metrics, ablation and conclusions. Runs are produced by `scripts/run_benchmark.sh` and the tables by
 `scripts/benchmark_table.py`, only from real `solution.json` files kept in `benchmarks/`.
+
+**Setup.** 5 models on free tiers (NVIDIA build.nvidia.com, Google AI Studio) × 3 SWE-bench Verified tasks
+(`sympy__sympy-14711`, `sympy__sympy-13480`, `pydata__xarray-4629`), exam limits (30 iterations, 300k input /
+10k output tokens, 900 s); every run respected them.
+
+| Model | Solved | Input tokens (3 tasks) | Output tokens | Time | Avg iterations |
+|---|---|---|---|---|---|
+| nemotron-3.5-lightning-30b-a3b | **3/3** | 268,671 | 5,403 | 146 s | 15.0 |
+| nemotron-3-ultra-550b-a55b | 2/3 | 499,202 | 9,551 | 493 s | 23.7 |
+| gemini-3.5-flash-lite | 2/3 | 140,479 | 1,344 | 93 s | 9.3 |
+| gemini-3-flash-preview | 2/3 | 59,650 | 5,708 | 234 s | 5.3 |
+| mistral-large-4-1t-a52b | 1/3 | 53,937 | 4,268 | 643 s | 6.3 |
+
+**Analysis.**
+- *Selected for SWE-bench:* `nemotron-3.5-lightning` — the only 3/3, the fastest (~2 s per request) and no daily
+  cap hit; `nemotron-3-ultra` is the backup (same success, twice the tokens, three times the time).
+- *Gemini flash* models solve with few iterations, but ~20 requests/day per model on the free tier is less than one
+  SWE-bench task: MBPP only. *Mistral-large* (via NVIDIA) is disregarded: 33 s per request and empty replies.
+- *Ablation* (same model and tasks, system prompt without its "Method / Efficiency / Integrity" sections):
+  2/3 in both variants, −4 % input tokens — within run-to-run noise. The remaining failure was the model submitting a
+  description instead of the patch, fixed by a framework check (an answer that is not a patch is refused), not by
+  prompt wording.
+- *MBPP:* `qwen/qwen3.8-27b` (Groq) and `north-mini-code-1.0` (Cohere), 5/5 each in the mock exam.
 
 ## Resources
 
@@ -391,5 +415,8 @@ See [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md). Runs are produced by `scripts/ru
 
 **Use of AI.** An AI assistant (Claude) was used to review the subject against the project plan, to draft the
 initial implementation of the modules listed above, the test-suite and the visualiser, and to draft this README.
+Agent Smith Studio (`src/agent_smith/studio/`, `web/`), an addition beyond the subject, was built with Claude Code:
+the web IDE, the chat around the agent, the model picker, the evaluation scripts for models and this README's Studio
+sections.
 All design decisions (process isolation, audit hook, budget policy, tool output formats) were reviewed and must
 be understood and defended by the author; the tests in `tests/` document the expected behaviour of each part.
