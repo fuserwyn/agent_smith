@@ -41,7 +41,10 @@ STUDENT="$(cd "$STUDENT" && pwd)"; MOULINETTE="$(cd "$MOULINETTE" && pwd)"; ENV_
 export DOCKER_HOST="${DOCKER_HOST:-$(docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null)}"
 STAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 G=$'\e[32m'; R=$'\e[31m'; Y=$'\e[33m'; N=$'\e[0m'
-moul() { (cd "$MOULINETTE" && PYTHONPATH=. uv run moulinette_eval "$@"); }
+# scripts/podman_compat: rootless podman (school machines) cannot chown the moulinette's copies into a container;
+# it records them as root there. Only active with a podman socket in DOCKER_HOST.
+COMPAT="$(cd "$STUDENT" && pwd)/scripts/podman_compat"
+moul() { (cd "$MOULINETTE" && PYTHONPATH=".:$COMPAT" uv run moulinette_eval "$@"); }
 verdict() { sed 's/\x1b\[[0-9;]*m//g' "$1" | grep -E '^Overall:' | awk '{print $2}'; }
 summary=()
 

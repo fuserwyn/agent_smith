@@ -29,6 +29,8 @@ from agent_smith.config import PROJECT_ROOT, load_models_config
 
 ROOT = PROJECT_ROOT
 MOULINETTE = ROOT / "moulinette"
+# rootless podman (school machines): the moulinette's copy into a container needs root-owned tar entries
+PODMAN_COMPAT = {"PYTHONPATH": "." + os.pathsep + str(ROOT / "scripts" / "podman_compat")}
 JOBS_DIR = ROOT / "runs" / "ui"
 TRACE_ROOTS = ("benchmarks", "evaluations", "runs")
 MBPP_ID = re.compile(r"^\d{1,4}$")
@@ -47,6 +49,7 @@ class Step:
     argv: List[str]
     cwd: Path = ROOT
     env: Dict[str, str] = field(default_factory=dict)
+    quiet_env: Dict[str, str] = field(default_factory=dict)  # applied when it runs, not shown in the command
 
     def display(self) -> str:
         """The command as a user would type it from the repository root."""
@@ -183,7 +186,7 @@ def plan(action: str, params: Dict[str, Any], job_dir: Path) -> List[Step]:
                                 "--output", f"{rel}/solution.json", "--model-name", model, "--provider-url", url,
                                 "--env-file", ".env", "--trace-file", f"{rel}/events.jsonl"], env=_no_free_fallback(model, url)),
             Step("step_validate", ["uv", "run", "moulinette_eval", "validate", "mbpp", f"../{rel}/task.json",
-                                   f"../{rel}/solution.json"], MOULINETTE, {**moul, "DOCKER_HOST": docker_host()}),
+                                   f"../{rel}/solution.json"], MOULINETTE, {**moul, "DOCKER_HOST": docker_host()}, PODMAN_COMPAT),
         ]
     if action == "swebench":
         model, url = _model(params, "swebench")
@@ -198,7 +201,7 @@ def plan(action: str, params: Dict[str, Any], job_dir: Path) -> List[Step]:
                                 "--env-file", ".env", "--trace-file", f"{rel}/events.jsonl"], env=_no_free_fallback(model, url)),
             Step("step_containers", ["docker", "ps", "-a", "--filter", "label=agent-smith"]),
             Step("step_validate", ["uv", "run", "moulinette_eval", "validate", "swebench", f"../{rel}/task.json",
-                                   f"../{rel}/solution.json"], MOULINETTE, {**moul, "DOCKER_HOST": docker_host()}),
+                                   f"../{rel}/solution.json"], MOULINETTE, {**moul, "DOCKER_HOST": docker_host()}, PODMAN_COMPAT),
         ]
     common = ["--student-path", ".", "--moulinette-path", "./moulinette", "--env-file", ".env"]
     if action == "sandbox":
@@ -284,7 +287,7 @@ class JobManager:
             log.append(f"$ {step.display()}")
             out: List[str] = []
             try:
-                self._proc = subprocess.Popen(step.argv, cwd=step.cwd, env={**os.environ, **step.env}, stdout=subprocess.PIPE,
+                self._proc = subprocess.Popen(step.argv, cwd=step.cwd, env={**os.environ, **step.env, **step.quiet_env}, stdout=subprocess.PIPE,
                                               stderr=subprocess.STDOUT, text=True, bufsize=1, start_new_session=True)
                 for line in self._proc.stdout:
                     clean = ANSI.sub("", line.rstrip("\n"))

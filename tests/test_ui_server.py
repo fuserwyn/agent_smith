@@ -139,3 +139,22 @@ def test_mock_exam_free_by_default_paid_on_request():
     assert ui_jobs.preview("exam", {"tier": "paid"})["steps"][0]["command"].endswith(" --paid")
     with pytest.raises(ui_jobs.ActionError):
         ui_jobs.preview("exam", {"tier": "gold"})
+
+
+def test_rootless_podman_gets_root_owned_copies_and_docker_is_untouched(tmp_path):
+    """School machines: rootless podman cannot chown the moulinette's copies (lchown … invalid argument)."""
+    import os
+    import subprocess
+    code = ("import io, tarfile\nb = io.BytesIO()\nwith tarfile.open(fileobj=b, mode='w') as t: t.add(r'%s', arcname='p')\n"
+            "b.seek(0); print(tarfile.open(fileobj=b).getmembers()[0].uid)") % (tmp_path / "f")
+    (tmp_path / "f").write_text("x")
+    compat = ui_jobs.PODMAN_COMPAT["PYTHONPATH"]
+    uid = {}
+    for name, host in (("podman", "unix:///run/user/1/podman/podman.sock"), ("docker", "unix:///var/run/docker.sock")):
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                             env={**os.environ, "DOCKER_HOST": host, "PYTHONPATH": compat})
+        uid[name] = int(out.stdout.strip())
+    assert uid["podman"] == 0 and uid["docker"] == os.getuid()
+    for action, params in (("mbpp", {"task_id": "11"}), ("swebench", {"task_id": "sympy__sympy-14711"})):
+        validate = next(s for s in ui_jobs.plan(action, params, ui_jobs.ROOT / "runs" / "ui" / "x") if s.key == "step_validate")
+        assert validate.quiet_env == ui_jobs.PODMAN_COMPAT and "podman_compat" not in validate.display()
