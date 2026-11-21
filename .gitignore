@@ -21,3 +21,10 @@ web/node_modules/
 web/dist/
 web/test-results/
 web/playwright-report/
+
+# make school: caches and state kept next to the clone on sgoinfre (Hugging Face datasets, uv, Python)
+hf/
+uv-cache/
+uv-python/
+state/
+logs/
