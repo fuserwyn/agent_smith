@@ -544,3 +544,5 @@ kbd, .pal-k { font: 11px var(--f-mono); padding: 1px 6px; border: 1px solid var(
 .mp-tab-t b { grid-area: name; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mp-tab-t span { grid-area: sub; }
 .mp-tab .n { grid-area: n; }
+.mp-tab .n { display: none; }  /* the list below shows what is there; the name needs the room */
+.mp-tab { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "icon name" "sub sub"; }

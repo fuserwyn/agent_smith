@@ -15,8 +15,11 @@ import shutil
 import signal
 import subprocess
 import threading
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
+
+import httpx
 
 from agent_smith.config import keys_from_env
 
@@ -28,6 +31,8 @@ MODELS = [  # aliases of the CLI: always the latest model of each family
     ("haiku", "Claude Haiku (latest) — fast and light on your limits"),
     ("fable", "Claude Fable (latest) — the most capable"),
 ]
+FAMILIES = ("fable", "opus", "sonnet", "haiku")
+_VERSIONS: Dict[str, Any] = {"at": 0.0, "list": None}
 WRITE_TOOLS = {"Bash", "Edit", "MultiEdit", "Write", "NotebookEdit"}  # marks around these: what they change is the turn's
 # environment of the CLI: what a shell needs, plus the token. Never the provider keys of Agent Smith.
 PASS_ENV = ("PATH", "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "LC_CTYPE", "TERM", "SHELL", "TMPDIR")
@@ -54,11 +59,43 @@ def unavailable() -> Optional[str]:
     return None
 
 
+def versions() -> List[Dict[str, str]]:
+    """The models your subscription can use, newest first (Anthropic's model list with the token; cached an hour).
+    Empty when offline or unreachable: the aliases still work."""
+    if _VERSIONS["list"] is not None and time.time() - _VERSIONS["at"] < 3600:
+        return _VERSIONS["list"]
+    tok = token()
+    if not tok or os.environ.get("AGENT_SMITH_OFFLINE"):
+        return []
+    try:
+        r = httpx.get("https://api.anthropic.com/v1/models?limit=100", timeout=8, headers={
+            "Authorization": f"Bearer {tok}", "anthropic-version": "2023-06-01", "anthropic-beta": "oauth-2025-04-20"})
+        data = r.json().get("data") or [] if r.status_code == 200 else []
+    except (httpx.HTTPError, ValueError):
+        data = []
+    out = [{"id": str(m["id"]), "name": str(m.get("display_name") or m["id"])} for m in data if m.get("id")]
+    _VERSIONS.update(at=time.time(), list=out)
+    return out
+
+
+def family(model: str) -> str:
+    return next((f for f in FAMILIES if f in model), "other")
+
+
 def choices() -> List[Dict[str, Any]]:
+    """Per family: the alias (always the latest), then each version your plan offers, newest first."""
     ok = unavailable() is None
-    return [{"provider": PROVIDER, "model": alias, "url": "", "notes": notes, "key_env": TOKEN_ENV, "key_ok": ok,
-             "paid": False, "tier": "claude", "limits": "your Claude plan's usage limits", "price": None,
-             "inputs": ["text", "image", "file"], "live": None} for alias, notes in MODELS]
+    base = {"provider": PROVIDER, "url": "", "key_env": TOKEN_ENV, "key_ok": ok, "paid": False, "tier": "claude",
+            "limits": "your Claude plan's usage limits", "price": None, "inputs": ["text", "image", "file"], "live": None}
+    listed = versions() if ok else []
+    out: List[Dict[str, Any]] = []
+    for alias, notes in sorted(MODELS, key=lambda m: FAMILIES.index(m[0])):
+        out.append({**base, "model": alias, "label": f"{alias.capitalize()} · latest", "notes": notes, "family": alias})
+        for v in listed:
+            if family(v["id"]) == alias:
+                out.append({**base, "model": v["id"], "label": v["name"].replace("Claude ", ""), "notes": v["id"],
+                            "family": alias})
+    return out
 
 
 def _args(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:

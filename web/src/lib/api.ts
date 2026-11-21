@@ -110,6 +110,7 @@ export interface ModelChoice {
   inputs?: string[]; price?: { in: number; out: number } | null;  // from the OpenRouter catalog (what it reads, $ per 1M tokens)
   tier?: "free" | "paid" | "claude";  // free: a provider's free key; paid: your OpenRouter key; claude: Claude Code on your plan
   limits?: string;         // free tier: what the provider caps
+  label?: string; family?: string;  // Claude Code: "Opus 4.8" / "Opus · latest", and its family
   live?: { requests_left?: number; requests_limit?: number; tokens_left?: number; tokens_limit?: number; exhausted_at?: number } | null;
 }
 /** OpenRouter tab: the whole catalog, the key's balance, the user's picks (chat models, media defaults). */

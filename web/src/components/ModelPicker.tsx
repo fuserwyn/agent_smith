@@ -33,7 +33,7 @@ const READS: Record<string, string> = { image: "📷", audio: "🎧", video: "�
 const HOST: Record<string, string> = { groq: "Groq", cerebras: "Cerebras", sambanova: "SambaNova", together: "Together" };
 /** group of a model in the list: who serves it (and, for OpenRouter, the vendor or the pinned host) */
 const groupOf = (m: ModelChoice, t: ReturnType<typeof useT>) => {
-  if (m.provider === "claude-code") return t("tier.claudeGroup");
+  if (m.provider === "claude-code") return `Claude ${(m.family ?? "").replace(/^./, (c) => c.toUpperCase())}`.trim();
   if (m.provider !== "openrouter") return t("tier.freeKey", { p: PROVIDER[m.provider] ?? m.provider });
   const host = m.model.split("@")[1];
   if (host) return t("tier.viaOR", { p: HOST[host] ?? host });
@@ -41,7 +41,7 @@ const groupOf = (m: ModelChoice, t: ReturnType<typeof useT>) => {
 };
 const cost = (m: ModelChoice) => (m.price ? m.price.in + m.price.out * 3 : Number.MAX_VALUE);
 const shortName = (m: ModelChoice) => {
-  if (m.provider === "claude-code") return "Claude " + m.model[0]!.toUpperCase() + m.model.slice(1);
+  if (m.provider === "claude-code") return m.label ?? m.model;
   const [id, host] = m.model.split("@");
   const name = m.provider === "openrouter" ? id!.split("/").slice(1).join("/") || id! : id!.split("/").pop()!;
   return host ? `${name} · ${HOST[host] ?? host}` : name;
@@ -84,6 +84,7 @@ export function ModelPicker() {
     const g = new Map<string, ModelChoice[]>();
     for (const m of ag.models.filter((x) => tierOf(x) === tab)) g.set(groupOf(m, t), [...(g.get(groupOf(m, t)) ?? []), m]);
     const sorted = [...g].map(([name, ms]) => [name, [...ms].sort((a, b) => (a.provider === "claude-code" ? 0 : cost(a) - cost(b) || a.model.localeCompare(b.model)))] as const);
+    if (tab === "claude") return sorted;  // families in their order (Fable, Opus, Sonnet, Haiku), newest version first
     return sorted.sort((a, b) => Math.min(...a[1].map(cost)) - Math.min(...b[1].map(cost)) || a[0].localeCompare(b[0]));
   }, [ag.models, tab, t]);
   const count = (tier: Tier) => ag.models.filter((m) => tierOf(m) === tier && m.key_ok).length;
