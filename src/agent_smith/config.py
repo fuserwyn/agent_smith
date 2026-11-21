@@ -80,6 +80,8 @@ class ModelSpec(BaseModel):
     model: str
     notes: str = ""
     paid: bool = Field(default=False, description="Costs money (purchased credits); every model listed here is free")
+    extra_body: Dict[str, Any] = Field(default_factory=dict,
+                                       description="Merged over the provider's extra_body for this model only")
 
 
 class ModelsConfig(BaseModel):
@@ -102,6 +104,9 @@ class ModelsConfig(BaseModel):
 
     def provider_by_name(self, name: str) -> Optional[ProviderSpec]:
         return next((p for p in self.providers if p.name == name), None)
+
+    def model_spec(self, provider: str, model: str) -> Optional[ModelSpec]:
+        return next((m for m in self.models if m.provider == provider and m.model == model), None)
 
     def provider_for_url(self, url: str) -> Optional[ProviderSpec]:
         host = (urlparse(url).hostname or "").lower()

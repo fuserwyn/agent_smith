@@ -95,3 +95,14 @@ def test_reaper_removes_the_container_once_the_agent_is_gone(tmp_path):
     finally:
         agent.kill()
         reaper.kill()
+
+
+def test_per_model_extra_body_wins_over_the_provider(monkeypatch):
+    from agent_smith.llm import build_client
+    from agent_smith.config import load_models_config
+    cfg = load_models_config()
+    monkeypatch.setenv("GROQ_API_KEY", "test")
+    qwen = build_client("qwen/qwen3.8-27b", "https://api.groq.com/openai/v1", no_fallbacks=True, models_config=cfg)
+    gpt = build_client("openai/gpt-oss-120b", "https://api.groq.com/openai/v1", no_fallbacks=True, models_config=cfg)
+    assert qwen.endpoints[0].provider.extra_body["reasoning_effort"] == "none"   # thinking fills a 500-token reply
+    assert gpt.endpoints[0].provider.extra_body["reasoning_effort"] == "low"     # the provider default

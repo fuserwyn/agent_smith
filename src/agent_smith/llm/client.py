@@ -153,6 +153,9 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
         raise SystemExit(f"error: no API key found. Set {spec.key_env} (or {spec.key_env}_2.., "
                          f"{spec.key_env}S=k1,k2) in the environment or .env file.")
     model_id, extra_body = model_name, dict(spec.extra_body) if spec else {}
+    mspec = cfg.model_spec(spec.name, model_name) if spec else None
+    if mspec:  # per-model settings (e.g. reasoning off for one model of a provider) win over the provider's
+        extra_body.update(mspec.extra_body)
     route = openrouter_route(model_name) if spec and spec.name == "openrouter" else None
     if route:  # "openai/gpt-oss-120b@groq": that model on OpenRouter, served by Groq only (billed to the OpenRouter key)
         model_id, extra_body["provider"] = route[0], {"only": [route[1]], "allow_fallbacks": False}
@@ -169,7 +172,9 @@ def build_client(model_name: str, provider_url: str, use_fallbacks: bool = False
             fkeys = keys_from_env(fspec.key_env)
             if fspec.key_env and not fkeys:
                 continue
+            fmodel = cfg.model_spec(fspec.name, fb.model)
+            fbody = {**fspec.extra_body, **(fmodel.extra_body if fmodel else {})}
             endpoints.append(Endpoint(OpenAICompatProvider(fspec.base_url, fb.model, fspec.extra_headers,
-                                                           extra_body=fspec.extra_body),
+                                                           extra_body=fbody or None),
                                       KeyPool(fkeys), fspec.name))
     return LLMClient(endpoints, on_event=on_event)

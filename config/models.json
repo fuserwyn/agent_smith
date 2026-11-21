@@ -144,7 +144,10 @@
     {
       "provider": "groq",
       "model": "qwen/qwen3.8-27b",
-      "notes": "free (Groq): 1000 req/day, 8k tokens/min -> MBPP only"
+      "notes": "free (Groq): 1000 req/day, 8k tokens/min, 1k output tokens/min -> MBPP only; reasoning off (\"low\" still thinks and fills the 500-token reply)",
+      "extra_body": {
+        "reasoning_effort": "none"
+      }
     },
     {
       "provider": "groq",
