@@ -1,5 +1,5 @@
 {
- "date": "2026-11-20",
+ "date": "2026-11-21",
  "task": "The unit tests fail (run them with: python3 -m unittest). Find and fix the bugs in the shop package \u2014 do not modify the tests \u2014 then run the tests to confirm they pass.",
  "runs": [
   {
@@ -397,6 +397,223 @@
    "seconds": 22.2,
    "cost_usd": 0.0032,
    "error": null
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "attempt": 1,
+   "pass": true,
+   "status": "done",
+   "steps": 10,
+   "input_tokens": 33853,
+   "output_tokens": 839,
+   "seconds": 12.3,
+   "cost_usd": 0.0317,
+   "error": null
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "attempt": 2,
+   "pass": true,
+   "status": "done",
+   "steps": 13,
+   "input_tokens": 51185,
+   "output_tokens": 4972,
+   "seconds": 75.6,
+   "cost_usd": 0.0535,
+   "error": null
+  },
+  {
+   "model": "reflection/beam-1.0-501b-a23b",
+   "attempt": 1,
+   "pass": false,
+   "status": "failed",
+   "steps": 1,
+   "input_tokens": 1917,
+   "output_tokens": 99,
+   "seconds": 5.2,
+   "cost_usd": 0.0006,
+   "error": "LLM failure: all LLM attempts failed: openrouter:reflection/beam-1.0-501b-a23b key ...38b0: request rejected (400): {\"error\":{\"message\":\"Provider returned error\",\"code\":400,\"metadata\":{\"raw\":\"{\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"code\\\":\\\"process_messages_failed\\\",\\\"message\\\":\\\"Failed to apply chat template: Failed to render template: invalid operation: The assistant turn at messages[2] is missing its reasoning. Dropping reasoning from earlier turns degrades this model's output. Send it back in 'reasoning_content', or set allow_missing_thinking=true to skip this check. (in chat:422)\\\",\\\"param\\\":nul"
+  },
+  {
+   "model": "reflection/beam-1.0-501b-a23b",
+   "attempt": 2,
+   "pass": false,
+   "status": "failed",
+   "steps": 1,
+   "input_tokens": 1916,
+   "output_tokens": 99,
+   "seconds": 5.2,
+   "cost_usd": 0.0006,
+   "error": "LLM failure: all LLM attempts failed: openrouter:reflection/beam-1.0-501b-a23b key ...38b0: request rejected (400): {\"error\":{\"message\":\"Provider returned error\",\"code\":400,\"metadata\":{\"raw\":\"{\\\"error\\\":{\\\"type\\\":\\\"BadRequest\\\",\\\"message\\\":\\\"The assistant turn at messages[2] is missing its reasoning. Dropping reasoning from earlier turns degrades this model's output. Send it back in 'reasoning_content', or set allow_missing_thinking=true to skip this check.\\\",\\\"param\\\":null,\\\"code\\\":\\\"400\\\"},\\\"detail\\\":\\\"Invalid request. Please check the parameters and try again. Details: The assistant turn at messages[2] is "
+  },
+  {
+   "model": "minimax/minimax-m3",
+   "attempt": 1,
+   "pass": true,
+   "status": "done",
+   "steps": 9,
+   "input_tokens": 28049,
+   "output_tokens": 690,
+   "seconds": 14.3,
+   "cost_usd": 0.0092,
+   "error": null
+  },
+  {
+   "model": "minimax/minimax-m3",
+   "attempt": 2,
+   "pass": true,
+   "status": "done",
+   "steps": 15,
+   "input_tokens": 55720,
+   "output_tokens": 1422,
+   "seconds": 21.3,
+   "cost_usd": 0.0184,
+   "error": null
+  },
+  {
+   "model": "moonshotai/kimi-k2.7-code",
+   "attempt": 1,
+   "pass": true,
+   "status": "done",
+   "steps": 67,
+   "input_tokens": 352154,
+   "output_tokens": 2596,
+   "seconds": 126.8,
+   "cost_usd": 0.2191,
+   "error": null
+  },
+  {
+   "model": "moonshotai/kimi-k2.7-code",
+   "attempt": 2,
+   "pass": true,
+   "status": "done",
+   "steps": 14,
+   "input_tokens": 41322,
+   "output_tokens": 751,
+   "seconds": 21.2,
+   "cost_usd": 0.027,
+   "error": null
+  },
+  {
+   "model": "qwen/qwen3-coder-next",
+   "attempt": 1,
+   "pass": true,
+   "status": "done",
+   "steps": 16,
+   "input_tokens": 61869,
+   "output_tokens": 1328,
+   "seconds": 48.3,
+   "cost_usd": 0.0085,
+   "error": null
+  },
+  {
+   "model": "qwen/qwen3-coder-next",
+   "attempt": 2,
+   "pass": true,
+   "status": "done",
+   "steps": 15,
+   "input_tokens": 54498,
+   "output_tokens": 1014,
+   "seconds": 23.2,
+   "cost_usd": 0.0074,
+   "error": null
+  },
+  {
+   "model": "mistralai/devstral-2512",
+   "attempt": 1,
+   "pass": true,
+   "status": "done",
+   "steps": 15,
+   "input_tokens": 62477,
+   "output_tokens": 1782,
+   "seconds": 18.2,
+   "cost_usd": 0.0286,
+   "error": null
+  },
+  {
+   "model": "mistralai/devstral-2512",
+   "attempt": 2,
+   "pass": true,
+   "status": "done",
+   "steps": 14,
+   "input_tokens": 56537,
+   "output_tokens": 1465,
+   "seconds": 16.2,
+   "cost_usd": 0.0255,
+   "error": null
+  },
+  {
+   "model": "openai/gpt-6.1-terra",
+   "attempt": 1,
+   "pass": true,
+   "status": "done",
+   "steps": 4,
+   "input_tokens": 11251,
+   "output_tokens": 583,
+   "seconds": 13.2,
+   "cost_usd": 0.0142,
+   "error": null
+  },
+  {
+   "model": "openai/gpt-6.1-terra",
+   "attempt": 2,
+   "pass": true,
+   "status": "done",
+   "steps": 5,
+   "input_tokens": 14846,
+   "output_tokens": 490,
+   "seconds": 12.1,
+   "cost_usd": 0.0173,
+   "error": null
+  },
+  {
+   "model": "xiaomi/mimo-v2.6-pro",
+   "attempt": 1,
+   "pass": true,
+   "status": "done",
+   "steps": 9,
+   "input_tokens": 29679,
+   "output_tokens": 818,
+   "seconds": 13.2,
+   "cost_usd": 0.0136,
+   "error": null
+  },
+  {
+   "model": "xiaomi/mimo-v2.6-pro",
+   "attempt": 2,
+   "pass": true,
+   "status": "done",
+   "steps": 8,
+   "input_tokens": 25604,
+   "output_tokens": 884,
+   "seconds": 11.1,
+   "cost_usd": 0.0119,
+   "error": null
+  },
+  {
+   "model": "google/gemini-4-argon",
+   "attempt": 1,
+   "pass": true,
+   "status": "done",
+   "steps": 4,
+   "input_tokens": 6204,
+   "output_tokens": 207,
+   "seconds": 29.2,
+   "cost_usd": 0.0145,
+   "error": null
+  },
+  {
+   "model": "google/gemini-4-argon",
+   "attempt": 2,
+   "pass": true,
+   "status": "done",
+   "steps": 4,
+   "input_tokens": 6540,
+   "output_tokens": 229,
+   "seconds": 48.4,
+   "cost_usd": 0.0154,
+   "error": null
   }
- ]
+ ],
+ "note": "runs of 2026-11-20 and 2026-11-21"
 }

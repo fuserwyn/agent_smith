@@ -1,0 +1,804 @@
+{
+ "date": "2026-11-21",
+ "task": "one-shot single-file SwiftUI + SwiftData app for macOS 15 and iOS 18, typechecked with Xcode; then one round with the compiler errors",
+ "runs": [
+  {
+   "model": "openai/gpt-6.2-sol",
+   "attempt": 1,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 317,
+   "in": 261,
+   "out": 2807,
+   "cost": 0.0286,
+   "s": 36
+  },
+  {
+   "model": "openai/gpt-6.2-sol",
+   "attempt": 2,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 309,
+   "in": 261,
+   "out": 1811,
+   "cost": 0.0186,
+   "s": 9
+  },
+  {
+   "model": "openai/gpt-6.2-sol",
+   "attempt": 3,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 313,
+   "in": 261,
+   "out": 1832,
+   "cost": 0.0188,
+   "s": 9
+  },
+  {
+   "model": "moonshotai/kimi-k3.1-pro",
+   "attempt": 1,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 349,
+   "in": 270,
+   "out": 2136,
+   "cost": 0.0189,
+   "s": 9
+  },
+  {
+   "model": "moonshotai/kimi-k3.1-pro",
+   "attempt": 2,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 317,
+   "in": 270,
+   "out": 1980,
+   "cost": 0.0175,
+   "s": 9
+  },
+  {
+   "model": "moonshotai/kimi-k3.1-pro",
+   "attempt": 3,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 326,
+   "in": 270,
+   "out": 2013,
+   "cost": 0.0178,
+   "s": 19
+  },
+  {
+   "model": "anthropic/claude-sonnet-5.5",
+   "attempt": 1,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 386,
+   "in": 395,
+   "out": 7845,
+   "cost": 0.0792,
+   "s": 47
+  },
+  {
+   "model": "anthropic/claude-sonnet-5.5",
+   "attempt": 2,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 403,
+   "in": 395,
+   "out": 9222,
+   "cost": 0.093,
+   "s": 58
+  },
+  {
+   "model": "anthropic/claude-sonnet-5.5",
+   "attempt": 3,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 410,
+   "in": 395,
+   "out": 7880,
+   "cost": 0.0796,
+   "s": 46
+  },
+  {
+   "model": "anthropic/claude-haiku-5.5",
+   "attempt": 1,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 1,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 301,
+   "in": 4390,
+   "out": 6702,
+   "cost": 0.0038,
+   "s": 24
+  },
+  {
+   "model": "anthropic/claude-haiku-5.5",
+   "attempt": 2,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 317,
+   "in": 393,
+   "out": 3178,
+   "cost": 0.0016,
+   "s": 11
+  },
+  {
+   "model": "anthropic/claude-haiku-5.5",
+   "attempt": 3,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 338,
+   "in": 393,
+   "out": 3391,
+   "cost": 0.0017,
+   "s": 12
+  },
+  {
+   "model": "xiaomi/mimo-v2.6-pro",
+   "attempt": 1,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "lines": 306,
+   "in": 2953,
+   "out": 3655,
+   "cost": 0.0045,
+   "s": 32
+  },
+  {
+   "model": "xiaomi/mimo-v2.6-pro",
+   "attempt": 2,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 357,
+   "in": 2892,
+   "out": 4245,
+   "cost": 0.005,
+   "s": 24
+  },
+  {
+   "model": "xiaomi/mimo-v2.6-pro",
+   "attempt": 3,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "lines": 291,
+   "in": 2858,
+   "out": 3456,
+   "cost": 0.0042,
+   "s": 21
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "attempt": 1,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 329,
+   "in": 261,
+   "out": 1951,
+   "cost": 0.0032,
+   "s": 24
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "attempt": 2,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "errors_after": {
+    "macOS": 4,
+    "iOS": 4
+   },
+   "lines": 314,
+   "in": 2597,
+   "out": 3729,
+   "cost": 0.0079,
+   "s": 45
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "attempt": 3,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 289,
+   "in": 2488,
+   "out": 3447,
+   "cost": 0.0074,
+   "s": 65
+  },
+  {
+   "model": "google/gemini-4-hydrogen",
+   "attempt": 1,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 399,
+   "in": 300,
+   "out": 6961,
+   "cost": 0.0527,
+   "s": 43
+  },
+  {
+   "model": "google/gemini-4-hydrogen",
+   "attempt": 2,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 351,
+   "in": 300,
+   "out": 9413,
+   "cost": 0.071,
+   "s": 58
+  },
+  {
+   "model": "google/gemini-4-hydrogen",
+   "attempt": 3,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 365,
+   "in": 300,
+   "out": 8676,
+   "cost": 0.0655,
+   "s": 56
+  },
+  {
+   "model": "google/gemini-4-argon",
+   "attempt": 1,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 401,
+   "in": 300,
+   "out": 2874,
+   "cost": 0.0293,
+   "s": 37
+  },
+  {
+   "model": "google/gemini-4-argon",
+   "attempt": 2,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 430,
+   "in": 300,
+   "out": 3025,
+   "cost": 0.0309,
+   "s": 39
+  },
+  {
+   "model": "google/gemini-4-argon",
+   "attempt": 3,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 418,
+   "in": 3922,
+   "out": 5993,
+   "cost": 0.0678,
+   "s": 78
+  },
+  {
+   "model": "openai/gpt-6.1-terra",
+   "attempt": 1,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 335,
+   "in": 2955,
+   "out": 3788,
+   "cost": 0.0219,
+   "s": 46
+  },
+  {
+   "model": "openai/gpt-6.1-terra",
+   "attempt": 2,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 344,
+   "in": 2972,
+   "out": 3826,
+   "cost": 0.0221,
+   "s": 46
+  },
+  {
+   "model": "openai/gpt-6.1-terra",
+   "attempt": 3,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 322,
+   "in": 2895,
+   "out": 3667,
+   "cost": 0.0212,
+   "s": 44
+  },
+  {
+   "model": "minimax/minimax-m3",
+   "attempt": 1,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "lines": 321,
+   "in": 3400,
+   "out": 4063,
+   "cost": 0.0059,
+   "s": 16
+  },
+  {
+   "model": "minimax/minimax-m3",
+   "attempt": 2,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "lines": 345,
+   "in": 3753,
+   "out": 4743,
+   "cost": 0.0068,
+   "s": 26
+  },
+  {
+   "model": "minimax/minimax-m3",
+   "attempt": 3,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "lines": 398,
+   "in": 3967,
+   "out": 5209,
+   "cost": 0.0074,
+   "s": 27
+  },
+  {
+   "model": "moonshotai/kimi-k2.7-code",
+   "attempt": 1,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 0,
+   "in": 2849,
+   "out": 26392,
+   "cost": 0.0809,
+   "s": 451
+  },
+  {
+   "model": "moonshotai/kimi-k2.7-code",
+   "attempt": 2,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 0,
+   "in": 260,
+   "out": 16000,
+   "cost": 0.0482,
+   "s": 140
+  },
+  {
+   "model": "moonshotai/kimi-k2.7-code",
+   "attempt": 3,
+   "ok": true,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 289,
+   "in": 259,
+   "out": 5457,
+   "cost": 0.0165,
+   "s": 121
+  },
+  {
+   "model": "deepseek/deepseek-v4.1-flash",
+   "attempt": 1,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 1,
+    "iOS": 0
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 310,
+   "in": 2651,
+   "out": 4026,
+   "cost": 0.001,
+   "s": 14
+  },
+  {
+   "model": "deepseek/deepseek-v4.1-flash",
+   "attempt": 2,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "lines": 284,
+   "in": 2905,
+   "out": 3612,
+   "cost": 0.0009,
+   "s": 19
+  },
+  {
+   "model": "deepseek/deepseek-v4.1-flash",
+   "attempt": 3,
+   "ok": false,
+   "ok_after_fix": false,
+   "errors": {
+    "macOS": 3,
+    "iOS": 3
+   },
+   "errors_after": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "lines": 331,
+   "in": 3140,
+   "out": 4086,
+   "cost": 0.001,
+   "s": 17
+  },
+  {
+   "model": "qwen/qwen3.8-flash",
+   "attempt": 1,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 4,
+    "iOS": 1
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 401,
+   "in": 3991,
+   "out": 5752,
+   "cost": 0.0033,
+   "s": 59
+  },
+  {
+   "model": "qwen/qwen3.8-flash",
+   "attempt": 2,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 5,
+    "iOS": 5
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 445,
+   "in": 4942,
+   "out": 6349,
+   "cost": 0.0037,
+   "s": 64
+  },
+  {
+   "model": "qwen/qwen3.8-flash",
+   "attempt": 3,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 349,
+   "in": 3274,
+   "out": 4911,
+   "cost": 0.0028,
+   "s": 52
+  },
+  {
+   "model": "openai/gpt-6-luna",
+   "attempt": 1,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 1,
+    "iOS": 1
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 298,
+   "in": 2537,
+   "out": 3622,
+   "cost": 0.0021,
+   "s": 22
+  },
+  {
+   "model": "openai/gpt-6-luna",
+   "attempt": 2,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 8,
+    "iOS": 9
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 318,
+   "in": 3788,
+   "out": 3771,
+   "cost": 0.0023,
+   "s": 24
+  },
+  {
+   "model": "openai/gpt-6-luna",
+   "attempt": 3,
+   "ok": false,
+   "ok_after_fix": true,
+   "errors": {
+    "macOS": 7,
+    "iOS": 7
+   },
+   "errors_after": {
+    "macOS": 0,
+    "iOS": 0
+   },
+   "lines": 285,
+   "in": 3382,
+   "out": 3399,
+   "cost": 0.002,
+   "s": 21
+  }
+ ]
+}

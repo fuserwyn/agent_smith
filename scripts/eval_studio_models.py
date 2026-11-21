@@ -104,6 +104,16 @@ def one(spec: str, attempt: int, price: dict) -> dict:
             "seconds": round(time.monotonic() - t0, 1), "cost_usd": round(cost, 4), "error": run.get("error")}
 
 
+def safe_one(spec: str, attempt: int, price: dict) -> dict:
+    """One run; an error of one model (HTTP, provider) is a failed run, not the end of the whole evaluation."""
+    try:
+        return one(spec, attempt, price)
+    except Exception as exc:  # noqa: BLE001 - reported in the results
+        return {"model": spec.split(":", 1)[1], "attempt": attempt, "pass": False, "status": "error", "steps": 0,
+                "input_tokens": 0, "output_tokens": 0, "seconds": 0.0, "cost_usd": 0.0,
+                "error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("models", nargs="+", help="provider:model, e.g. openrouter:anthropic/claude-haiku-5.5")
@@ -114,7 +124,7 @@ def main() -> None:
     jobs = [(m, i) for m in a.models for i in range(1, a.runs + 1)]
     results = []
     with cf.ProcessPoolExecutor(max_workers=a.jobs) as ex:
-        for res in ex.map(one, *zip(*jobs), [price] * len(jobs)):
+        for res in ex.map(safe_one, *zip(*jobs), [price] * len(jobs)):
             results.append(res)
             print(json.dumps(res), flush=True)
     out = ROOT / "benchmarks" / "studio" / "models.json"

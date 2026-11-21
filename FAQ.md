@@ -226,6 +226,26 @@ Measured, not guessed: the same studio task for 11 paid models (all passed, $0.0
 SWE-bench bugs for five of them (all 3/3). **Claude Haiku 5.5** — the studio's default chat model — solved the three
 SWE-bench bugs for **$0.009** in total, GPT-6 Luna for $0.007, Claude Sonnet 5.5 for $0.13.
 
+### Which model for macOS, iOS and web apps?
+Measured on 2026-11-21 (`scripts/eval_swift_models.py`, results in `benchmarks/studio/swift.json`): one single-file
+SwiftUI + SwiftData app that must compile for **both** macOS 15 and iOS 18 with Xcode, 3 tries per model, then one round
+with the compiler errors — the way the agent works in the studio.
+
+| Model | Compiles first try | After one fix | $ per app |
+|---|---|---|---|
+| Kimi K3.1 Pro | 3/3 | 3/3 | 0.018 |
+| GPT-6.2 Sol | 3/3 | 3/3 | 0.022 |
+| Claude Sonnet 5.5 | 3/3 | 3/3 | 0.084 |
+| Gemini 4 Hydrogen | 3/3 | 3/3 | 0.063 |
+| Claude Haiku 5.5 (default) | 2/3 | 3/3 | 0.002 |
+| GPT-6 Luna · Qwen3.8 Flash · GPT-6.1 Terra · Gemini 4 Argon | 0–2/3 | 3/3 | 0.002–0.04 |
+| DeepSeek V4 Pro | 1/3 | 2/3 | 0.006 |
+
+For Apple apps: **Kimi K3.1 Pro** or **GPT-6.2 Sol** (right the first time, about 2 cents), Claude Haiku 5.5 when the agent
+can compile and fix (a tenth of the price). For web and backend every model of the Paid tab passes the studio task;
+DeepSeek V4 Pro and Qwen3 Coder Next are the cheap specialists there. Swift needs Xcode: start the studio with
+`--shell local` on your Mac so the agent can run `swiftc` / `xcodebuild` (the Docker shell is Linux).
+
 ### Can I send it files, photos, my voice?
 Yes: attach (picker, drop, paste) files, photos, audio, video; a model that reads the kind gets it directly,
 otherwise a cheap multimodal model describes it first, so it works with every model. The microphone button records,
