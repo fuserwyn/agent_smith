@@ -3,7 +3,10 @@
 The container is started with ``--network none`` (the agent must not reach the
 internet: AI-safety requirement) and labelled ``agent-smith=1`` so leftovers can
 always be found and removed. ``close()`` is idempotent and is also registered
-with ``atexit`` so the container is removed even on unexpected exits.
+with ``atexit`` so the container is removed even on unexpected exits. For the exits
+nothing can catch (``kill -9``), a separate reaper process (``container_reaper.py``)
+removes the container once the agent's pid is gone, and every new run removes the
+containers of agents that are no longer alive (``agent-smith.pid`` label).
 """
 
 from __future__ import annotations
@@ -13,11 +16,15 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import time
+from pathlib import Path
 from typing import Optional
 
 log = logging.getLogger(__name__)
 LABEL = "agent-smith=1"
+PID_LABEL = "agent-smith.pid"
+REAPER = Path(__file__).with_name("container_reaper.py")
 
 
 class DockerError(RuntimeError):
@@ -68,11 +75,14 @@ class DockerEnv:
         _docker(*args, timeout=timeout)
 
     def start(self) -> str:
-        args = ["run", "-d", "--name", self.name, "--label", LABEL, "--network", self.network]
+        cleanup_orphans()
+        args = ["run", "-d", "--name", self.name, "--label", LABEL, "--label", f"{PID_LABEL}={os.getpid()}",
+                "--network", self.network]
         if self.platform:
             args += ["--platform", self.platform]
         args += [self.image, "tail", "-f", "/dev/null"]
         self.container_id = _docker(*args, timeout=300).stdout.strip()
+        start_reaper(self.name)
         return self.name
 
     def close(self) -> None:
@@ -100,3 +110,35 @@ def cleanup_leftovers() -> int:
     for cid in ids:
         _docker("rm", "-f", cid, check=False)
     return len(ids)
+
+
+def start_reaper(name: str) -> None:
+    """Watch this process from outside: if it dies without cleaning up (kill -9), remove the container."""
+    try:
+        subprocess.Popen([sys.executable, str(REAPER), str(os.getpid()), name], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True, close_fds=True)
+    except OSError as exc:  # the atexit cleanup still covers normal exits
+        log.warning("could not start the container reaper: %s", exc)
+
+
+def _alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def cleanup_orphans() -> int:
+    """Remove our containers whose agent process is gone (left by a crash before the reaper could act)."""
+    out = _docker("ps", "-a", "--filter", f"label={LABEL}", "--format", f'{{{{.Names}}}} {{{{.Label "{PID_LABEL}"}}}}',
+                  check=False, timeout=60).stdout
+    removed = 0
+    for line in out.splitlines():
+        name, _, pid = line.partition(" ")
+        if pid.strip().isdigit() and not _alive(int(pid)):
+            _docker("rm", "-f", name, check=False, timeout=60)
+            removed += 1
+    return removed

@@ -74,3 +74,24 @@ def test_run_tests_json_result():
                                                                 ["assert add(1, 2) == 3", "assert add(0, 0) == 0"])))
     assert failed["success"] is False and (failed["passed"], failed["total"]) == (1, 2)
     assert "got:" in failed["output"]
+
+
+def test_reaper_removes_the_container_once_the_agent_is_gone(tmp_path):
+    """kill -9 runs no cleanup code in the agent: the reaper, a separate process, removes the container."""
+    log = tmp_path / "docker.log"
+    fake = tmp_path / "docker"
+    fake.write_text(f'#!/bin/sh\necho "$@" >> "{log}"\n')
+    fake.chmod(0o755)
+    agent = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    env = dict(os.environ, PATH=f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    reaper = subprocess.Popen([sys.executable, str(ROOT / "src" / "agent_smith" / "container_reaper.py"),
+                               str(agent.pid), "agent-smith-x-1"], env=env)
+    try:
+        assert reaper.poll() is None and not log.exists()  # agent alive: the container stays
+        agent.kill()
+        agent.wait()
+        assert reaper.wait(timeout=10) == 0
+        assert log.read_text().split() == ["rm", "-f", "agent-smith-x-1"]
+    finally:
+        agent.kill()
+        reaper.kill()
