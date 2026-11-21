@@ -14,19 +14,20 @@
 #   The heavy folders of the clone are symlinks into $SGO, so every command keeps working unchanged.
 #
 # Speed: Python + both `uv sync` run in parallel, and the Docker images (python:3.11-slim for MBPP
-# validation, then the SWE-bench exam pool) are pulled in the background while you start working.
+# validation, then the subject's starter SWE-bench tasks) are pulled in the background while you start working.
 #
 # Options
 #   --sgo DIR              data folder (default /sgoinfre/goinfre/Perso/$USER/agent_smith)
 #   --moulinette PATH      moulinette folder or archive (default: ./moulinette, then ~/moulinette, ~/Downloads, $SGO)
 #   --env FILE             .env with the API keys (copied to ~/.agent_smith.env; default: keep ./.env if present)
-#   --prefetch all|none|ID[,ID]   SWE-bench images to pull in the background (default all = the 6 exam tasks)
+#   --prefetch starters|none|ID[,ID]   SWE-bench images to pull in the background (default starters = the subject's
+#                          suggested tasks; any other image is pulled by the agent when its task starts)
 #   --no-check             skip the sandbox security check at the end (~15 s)
 #   --yes                  do not ask before moving Docker's image store out of home
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
-SGO_BASE="/sgoinfre/goinfre/Perso/$USER"; SGO=""; MOUL_SRC=""; ENV_SRC=""; PREFETCH="all"; CHECK=1; YES=0; UNINSTALL=0
+SGO_BASE="/sgoinfre/goinfre/Perso/$USER"; SGO=""; MOUL_SRC=""; ENV_SRC=""; PREFETCH="starters"; CHECK=1; YES=0; UNINSTALL=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --sgo) SGO="$2"; shift 2 ;;
@@ -211,9 +212,8 @@ fi
 
 # ------------------------------------------------------------------ 5. background image pulls
 if [[ $DOCKER_OK == 1 ]]; then
-  pool=$(awk '/^(SEED_POOL|EXAM_POOL) = /{f=1} f{s=$0; while (match(s, /"[^"]+"/)) {print substr(s, RSTART+1, RLENGTH-2); s=substr(s, RSTART+RLENGTH)}} f && /\]/{f=0}' \
-         moulinette/moulinette/swebench/interact.py 2>/dev/null | awk '!seen[$0]++')
-  case "$PREFETCH" in all) ids="$pool" ;; none) ids="" ;; *) ids="${PREFETCH//,/ }" ;; esac
+  starters="sympy__sympy-14711 sympy__sympy-13480 pydata__xarray-4629"   # the subject's suggested tasks
+  case "$PREFETCH" in starters|all) ids="$starters" ;; none) ids="" ;; *) ids="${PREFETCH//,/ }" ;; esac
   plat=""; [[ "$(uname -m)" != x86_64 ]] && plat="--platform linux/amd64"
   imgs=("docker.io/library/python:3.11-slim")   # full names: Podman refuses short ones without a TTY
   for id in $ids; do imgs+=("docker.io/swebench/sweb.eval.x86_64.$(echo "$id" | tr '[:upper:]' '[:lower:]' | sed 's/__/_1776_/g'):latest"); done

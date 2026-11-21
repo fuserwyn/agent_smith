@@ -24,7 +24,7 @@ OUT = Path(sys.argv[1])
 MODELS = sys.argv[2].split(",")
 RUNS = int(sys.argv[3]) if len(sys.argv) > 3 else 2
 FIX = True
-PROMPT = """Write a complete single-file SwiftUI app that builds for BOTH macOS 15 and iOS 18 from the same file.
+SWIFT_TASK = """Write a complete single-file SwiftUI app that builds for BOTH macOS 15 and iOS 18 from the same file.
 
 Requirements:
 - SwiftData model `Note` (title, body, createdAt, isPinned) and `.modelContainer(for: Note.self)` on the WindowGroup.
@@ -46,20 +46,20 @@ def sdk(name):
 
 
 SDKS = {"macOS": (sdk("macosx"), "arm64-apple-macos15"), "iOS": (sdk("iphonesimulator"), "arm64-apple-ios18.0-simulator")}
-PRICES = {}
+COSTS = {}
 
 
 def prices():
     import httpx
     for m in httpx.get("https://openrouter.ai/api/v1/models", timeout=20).json()["data"]:
-        PRICES[m["id"]] = (float(m["pricing"]["prompt"]), float(m["pricing"]["completion"]))
+        COSTS[m["id"]] = (float(m["pricing"]["prompt"]), float(m["pricing"]["completion"]))
 
 
 def one(model, attempt):
     t0 = time.monotonic()
     llm = build_client(model, "https://openrouter.ai/api/v1", no_fallbacks=True)
     try:
-        r = llm.chat([{"role": "user", "content": PROMPT}], max_tokens=16000, temperature=0.2)
+        r = llm.chat([{"role": "user", "content": SWIFT_TASK}], max_tokens=16000, temperature=0.2)
     except BaseException as e:  # noqa: BLE001
         return {"model": model, "attempt": attempt, "ok": False, "error": str(e)[:200]}
     tin, tout = r.input_tokens, r.output_tokens
@@ -82,7 +82,7 @@ def one(model, attempt):
     ok1 = bool(code) and not any(first.values())
     ok2, after = ok1, first
     if not ok1 and code and FIX:
-        msgs = [{"role": "user", "content": PROMPT}, {"role": "assistant", "content": "```swift\n" + code + "```"},
+        msgs = [{"role": "user", "content": SWIFT_TASK}, {"role": "assistant", "content": "```swift\n" + code + "```"},
                 {"role": "user", "content": "The Swift compiler (Xcode, macOS 15 and iOS 18 SDKs) reports:\n" + log
                  + "\nFix every error. Answer with the whole corrected file in ONE ```swift block."}]
         try:
@@ -92,7 +92,7 @@ def one(model, attempt):
             ok2 = bool(code) and not any(after.values())
         except BaseException:  # noqa: BLE001
             pass
-    pi, po = PRICES.get(model.split("@")[0], (0, 0))
+    pi, po = COSTS.get(model.split("@")[0], (0, 0))
     return {"model": model, "attempt": attempt, "ok": ok1, "ok_after_fix": ok2, "errors": first, "errors_after": after,
             "lines": code.count("\n"), "in": tin, "out": tout,
             "cost": round(tin * pi + tout * po, 4), "s": round(time.monotonic() - t0)}

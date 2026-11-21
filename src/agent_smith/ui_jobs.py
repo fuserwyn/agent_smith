@@ -91,18 +91,13 @@ def model_choices() -> List[Dict[str, Any]]:
     return out
 
 
+# SWE-bench tasks offered in the UI: the subject's suggested starters (any other instance id can be typed in).
+# The exam pool itself lives in the moulinette and is never read by Agent Smith.
+STARTER_SWE_TASKS = ["sympy__sympy-14711", "sympy__sympy-13480", "pydata__xarray-4629"]
+
+
 def swebench_pool() -> List[str]:
-    """Exam pool ids read from the moulinette sources (SEED_POOL + EXAM_POOL)."""
-    src = MOULINETTE / "moulinette" / "swebench" / "interact.py"
-    if not src.is_file():
-        return []
-    text = src.read_text(encoding="utf-8")
-    ids: List[str] = []
-    for name in ("SEED_POOL = [", "EXAM_POOL = SEED_POOL + ["):
-        i = text.find(name)
-        if i >= 0:
-            ids += re.findall(r'"([^"]+)"', text[i:text.find("]", i)])
-    return list(dict.fromkeys(ids))
+    return list(STARTER_SWE_TASKS)
 
 
 @functools.lru_cache(maxsize=1)
