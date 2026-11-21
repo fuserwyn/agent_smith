@@ -17,7 +17,7 @@ import threading
 import time
 import traceback
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -50,7 +50,7 @@ LIMITS = Limits(max_iterations=1_000_000, max_input_tokens=10**12, max_output_to
 # Stop sequences (providers accept 4): an empty ```python``` block is never useful — some small models repeat
 # it until the output cap after their first block; it replaces </function_calls>, a format these models don't use.
 STOP = [END_CODE, "\nObservation:", "</tool_call>", "```python\n```"]
-SETTINGS = AgentSettings(max_output_tokens_per_call=2000, observation_max_chars=7000, old_observation_chars=900,
+SETTINGS = AgentSettings(max_output_tokens_per_call=4096, attachment_steps=2, observation_max_chars=7000, old_observation_chars=900,
                          keep_recent_steps=4, show_budget=False, safety_seconds=20.0, stop_sequences=STOP,
                          max_history_steps=40)
 HISTORY_TURNS = 6  # earlier exchanges given to the model as context
@@ -130,6 +130,8 @@ class Run:
     # files the agent's own actions changed (marks before / after each tool that can write); None: runs saved
     # before this existed. Only these are the turn's changes: edits by you or other programs meanwhile are not.
     touched: Optional[List[str]] = None
+    tier: str = ""  # free | paid | claude (Claude Code on your subscription); "" in runs saved before
+    cost_usd: Optional[float] = None  # reported by the engine itself (Claude Code); else the chat computes it
 
     def public(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -147,6 +149,7 @@ class AgentService:
         self.scenarios = Scenarios(publish)
         self.apps = AppManager(ws, publish)
         self.media = Media(ws, self.state_dir)
+        self.claude_session: Optional[str] = None  # the Claude Code session the chat continues (--resume)
         self.runs: Dict[str, Run] = {}
         self.current: Optional[str] = None
         self._cancel: Dict[str, threading.Event] = {}
@@ -166,12 +169,14 @@ class AgentService:
                 if run.status == "running":  # the server stopped mid-run
                     run.status, run.error = "failed", "interrupted (the studio was restarted)"
                 self.runs[run.id] = run
+            self.claude_session = data.get("claude_session")
             return list(data.get("messages", []))
         except (OSError, ValueError, TypeError):
             return []
 
     def _save(self) -> None:
-        data = {"messages": self.conversation[-200:], "runs": [asdict(r) for r in list(self.runs.values())[-100:]]}
+        data = {"messages": self.conversation[-200:], "runs": [asdict(r) for r in list(self.runs.values())[-100:]],
+                "claude_session": self.claude_session}
         tmp = self._conv_path().with_suffix(".tmp")
         tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
         tmp.replace(self._conv_path())
@@ -183,6 +188,7 @@ class AgentService:
         if self.current:
             raise WorkspaceError(409, "the agent is working; stop it first")
         self.conversation = []
+        self.claude_session = None  # a new chat is a new Claude Code session too
         self._save()
 
     # ------------------------------------------------------------------ models
@@ -240,8 +246,10 @@ class AgentService:
         if default is None and out:
             default = (out[0]["provider"], out[0]["model"])
         provider, model = default or ("", "")
+        from agent_smith.studio import claude_code
+        out += claude_code.choices()  # Claude Code on your subscription: a tier of its own
         return {"models": out, "default": {"provider": provider, "model": model},
-                "tiers": {t: any(m["tier"] == t and m["key_ok"] for m in out) for t in ("free", "paid")}}
+                "tiers": {t: any(m["tier"] == t and m["key_ok"] for m in out) for t in ("free", "paid", "claude")}}
 
     def _pick(self, provider: Optional[str], model: Optional[str]) -> Dict[str, Any]:
         info = self.models()
@@ -249,6 +257,9 @@ class AgentService:
         for m in info["models"]:
             if (m["provider"], m["model"]) == want:
                 if not m["key_ok"]:
+                    from agent_smith.studio import claude_code
+                    if m["provider"] == claude_code.PROVIDER:
+                        raise WorkspaceError(400, f"Claude Code: {claude_code.unavailable()}")
                     raise WorkspaceError(400, f"no API key for {m['provider']}: add {m['key_env']}=... to the .env of Agent Smith")
                 return m
         raise WorkspaceError(400, f"unknown model {want[0]}/{want[1]}")
@@ -276,7 +287,8 @@ class AgentService:
             if self.current:
                 raise WorkspaceError(409, "the agent is already working")
             run = Run(id=uuid.uuid4().hex[:12], mode=mode, provider=m["provider"], model=m["model"], message=message,
-                      attachments=files, paid=bool(m.get("paid")))
+                      attachments=files, paid=bool(m.get("paid")),
+                      tier="claude" if m["provider"] == "claude-code" else ("paid" if m.get("paid") else "free"))
             run.trace = str(self.state_dir / "runs" / f"{run.id}.jsonl")
             self.runs[run.id] = run
             self.current = run.id
@@ -288,6 +300,8 @@ class AgentService:
         self.publish({"type": "agent-run", "run": run.public()})
         if command:
             threading.Thread(target=self._command, args=(run, command), name=f"command-{run.id}", daemon=True).start()
+        elif run.tier == "claude":
+            threading.Thread(target=self._claude, args=(run, history), name=f"claude-{run.id}", daemon=True).start()
         else:
             threading.Thread(target=self._work, args=(run, m["url"], history), name=f"agent-{run.id}", daemon=True).start()
         return run
@@ -296,6 +310,55 @@ class AgentService:
         ev = self._cancel.get(run_id)
         if ev:
             ev.set()
+
+    def _claude(self, run: Run, history: List[Dict[str, Any]]) -> None:
+        """A turn by Claude Code (the CLI on the user's subscription), shown like a turn of our agent."""
+        from agent_smith.studio.claude_code import ClaudeCodeTurn
+
+        def relay(_kind: str, record: Dict[str, Any]) -> None:
+            if record.get("type") == "llm_response":
+                run.steps = int(record.get("step") or run.steps)
+                run.input_tokens += int(record.get("input_tokens") or 0)
+                run.output_tokens += int(record.get("output_tokens") or 0)
+            self.publish({"type": "agent", "run": run.id, "event": record})
+
+        sink = EventSink(run.trace, listeners=[relay])
+        final = "failed"
+        try:
+            if run.mode == "agent":
+                sink.emit("checkpoint", {"phase": "start"})
+                run.checkpoint = self.checkpoints.snapshot(f"before agent turn {run.id}")
+                sink.emit("checkpoint", {"phase": "done", "id": run.checkpoint})
+            sink.emit("workspace", {"executor": "claude-code", "root": str(self.ws.root)})
+            sink.emit("run_start", {"benchmark": "studio", "task_id": run.id, "model": f"claude-code:{run.model}",
+                                    "api_url": "claude-code", "system_prompt": "(Claude Code's own)", "task_prompt": run.message})
+            # a resumed session already has the conversation; a first Claude Code turn gets it as text
+            prompt = run.message if self.claude_session else self._task_prompt(run, history)
+            if run.attachments:
+                prompt += "\n\nAttached files (in the project; open them with your Read tool):\n" + "\n".join(
+                    f"- {a['path']} ({a['kind']})" for a in run.attachments)
+            turn = ClaudeCodeTurn(self.ws.root, sink.emit, self._cancel[run.id].is_set,
+                                  mark=self.checkpoints.tree if run.mode == "agent" else None,
+                                  changed=self.checkpoints.changed_between)
+            run.touched = [] if run.mode == "agent" else None
+            ok = turn.run(prompt, run.model, run.mode, self.claude_session)
+            if run.mode == "agent":
+                run.touched = turn.touched
+            if turn.session_id:
+                self.claude_session = turn.session_id
+            run.steps = turn.steps
+            if turn.input_tokens or turn.output_tokens:  # the engine's own totals (the per-step sums double count)
+                run.input_tokens, run.output_tokens = turn.input_tokens, turn.output_tokens
+            run.cost_usd = turn.cost_usd
+            run.answer = turn.answer.strip()
+            run.error = None if ok else turn.error
+            final = "stopped" if self._cancel[run.id].is_set() else ("done" if ok else "failed")
+            sink.emit("run_end", {"success": ok, "steps": run.steps})
+        except Exception as exc:  # noqa: BLE001 - shown in the chat
+            final, run.error = "failed", f"{type(exc).__name__}: {exc}"
+            sink.emit("studio_error", {"error": run.error, "trace": traceback.format_exc()[-2000:]})
+        finally:
+            self._finish(run, sink, final)
 
     def _task_prompt(self, run: Run, history: List[Dict[str, Any]]) -> str:
         context = ""
@@ -371,8 +434,10 @@ class AgentService:
                     mcp.call_tool = tracked  # type: ignore[method-assign]
                 sink.emit("mcp_connected", mcp.describe())
                 with Sandbox(config, mcp, event_hook=sink.emit, trace_execution=True) as sandbox:
+                    # a paid model writes a whole file in one reply; free tiers cap tokens per minute (Groq: 8k)
+                    settings = replace(SETTINGS, max_output_tokens_per_call=16000 if run.paid else 4096)
                     agent = CodeAgent(llm, sandbox, studio_system_prompt(config, mcp, root, run.mode), LIMITS, "studio", run.id,
-                                      settings=SETTINGS, events=sink, cancel=self._cancel[run.id].is_set)
+                                      settings=settings, events=sink, cancel=self._cancel[run.id].is_set)
                     extra, parts = (self.media.for_turn([f["id"] for f in run.attachments], run.model, run.provider,
                                                         lambda s: sink.emit("attachments", {"note": s}),
                                                         tier="paid" if run.paid else "free")

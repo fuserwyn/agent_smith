@@ -31,6 +31,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class AgentSettings:
     max_output_tokens_per_call: int = 1024
+    attachment_steps: int = 0  # send the attachments (images…) only in the first N requests; 0 = in every request
     observation_max_chars: int = 6000     # observation of the latest steps
     old_observation_chars: int = 800      # observations older than `keep_recent_steps`
     keep_recent_steps: int = 3
@@ -103,7 +104,14 @@ class CodeAgent:
             task_prompt += (f"\n\n[{first} earlier step(s) of this run are not shown, to stay within the context window. "
                             f"Their effects are in the project: check its current state instead of assuming.]")
         # attachments (images, audio, video, PDF the user gave): content parts next to the task text
-        task: object = [{"type": "text", "text": task_prompt}, *self.attachments] if self.attachments else task_prompt
+        # Only in the first steps: an image is thousands of tokens, re-sent with every request otherwise.
+        keep = self.settings.attachment_steps
+        if self.attachments and keep and len(self.history) >= keep:
+            task_prompt += ("\n\n[The attached file(s) were shown to you in your first steps; they are not repeated, "
+                            "to save context. Rely on what you noted from them.]")
+            task: object = task_prompt
+        else:
+            task = [{"type": "text", "text": task_prompt}, *self.attachments] if self.attachments else task_prompt
         msgs: List[Message] = [{"role": "system", "content": self.system_prompt},
                                {"role": "user", "content": task}]
         n = len(self.history)
@@ -192,7 +200,7 @@ class CodeAgent:
                     error = "stopped by the user"
                     ev("cancelled", {"step": step_no})
                     break
-                extraction = extract_code(chat.text, self.known_tools)
+                extraction = extract_code(chat.text, self.known_tools, complete=chat.finish_reason != "length")
                 if chat.finish_reason == "length":  # cut by the output limit: say so, or the model retries the same way
                     extraction.notes.append(
                         f"Your reply was cut off at the output limit ({chat.output_tokens} tokens), so its code was "

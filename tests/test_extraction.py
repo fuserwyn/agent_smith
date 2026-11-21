@@ -40,3 +40,19 @@ def test_repl_prompts_and_indentation_repaired():
 
 def test_no_code():
     assert not extract_code("The answer is 42.").found
+
+
+def test_a_block_whose_fence_was_taken_by_the_stop_sequence_is_whole():
+    """Providers cut at <end_code> and often drop the ``` before it: with a normal finish that is not an error."""
+    e = extract_code('Thought: list.\n```python\nrun_command("ls")', complete=True)
+    assert e.code == 'run_command("ls")' and e.format == "python_block" and not e.notes
+    cut = extract_code('```python\nx = (1,\n', complete=False)               # cut by the output limit: still reported
+    assert cut.format == "python_block_unclosed" and cut.notes
+
+
+def test_markdown_fences_inside_python_strings_do_not_end_the_block():
+    for text in ('```python\nfinal_answer("""## Done\n\n```swift\nlet a = 1\n```\n""")\n```<end_code>',
+                 '```python\nwrite_file("README.md", """# App\n```bash\nmake\n```\n""")'):
+        e = extract_code(text, complete=True)
+        compile(e.code, "<step>", "exec")                                       # the whole program, not cut at ```
+        assert "```" in e.code and not e.notes

@@ -242,7 +242,8 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
         data = await request.body()
         fmt = {"audio/wav": "wav", "audio/x-wav": "wav", "audio/mpeg": "mp3"}.get(
             (request.headers.get("content-type") or "audio/wav").split(";")[0], "wav")
-        tier = "free" if request.headers.get("x-tier") == "free" else "paid"  # the chat's tier: free never uses OpenRouter
+        # the chat's tier: only "paid" uses the OpenRouter key; Free and Claude Code use the free Groq Whisper
+        tier = "paid" if request.headers.get("x-tier", "paid") == "paid" else "free"
         text = await asyncio.to_thread(agent.media.transcribe, data, fmt, request.headers.get("x-language") or "", tier)
         return {"text": text}
 

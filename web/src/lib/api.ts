@@ -108,7 +108,7 @@ export const termApi = {
 export interface ModelChoice {
   provider: string; model: string; url: string; notes: string; key_env: string | null; key_ok: boolean; paid: boolean;
   inputs?: string[]; price?: { in: number; out: number } | null;  // from the OpenRouter catalog (what it reads, $ per 1M tokens)
-  tier?: "free" | "paid";  // free: a provider's free key (its limits apply); paid: the user's OpenRouter key, per token
+  tier?: "free" | "paid" | "claude";  // free: a provider's free key; paid: your OpenRouter key; claude: Claude Code on your plan
   limits?: string;         // free tier: what the provider caps
   live?: { requests_left?: number; requests_limit?: number; tokens_left?: number; tokens_limit?: number; exhausted_at?: number } | null;
 }
@@ -141,7 +141,7 @@ export const uploadsApi = {
 };
 export const voiceApi = {
   /** tier: the chat's (Free: Groq Whisper on the free key; Paid: the OpenRouter transcribe model) */
-  transcribe: async (wav: Blob, lang: string, tier: "free" | "paid"): Promise<string> => {
+  transcribe: async (wav: Blob, lang: string, tier: "free" | "paid" | "claude"): Promise<string> => {
     const res = await fetch("/api/voice", { method: "POST", body: wav, headers: { ...authHeaders(), "X-Studio": "1", "Content-Type": "audio/wav", "X-Language": lang, "X-Tier": tier } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? res.statusText);
@@ -153,6 +153,7 @@ export interface AgentRun {
   id: string; mode: "ask" | "agent"; provider: string; model: string; message: string; started: number; ended: number | null;
   status: "running" | "done" | "failed" | "stopped"; answer: string; error: string | null; checkpoint: string | null;
   changes: AgentChange[]; steps: number; input_tokens: number; output_tokens: number; attachments?: Attachment[]; paid?: boolean;
+  tier?: "free" | "paid" | "claude" | ""; cost_usd?: number | null;
 }
 export interface ChatMessage { role: "user" | "assistant"; text: string; run: string; mode?: "ask" | "agent"; status?: AgentRun["status"]; ts: number; attachments?: Attachment[] }
 export interface AgentState { messages: ChatMessage[]; runs: Record<string, AgentRun>; current: string | null }

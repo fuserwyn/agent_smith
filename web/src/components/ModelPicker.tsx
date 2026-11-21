@@ -1,16 +1,27 @@
-/* The chat's model picker, in two tiers that never mix:
+/* The chat's model picker, in three tiers that never mix:
  *   Free — the free keys of the direct providers (Groq, Gemini, NVIDIA, Cohere): no charge, the provider's limits;
  *   Paid — the user's OpenRouter key, billed per token.
  * The trigger always says which one the next message goes to. */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Coins, Gift, KeyRound, TriangleAlert } from "lucide-react";
+import { Check, ChevronDown, Coins, Gift, KeyRound, Sparkles, TriangleAlert } from "lucide-react";
 import type { ModelChoice } from "../lib/api";
 import { useAgent } from "../lib/agent";
 import { useT } from "../lib/i18n";
 import { fmtPrice, useOpenRouter } from "../lib/openrouter";
 
-export type Tier = "free" | "paid";
+export type Tier = "free" | "paid" | "claude";
+export const TIERS: Tier[] = ["free", "paid", "claude"];
 export const tierOf = (m: Pick<ModelChoice, "tier" | "paid"> | undefined): Tier => (m?.tier ?? (m?.paid ? "paid" : "free"));
+/** i18n key of a tier's name, and its icon */
+export const tierName = (x: Tier) => (x === "paid" ? "tier.paid" : x === "claude" ? "tier.claude" : "tier.free") as "tier.paid";
+export function TierIcon({ tier, size = 11 }: { tier: Tier; size?: number }) {
+  return tier === "paid" ? <Coins size={size} /> : tier === "claude" ? <Sparkles size={size} /> : <Gift size={size} />;
+}
+const TEXT = {
+  free: { sub: "tier.freeSub", about: "tier.freeAbout", foot: "tier.freeFoot", empty: "tier.noneFree" },
+  paid: { sub: "tier.paidSub", about: "tier.paidAbout", foot: "tier.paidFoot", empty: "or.noKey" },
+  claude: { sub: "tier.claudeSub", about: "tier.claudeAbout", foot: "tier.claudeFoot", empty: "tier.claudeNone" },
+} as const;
 
 const VENDOR: Record<string, string> = {
   anthropic: "Anthropic", openai: "OpenAI", google: "Google", deepseek: "DeepSeek", qwen: "Qwen", "z-ai": "Z.ai",
@@ -22,6 +33,7 @@ const READS: Record<string, string> = { image: "📷", audio: "🎧", video: "�
 const HOST: Record<string, string> = { groq: "Groq", cerebras: "Cerebras", sambanova: "SambaNova", together: "Together" };
 /** group of a model in the list: who serves it (and, for OpenRouter, the vendor or the pinned host) */
 const groupOf = (m: ModelChoice, t: ReturnType<typeof useT>) => {
+  if (m.provider === "claude-code") return t("tier.claudeGroup");
   if (m.provider !== "openrouter") return t("tier.freeKey", { p: PROVIDER[m.provider] ?? m.provider });
   const host = m.model.split("@")[1];
   if (host) return t("tier.viaOR", { p: HOST[host] ?? host });
@@ -29,6 +41,7 @@ const groupOf = (m: ModelChoice, t: ReturnType<typeof useT>) => {
 };
 const cost = (m: ModelChoice) => (m.price ? m.price.in + m.price.out * 3 : Number.MAX_VALUE);
 const shortName = (m: ModelChoice) => {
+  if (m.provider === "claude-code") return "Claude " + m.model[0]!.toUpperCase() + m.model.slice(1);
   const [id, host] = m.model.split("@");
   const name = m.provider === "openrouter" ? id!.split("/").slice(1).join("/") || id! : id!.split("/").pop()!;
   return host ? `${name} · ${HOST[host] ?? host}` : name;
@@ -81,32 +94,32 @@ export function ModelPicker() {
   return (
     <div className="mp" ref={root}>
       <button type="button" className={`mp-trigger t-${tier}`} aria-haspopup="listbox" aria-expanded={open} aria-label={t("ag.model")}
-              title={cur ? `${t(tier === "paid" ? "tier.paid" : "tier.free")} · ${cur.model}${tier === "free" && cur.limits ? `\n${cur.limits}` : ""}` : t("ag.model")} onClick={() => setOpen(!open)}>
-        <span className={`tier-b t-${tier}`}>{tier === "paid" ? <Coins size={11} /> : <Gift size={11} />}<span className="tier-w">{t(tier === "paid" ? "tier.paid" : "tier.free")}</span></span>
+              title={cur ? `${t(tierName(tier))} · ${cur.model}${tier === "free" && cur.limits ? `\n${cur.limits}` : ""}` : t("ag.model")} onClick={() => setOpen(!open)}>
+        <span className={`tier-b t-${tier}`}><TierIcon tier={tier} /><span className="tier-w">{t(tierName(tier))}</span></span>
         <span className="mp-name">{cur ? shortName(cur) : "—"}</span>
         <ChevronDown size={12} className="mp-chev" />
       </button>
       {open && (
         <div className="mp-pop" role="dialog" aria-label={t("ag.model")}>
           <div className="mp-tabs" role="tablist">
-            {(["free", "paid"] as const).map((x) => (
+            {TIERS.map((x) => (
               <button key={x} type="button" role="tab" aria-selected={tab === x} className={`mp-tab t-${x}`} onClick={() => setTab(x)}>
-                {x === "paid" ? <Coins size={14} /> : <Gift size={14} />}
-                <span className="mp-tab-t"><b>{t(x === "paid" ? "tier.paid" : "tier.free")}</b><span>{t(x === "paid" ? "tier.paidSub" : "tier.freeSub")}</span></span>
+                <TierIcon tier={x} size={14} />
+                <span className="mp-tab-t"><b>{t(tierName(x))}</b><span>{t(TEXT[x].sub)}</span></span>
                 <span className="n">{count(x)}</span>
               </button>
             ))}
           </div>
           <div className={`mp-about t-${tab}`}>
-            <p>{t(tab === "paid" ? "tier.paidAbout" : "tier.freeAbout")}</p>
+            <p>{t(TEXT[tab].about)}</p>
             {tab === "paid" && (
               <p className="mp-acc">{or.account?.key === false ? t("or.noKey")
                 : bal != null ? <>{t("tier.balance")} <b>${fmtPrice(bal)}</b>{or.account?.used != null && <span className="dim"> · {t("or.spent", { v: fmtPrice(or.account.used) })}</span>}</>
                 : or.account?.error ?? t("tier.balanceLoading")}</p>
             )}
           </div>
-          <div className="mp-list" role="listbox" ref={list} aria-label={t(tab === "paid" ? "tier.paid" : "tier.free")}>
-            {!groups.length && <div className="mp-empty">{t(tab === "paid" ? "or.noKey" : "tier.noneFree")}</div>}
+          <div className="mp-list" role="listbox" ref={list} aria-label={t(tierName(tab))}>
+            {!groups.length && <div className="mp-empty">{t(TEXT[tab].empty)}</div>}
             {groups.map(([name, ms]) => (
               <div key={name} className="mp-group">
                 <div className="mp-gh">{name}
@@ -121,6 +134,7 @@ export function ModelPicker() {
                       <span className="mp-check">{sel && <Check size={13} />}</span>
                       <span className="mp-rn">{shortName(m)}<span className="mp-reads">{(m.inputs ?? []).map((x) => READS[x] ?? "").join("")}</span></span>
                       {!m.key_ok ? <span className="mp-nokey"><KeyRound size={11} />{t("tier.noKey", { k: m.key_env ?? "key" })}</span>
+                        : tab === "claude" ? <span className="mp-plan">{t("tier.inPlan")}</span>
                         : tab === "paid" ? <span className="mp-price">{m.price ? <><b>${fmtPrice(m.price.in)}</b><span className="dim">/</span><b>${fmtPrice(m.price.out)}</b></> : <span className="dim">$</span>}</span>
                         : <LiveLimits m={m} />}
                     </button>
@@ -129,7 +143,7 @@ export function ModelPicker() {
               </div>
             ))}
           </div>
-          <div className="mp-foot">{t(tab === "paid" ? "tier.paidFoot" : "tier.freeFoot")}</div>
+          <div className="mp-foot">{t(TEXT[tab].foot)}</div>
         </div>
       )}
     </div>

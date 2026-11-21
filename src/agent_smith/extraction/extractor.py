@@ -108,13 +108,48 @@ def _parse_json_args(raw: str) -> Optional[Dict[str, Any]]:
     return {"input": value}
 
 
-def extract_code(text: str, known_tools: Iterable[str] = ()) -> Extraction:
-    """Return the code to execute (or ``code=None`` when nothing usable was found)."""
+_PY_OPEN_RE = re.compile(r"```[ \t]*(?:python|py|python3|py3)[ \t]*\n", re.I)
+
+
+def _python_blocks(text: str) -> List[str]:
+    """```python blocks whose code may itself contain ``` (Markdown in a string: a README, a final answer).
+    For each opening fence the closing one is the first ``` after which the code parses; if none parses,
+    the first ``` (the classic reading). Blocks that are not closed are left to the caller."""
+    out: List[str] = []
+    pos = 0
+    while True:
+        m = _PY_OPEN_RE.search(text, pos)
+        if not m:
+            return out
+        start = m.end()
+        ends = [e.start() for e in re.finditer(r"```", text[start:])]
+        if not ends:
+            return out
+        tail = len(text) - start  # the block may run to the end (its own fence taken by the stop sequence)
+        body_at = lambda e: text[start:start + e].replace(END_CODE, "").rstrip().removesuffix("```")  # noqa: E731
+        pick = next((e for e in [*ends, tail] if _parses(textwrap.dedent(body_at(e)))), ends[0])
+        if pick == tail:
+            out.append(body_at(tail))
+            return out
+        out.append(text[start:start + pick])
+        pos = start + pick + 3
+
+
+def extract_code(text: str, known_tools: Iterable[str] = (), complete: bool = False) -> Extraction:
+    """Return the code to execute (or ``code=None`` when nothing usable was found).
+
+    ``complete``: the reply ended normally (not cut by the output limit). Providers stop at ``<end_code>`` and
+    often drop the ``` just before it with the stop sequence, so an unclosed block is then normal, not an error."""
     known = set(known_tools) | {"final_answer"}
     notes: List[str] = []
     text = text or ""
 
-    # 1. fenced blocks
+    # 1. fenced blocks (```python first, read so that ``` inside its strings does not end it)
+    py_first = _python_blocks(text)
+    if py_first:
+        if len(py_first) > 1:
+            notes.append(f"{len(py_first)} code blocks were found; they were executed sequentially as one program.")
+        return Extraction(_clean("\n\n".join(py_first), notes), "python_block", notes)
     blocks = [(lang.lower(), body) for lang, body in _FENCE_RE.findall(text)]
     py_blocks = [b for lang, b in blocks if lang in _PY_LANGS]
     if not py_blocks:
@@ -130,9 +165,12 @@ def extract_code(text: str, known_tools: Iterable[str] = ()) -> Extraction:
 
     m = _OPEN_FENCE_RE.search(text)
     if m and m.group(2).strip():
+        body = m.group(2)
+        if complete:  # the stop sequence took the closing fence: the block is whole
+            return Extraction(_clean(body.rstrip().removesuffix("```"), notes), "python_block", notes)
         notes.append("Your ```python block was not closed with ```; everything after the opening fence "
                      "was interpreted as code.")
-        return Extraction(_clean(m.group(2).replace("```", ""), notes), "python_block_unclosed", notes)
+        return Extraction(_clean(body.replace("```", ""), notes), "python_block_unclosed", notes)
 
     # 2. <code> tags
     tags = [b for b in _CODE_TAG_RE.findall(text) if b.strip()]

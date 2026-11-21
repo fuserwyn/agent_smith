@@ -13,7 +13,7 @@ import { useUi } from "../lib/ui";
 import { AppLink } from "./AppsPanel";
 import { jobLabel } from "./InsidePanel";
 import { Markdown } from "./Markdown";
-import { ModelPicker, tierOf } from "./ModelPicker";
+import { ModelPicker, tierName, tierOf, type Tier } from "./ModelPicker";
 import { WarnIcon } from "./overlays";
 import { fuzzy } from "./QuickOpen";
 import { fs } from "../lib/api";
@@ -30,6 +30,7 @@ const fmtS = (s: number) => (s < 60 ? `${s.toFixed(0)}s` : `${Math.floor(s / 60)
 
 /** " · $0.012": what the turn cost so far (no limit in the studio, so it is shown), from the catalog price */
 function turnCost(run: AgentRun, models: ModelChoice[]): string {
+  if (run.tier === "claude") return run.cost_usd ? ` · ≈$${run.cost_usd.toFixed(3)} (plan)` : "";  // counted in your plan
   const p = models.find((m) => m.provider === run.provider && m.model === run.model)?.price;
   if (!p || (!p.in && !p.out)) return "";
   const usd = (run.input_tokens * p.in + run.output_tokens * p.out) / 1e6;
@@ -199,7 +200,7 @@ function Turn({ run, live }: { run: AgentRun; live: boolean }) {
       {!live && <Changes run={run} />}
       {!live && (
         <div className="turn-meta">
-          {run.provider !== "agent-smith" && <span className={`tier-b sm t-${run.paid ? "paid" : "free"}`}>{t(run.paid ? "tier.paid" : "tier.free")}</span>}
+          {run.provider !== "agent-smith" && (() => { const tr = (run.tier || (run.paid ? "paid" : "free")) as Tier; return <span className={`tier-b sm t-${tr}`}>{t(tierName(tr))}</span>; })()}
           <span className="mono">{run.model}</span>
           <button type="button" className="linkbtn" onClick={() => window.dispatchEvent(new CustomEvent("studio:inside", { detail: { run: run.id } }))}>
             <Workflow size={12} />{t("ag.inside")}</button>
