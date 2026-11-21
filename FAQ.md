@@ -246,6 +246,13 @@ can compile and fix (a tenth of the price). For web and backend every model of t
 DeepSeek V4 Pro and Qwen3 Coder Next are the cheap specialists there. Swift needs Xcode: start the studio with
 `--shell local` on your Mac so the agent can run `swiftc` / `xcodebuild` (the Docker shell is Linux).
 
+### Can I use my Claude subscription (Claude Code)?
+Yes: the **Claude Code** tab of the chat's model picker runs the official `claude` CLI on your subscription. Create a
+token once with `claude setup-token` and put it in Agent Smith's `.env` as `CLAUDE_CODE_OAUTH_TOKEN=…` (it is the only
+credential the CLI gets). Ask = Claude Code's read-only plan mode, Agent = its auto mode; every step and tool call shows
+in the chat, the files it changed can be reviewed and undone, and a follow-up message continues the same session.
+Usage counts against your plan's limits; the turn header shows the API-equivalent cost for reference.
+
 ### Can I send it files, photos, my voice?
 Yes: attach (picker, drop, paste) files, photos, audio, video; a model that reads the kind gets it directly,
 otherwise a cheap multimodal model describes it first, so it works with every model. The microphone button records,

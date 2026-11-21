@@ -537,3 +537,10 @@ kbd, .pal-k { font: 11px var(--f-mono); padding: 1px 6px; border: 1px solid var(
 .mp-tab.t-claude > svg { color: var(--accent); }
 .mp-about.t-claude { border-left-color: var(--accent); }
 .mp-plan { flex: none; font-size: 10.5px; color: var(--accent); }
+/* three tabs: icon · name · count on one line, the subtitle under them across the tab */
+.mp-tab { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "icon name n" "sub sub sub"; column-gap: 6px; row-gap: 2px; padding: 7px 9px; }
+.mp-tab > svg { grid-area: icon; }
+.mp-tab-t { display: contents; }
+.mp-tab-t b { grid-area: name; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-tab-t span { grid-area: sub; }
+.mp-tab .n { grid-area: n; }

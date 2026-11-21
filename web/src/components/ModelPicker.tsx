@@ -83,7 +83,7 @@ export function ModelPicker() {
   const groups = useMemo(() => {
     const g = new Map<string, ModelChoice[]>();
     for (const m of ag.models.filter((x) => tierOf(x) === tab)) g.set(groupOf(m, t), [...(g.get(groupOf(m, t)) ?? []), m]);
-    const sorted = [...g].map(([name, ms]) => [name, [...ms].sort((a, b) => cost(a) - cost(b) || a.model.localeCompare(b.model))] as const);
+    const sorted = [...g].map(([name, ms]) => [name, [...ms].sort((a, b) => (a.provider === "claude-code" ? 0 : cost(a) - cost(b) || a.model.localeCompare(b.model)))] as const);
     return sorted.sort((a, b) => Math.min(...a[1].map(cost)) - Math.min(...b[1].map(cost)) || a[0].localeCompare(b[0]));
   }, [ag.models, tab, t]);
   const count = (tier: Tier) => ag.models.filter((m) => tierOf(m) === tier && m.key_ok).length;
@@ -105,7 +105,7 @@ export function ModelPicker() {
             {TIERS.map((x) => (
               <button key={x} type="button" role="tab" aria-selected={tab === x} className={`mp-tab t-${x}`} onClick={() => setTab(x)}>
                 <TierIcon tier={x} size={14} />
-                <span className="mp-tab-t"><b>{t(tierName(x))}</b><span>{t(TEXT[x].sub)}</span></span>
+                <span className="mp-tab-t"><b>{t(x === "claude" ? "tier.claudeTab" : tierName(x))}</b><span>{t(TEXT[x].sub)}</span></span>
                 <span className="n">{count(x)}</span>
               </button>
             ))}

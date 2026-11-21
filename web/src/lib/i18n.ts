@@ -7,7 +7,8 @@ export const LANGS: readonly Lang[] = ["en", "ru", "fr"];
 const en = {
   "tier.free": "Free",
   "tier.claude": "Claude Code",
-  "tier.claudeSub": "your Claude plan",
+  "tier.claudeSub": "Claude Code · your plan",
+  "tier.claudeTab": "Claude",
   "tier.claudeGroup": "Claude Code · your subscription",
   "tier.claudeAbout": "The official Claude Code CLI on your Claude subscription (CLAUDE_CODE_OAUTH_TOKEN in Agent Smith's .env). It works with its own tools on this machine, in the project folder; Ask = its read-only plan mode. Usage counts against your plan's limits, not against money.",
   "tier.claudeFoot": "A follow-up message continues the same Claude Code session. No other key of Agent Smith reaches it.",
@@ -319,7 +320,8 @@ type Dict = Record<Key, string>;
 const ru: Dict = {
   "tier.free": "Бесплатно",
   "tier.claude": "Claude Code",
-  "tier.claudeSub": "твоя подписка Claude",
+  "tier.claudeSub": "Claude Code · подписка",
+  "tier.claudeTab": "Claude",
   "tier.claudeGroup": "Claude Code · подписка",
   "tier.claudeAbout": "Официальный Claude Code CLI на твоей подписке Claude (CLAUDE_CODE_OAUTH_TOKEN в .env Agent Smith). Работает своими инструментами на этом компьютере, в папке проекта; Ask — его режим plan (только чтение). Расход идёт в лимиты подписки, а не в деньги.",
   "tier.claudeFoot": "Следующее сообщение продолжает ту же сессию Claude Code. Другие ключи Agent Smith к нему не попадают.",
@@ -629,7 +631,8 @@ const ru: Dict = {
 const fr: Dict = {
   "tier.free": "Gratuit",
   "tier.claude": "Claude Code",
-  "tier.claudeSub": "ton abonnement Claude",
+  "tier.claudeSub": "Claude Code · abonnement",
+  "tier.claudeTab": "Claude",
   "tier.claudeGroup": "Claude Code · abonnement",
   "tier.claudeAbout": "Le CLI officiel Claude Code sur ton abonnement Claude (CLAUDE_CODE_OAUTH_TOKEN dans le .env d’Agent Smith). Il travaille avec ses propres outils sur cette machine, dans le dossier du projet ; Ask = son mode plan (lecture seule). La consommation compte dans les limites de l’abonnement, pas en argent.",
   "tier.claudeFoot": "Un message suivant continue la même session Claude Code. Aucune autre clé d’Agent Smith ne lui parvient.",
