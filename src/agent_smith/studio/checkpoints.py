@@ -49,15 +49,31 @@ class Checkpoints:
         self._git("commit", "-q", "--allow-empty", "--no-verify", "-m", label)
         return self._git("rev-parse", "HEAD").stdout.decode().strip()
 
-    def changes(self, since: str) -> List[Dict[str, Any]]:
-        """Files that differ between the checkpoint and the project now (added / modified / deleted)."""
+    def tree(self) -> str:
+        """The project as it is now, as a git tree id (no commit): cheap marks around each agent action."""
+        self._init()
+        self._git("add", "-A", ".")
+        return self._git("write-tree").stdout.decode().strip()
+
+    def changed_between(self, a: str, b: str) -> List[str]:
+        """Paths that differ between two trees / commits."""
+        if a == b:
+            return []
+        r = self._git("diff-tree", "-r", "--name-only", "--no-renames", "-z", a, b)
+        return [p for p in r.stdout.decode("utf-8", errors="replace").split("\x00") if p]
+
+    def changes(self, since: str, only: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """Files that differ between the checkpoint and the project now (added / modified / deleted);
+        ``only``: restricted to these paths (the ones the agent's own actions changed)."""
         self._init()
         self._git("add", "-A", ".")  # stage everything (untracked included) into the shadow index
         r = self._git("diff", "--cached", "--name-status", "--no-renames", "-z", since)
         parts = [p for p in r.stdout.decode("utf-8", errors="replace").split("\x00") if p]
         out = []
+        keep = set(only) if only is not None else None
         for code, path in zip(parts[0::2], parts[1::2]):
-            out.append({"path": path, "status": STATUS.get(code[0], "modified")})
+            if keep is None or path in keep:
+                out.append({"path": path, "status": STATUS.get(code[0], "modified")})
         return sorted(out, key=lambda c: c["path"])
 
     def original(self, since: str, rel: str) -> Optional[str]:
@@ -70,9 +86,10 @@ class Checkpoints:
             return None
         return r.stdout.decode("utf-8", errors="replace")
 
-    def restore(self, since: str, paths: Optional[List[str]] = None) -> List[str]:
-        """Put files back as they were at the checkpoint; files created since are removed."""
-        changed = {c["path"]: c["status"] for c in self.changes(since)}
+    def restore(self, since: str, paths: Optional[List[str]] = None, only: Optional[List[str]] = None) -> List[str]:
+        """Put files back as they were at the checkpoint; files created since are removed.
+        ``only``: the files the agent changed (never touch what someone else changed meanwhile)."""
+        changed = {c["path"]: c["status"] for c in self.changes(since, only)}
         targets = [p for p in (paths if paths is not None else list(changed)) if p in changed]
         restored = []
         for rel in targets:

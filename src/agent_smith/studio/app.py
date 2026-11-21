@@ -176,6 +176,17 @@ def create_app(workspace: Path, token: str, web_dist: Optional[Path] = WEB_DIST,
     def fs_files() -> Dict[str, Any]:
         return ws.files()
 
+    # ---------------------------------------------------------------- code navigation (go to definition, references)
+    @app.get("/api/code/definition")
+    async def code_definition(name: str = Query(..., max_length=120), path: Optional[str] = Query(None, max_length=1024)) -> Dict[str, Any]:
+        from agent_smith.studio import navigate
+        return await asyncio.to_thread(navigate.definitions, ws, name, path)
+
+    @app.get("/api/code/references")
+    async def code_references(name: str = Query(..., max_length=120), path: Optional[str] = Query(None, max_length=1024)) -> Dict[str, Any]:
+        from agent_smith.studio import navigate
+        return await asyncio.to_thread(navigate.references, ws, name, path)
+
     # ---------------------------------------------------------------- git
     @app.get("/api/git/status")
     def git_status() -> Dict[str, Any]:

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type * as Mon from "monaco-editor";
 import { Eye, FileCode, GitCompare, LoaderCircle, Lock, X } from "lucide-react";
 import { editors, loadMonaco, useEditors, type Tab } from "../lib/editors";
+import { installNavigation } from "../lib/navigation";
 import { useT } from "../lib/i18n";
 import { toast } from "../lib/toast";
 import { useUi } from "../lib/ui";
@@ -41,6 +42,7 @@ export function EditorArea() {
       padding: { top: 8 }, stickyScroll: { enabled: true }, fixedOverflowWidgets: true, tabSize: 4,
     };
     editor.current = mon.editor.create(host.current, opts);
+    installNavigation(mon, editor.current);  // go to definition / references / back across files
     diffEditor.current = mon.editor.createDiffEditor(diffHost.current, { ...opts, renderSideBySide: true, originalEditable: false, minimap: { enabled: false } } as Mon.editor.IStandaloneDiffEditorConstructionOptions);
     // Cmd/Ctrl+S is handled by the workbench (captured before Monaco), one save path for every focus
     // follow the app theme

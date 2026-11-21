@@ -73,6 +73,12 @@ export interface GitStatus { repo: boolean; branch: string | null; ahead?: numbe
 export interface GitDiff { path: string; original: string; modified: string; added: boolean; deleted: boolean }
 
 const q = (params: Record<string, string | boolean>) => "?" + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString();
+/** Code navigation: declarations / uses of a name across the project (studio/navigate.py). */
+export interface CodeHit { path: string; line: number; col: number; len: number; text: string; lang: string | null }
+export const codeApi = {
+  definition: (name: string, path?: string) => api<{ name: string; results: CodeHit[] }>("/api/code/definition" + q(path ? { name, path } : { name })),
+  references: (name: string, path?: string) => api<{ name: string; results: CodeHit[] }>("/api/code/references" + q(path ? { name, path } : { name })),
+};
 export const fs = {
   list: (path = "") => api<{ path: string; entries: Entry[] }>("/api/fs/list" + q({ path })),
   read: (path: string) => api<FileData>("/api/fs/read" + q({ path })),

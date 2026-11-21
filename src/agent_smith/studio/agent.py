@@ -43,6 +43,7 @@ from agent_smith.studio.workspace import Workspace, WorkspaceError
 
 READ_ONLY_TOOLS = frozenset({"read_file", "list_files", "search_code", "search_function_or_class_definition_in_code",
                              "find_references"})
+NO_WRITE_TOOLS = READ_ONLY_TOOLS | {"get_patch", "call_app", "app_logs"}  # no marks around these (they change nothing)
 # No limit in the studio: a turn works until the result (or Stop). The 42 exam limits belong to agent_mbpp /
 # agent_swebench (and to the benchmark runs the chat starts), not to this open-ended work.
 LIMITS = Limits(max_iterations=1_000_000, max_input_tokens=10**12, max_output_tokens=10**12, timeout_seconds=30 * 24 * 3600)
@@ -126,6 +127,9 @@ class Run:
     trace: str = ""
     attachments: List[Dict[str, Any]] = field(default_factory=list)  # uploads given with the message
     paid: bool = False  # a paid model was chosen: the whole turn stays on it (no free fallback)
+    # files the agent's own actions changed (marks before / after each tool that can write); None: runs saved
+    # before this existed. Only these are the turn's changes: edits by you or other programs meanwhile are not.
+    touched: Optional[List[str]] = None
 
     def public(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -350,7 +354,21 @@ class AgentService:
                         for tool in APP_TOOLS:
                             local[tool] = lambda args, tool=tool: self.apps.call(tool, args, run.id)
                     forward = mcp.call_tool
-                    mcp.call_tool = lambda name, args: local[name](args) if name in local else forward(name, args)  # type: ignore[method-assign]
+                    route = lambda name, args: local[name](args) if name in local else forward(name, args)  # noqa: E731
+                    run.touched = []
+
+                    def tracked(name: str, args: Dict[str, Any]) -> Any:
+                        """A tool that can write: what changed during it is the agent's doing (and only that)."""
+                        if name in NO_WRITE_TOOLS:
+                            return route(name, args)
+                        before = self.checkpoints.tree()
+                        try:
+                            return route(name, args)
+                        finally:
+                            for p in self.checkpoints.changed_between(before, self.checkpoints.tree()):
+                                if p not in run.touched:
+                                    run.touched.append(p)
+                    mcp.call_tool = tracked  # type: ignore[method-assign]
                 sink.emit("mcp_connected", mcp.describe())
                 with Sandbox(config, mcp, event_hook=sink.emit, trace_execution=True) as sandbox:
                     agent = CodeAgent(llm, sandbox, studio_system_prompt(config, mcp, root, run.mode), LIMITS, "studio", run.id,
@@ -373,7 +391,7 @@ class AgentService:
     def _finish(self, run: Run, sink: EventSink, final: str) -> None:
         if run.checkpoint:
             try:
-                run.changes = self.checkpoints.changes(run.checkpoint)
+                run.changes = self.checkpoints.changes(run.checkpoint, run.touched)
             except WorkspaceError:
                 run.changes = []
         run.ended = time.time()
@@ -434,8 +452,8 @@ class AgentService:
             raise WorkspaceError(400, "this turn made no checkpoint")
         if self.current:
             raise WorkspaceError(409, "the agent is working; stop it first")
-        restored = self.checkpoints.restore(run.checkpoint, paths)
-        run.changes = self.checkpoints.changes(run.checkpoint)
+        restored = self.checkpoints.restore(run.checkpoint, paths, run.touched)
+        run.changes = self.checkpoints.changes(run.checkpoint, run.touched)
         self._save()
         self.publish({"type": "agent-run", "run": run.public()})
         return {"restored": restored, "changes": run.changes}

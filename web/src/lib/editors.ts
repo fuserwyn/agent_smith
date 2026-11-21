@@ -123,6 +123,12 @@ class EditorStore {
 
   revealSecret(path: string) { return this.ensureFile(path, true); }
 
+  /** The model of a file without opening a tab (go to definition / peek need the target's text). */
+  async peekModel(path: string): Promise<Mon.editor.ITextModel | null> {
+    await this.ensureFile(path);
+    return this.models.get(path) ?? null;
+  }
+
   private async loadDiff(path: string, kind: TabKind, run?: string) {
     const id = tabId(kind, path, run);
     this.diffs.set(id, { loading: true, error: null, label: kind === "git" ? "HEAD" : kind === "agent" ? "before" : "disk" });

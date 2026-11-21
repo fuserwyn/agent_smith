@@ -131,9 +131,9 @@ def test_a_finished_run_already_lists_its_changes(project, tmp_path, monkeypatch
     from agent_smith.studio.checkpoints import Checkpoints
     slow = Checkpoints.changes
 
-    def slow_changes(self, since):
+    def slow_changes(self, since, only=None):
         time.sleep(0.5)
-        return slow(self, since)
+        return slow(self, since, only)
 
     monkeypatch.setattr(Checkpoints, "changes", slow_changes)
     client, _app, srv = make_client(project, tmp_path, monkeypatch, [
@@ -163,3 +163,25 @@ def test_a_reply_cut_by_the_output_limit_is_reported_and_files_can_be_written_in
         assert "appended 8 chars to site/page.html" in obs and "write_file failed" in obs
         assert not (tmp_path / "escape.txt").exists()
         assert "append_file(" in srv.requests[0]["messages"][0]["content"]
+
+
+def test_only_what_the_agent_changed_is_its_turn_not_edits_made_meanwhile(project, tmp_path, monkeypatch):
+    """Regression: files edited by someone else during a turn (you, another program) were listed as the
+    agent's changes, and "Undo all" would have reverted them."""
+    import threading
+
+    client, _app, srv = make_client(project, tmp_path, monkeypatch, [
+        step("print(edit_file('calc.py', 'return a + b', 'return a - b'))"),
+        step("final_answer('done')"),
+    ])
+    srv.delay = 0.6  # the model "thinks": someone edits another file meanwhile
+    notes = project / "NOTES.md"
+    notes.write_text("mine\n")
+    with client, srv:
+        run = client.post("/api/agent/runs", json={"message": "subtract", "mode": "agent"}, headers=H).json()
+        threading.Timer(0.3, lambda: notes.write_text("mine, edited during the turn\n")).start()
+        done = wait_done(client, run["id"])
+        assert [c["path"] for c in done["changes"]] == ["calc.py"]          # not NOTES.md
+        client.post(f"/api/agent/runs/{run['id']}/undo", json={"paths": None}, headers=H)
+        assert notes.read_text() == "mine, edited during the turn\n"     # Undo all left it alone
+        assert "a + b" in (project / "calc.py").read_text()                 # and reverted the agent's edit
