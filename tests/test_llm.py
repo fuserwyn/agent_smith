@@ -157,3 +157,18 @@ def test_interactive_client_falls_back_instead_of_waiting_long():
         c.max_wait = 15
         res = c.chat([{"role": "user", "content": "x"}], 10)
     assert res.text == "from the backup" and sleeps == [] and res.model_name == "m2"   # no 58 s wait
+
+
+def test_code_written_in_the_reasoning_channel_is_recovered():
+    """gpt-oss on Groq sometimes returns only "Thought: ..." as content and puts the code at the end of `reasoning`."""
+    body = {"choices": [{"finish_reason": "stop", "message": {
+        "content": "Thought: use the closed formula.",
+        "reasoning": "n=1 gives 32. Let's code.```python\nprint(run_tests(code))\n```"}}],
+        "usage": {"prompt_tokens": 5, "completion_tokens": 9}}
+    res = OpenAICompatProvider("http://unused", "m")._parse(HttpResponse(200, _json.dumps(body)), [])
+    assert res.text == "Thought: use the closed formula.\n```python\nprint(run_tests(code))\n```"
+    body["choices"][0]["message"]["content"] = "Thought: x\n```python\nprint(1)\n```"     # content has code: untouched
+    res = OpenAICompatProvider("http://unused", "m")._parse(HttpResponse(200, _json.dumps(body)), [])
+    assert res.text == "Thought: x\n```python\nprint(1)\n```"
+    body["choices"][0]["message"].update(content="Thought: only words", reasoning="no code here")
+    assert OpenAICompatProvider("http://unused", "m")._parse(HttpResponse(200, _json.dumps(body)), []).text == "Thought: only words"

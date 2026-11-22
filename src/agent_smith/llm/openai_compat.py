@@ -19,6 +19,23 @@ def redact_account_ids(text: str) -> str:
     return _INLINE_ID_RE.sub(r"\1_<redacted>", _ACCOUNT_ID_RE.sub(r"\1<redacted>\2", text))
 
 
+# ---------------------------------------------------------------- code written in the reasoning channel
+_FENCED = re.compile(r"```(?:python|py)?[ \t]*\n.*?```", re.S)
+
+
+def _recover_code_from_reasoning(text: str, reasoning: str) -> str:
+    """Some reasoning models (gpt-oss on Groq, about one reply in two on some days) end their *reasoning* with the
+    code block and return only the "Thought:" line as content. The step would then run nothing. When the content
+    has no code block and the reasoning ends with one, that last block is appended to the content, so the reply
+    (and llm_output in solution.json) holds exactly the code that the sandbox runs."""
+    if "```" in text or "```" not in reasoning:
+        return text
+    blocks = _FENCED.findall(reasoning)
+    if not blocks:
+        return text
+    return (text.rstrip() + "\n" if text.strip() else "") + blocks[-1]
+
+
 # ---------------------------------------------------------------- rate limits (throttling)
 _DUR_RE = re.compile(r"(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m(?!s))?(?:(\d+(?:\.\d+)?)s)?(?:(\d+(?:\.\d+)?)ms)?$")
 _TRY_AGAIN_RE = re.compile(r"try again in\s+((?:\d+(?:\.\d+)?(?:h|ms|m|s))+)", re.I)
@@ -225,6 +242,7 @@ class OpenAICompatProvider:
             raise LLMError(f"response has no choices: {str(data)[:300]}")
         msg = choices[0].get("message") or {}
         text = msg.get("content") or ""
+        text = _recover_code_from_reasoning(text, msg.get("reasoning") or msg.get("reasoning_content") or "")
         usage = data.get("usage") or {}
         in_tok, out_tok = usage.get("prompt_tokens"), usage.get("completion_tokens")
         estimated = in_tok is None or out_tok is None
