@@ -1,0 +1,10 @@
+{
+  "_doc": "Public OpenRouter list prices (USD per 1M tokens) of the paid versions of the free models we benchmark, read from https://openrouter.ai/api/v1/models on 2026-11-21. Used only for the 'what would this cost without a free tier' column; every benchmark run itself was free. Models without a paid version are left out.",
+  "nvidia/nemotron-3.5-lightning-30b-a3b": {"prompt_per_M": 0.07, "completion_per_M": 0.2, "paid_id": "nvidia/nemotron-3.5-lightning"},
+  "nvidia/nemotron-3.5-lightning:free": {"prompt_per_M": 0.07, "completion_per_M": 0.2, "paid_id": "nvidia/nemotron-3.5-lightning"},
+  "nvidia/nemotron-3-ultra-550b-a55b": {"prompt_per_M": 0.5, "completion_per_M": 2.2, "paid_id": "nvidia/nemotron-3-ultra-550b-a55b"},
+  "nvidia/nemotron-3-ultra-550b-a55b:free": {"prompt_per_M": 0.5, "completion_per_M": 2.2, "paid_id": "nvidia/nemotron-3-ultra-550b-a55b"},
+  "nvidia/nemotron-3.5-super-vl:free": {"prompt_per_M": 0.15, "completion_per_M": 0.47, "paid_id": "nvidia/nemotron-3.5-super-vl"},
+  "google/gemma-4-31b-it:free": {"prompt_per_M": 0.2, "completion_per_M": 0.4, "paid_id": "google/gemma-4-31b-it"},
+  "command-a-03-2025": {"prompt_per_M": 2.5, "completion_per_M": 10.0, "paid_id": "cohere/command-a"}
+}

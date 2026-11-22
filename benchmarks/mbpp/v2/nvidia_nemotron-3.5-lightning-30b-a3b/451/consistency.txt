@@ -1,0 +1,4 @@
+CONSISTENCY CHECKS
+============================================================
+  WARN: Step 2: has sandbox_output but empty sandbox_input
+  WARN: Step 4: has sandbox_output but empty sandbox_input

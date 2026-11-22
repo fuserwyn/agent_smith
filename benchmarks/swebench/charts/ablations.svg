@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="190" font-family="sans-serif" font-size="12">
+<rect width="100%" height="100%" fill="white"/>
+<text x="10" y="22" font-size="15" font-weight="bold">Ablations: tasks solved (of 8)</text>
+<text x="252" y="56" text-anchor="end">baseline</text>
+<rect x="260" y="44" width="410.0" height="18" fill="#4878cf"/>
+<text x="676.0" y="56">8.0</text>
+<text x="252" y="82" text-anchor="end">full-history</text>
+<rect x="260" y="70" width="410.0" height="18" fill="#4878cf"/>
+<text x="676.0" y="82">8.0</text>
+<text x="252" y="108" text-anchor="end">minimal-prompt</text>
+<rect x="260" y="96" width="307.5" height="18" fill="#4878cf"/>
+<text x="573.5" y="108">6.0</text>
+<text x="252" y="134" text-anchor="end">no-budget</text>
+<rect x="260" y="122" width="358.8" height="18" fill="#4878cf"/>
+<text x="624.8" y="134">7.0</text>
+<text x="252" y="160" text-anchor="end">no-patch-check</text>
+<rect x="260" y="148" width="358.8" height="18" fill="#4878cf"/>
+<text x="624.8" y="160">7.0</text>
+</svg>

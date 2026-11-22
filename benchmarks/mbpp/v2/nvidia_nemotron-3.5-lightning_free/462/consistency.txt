@@ -1,0 +1,3 @@
+CONSISTENCY CHECKS
+============================================================
+  WARN: Steps 1 and 2: identical sandbox_input (copy-paste?)

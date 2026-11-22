@@ -122,6 +122,11 @@
       "notes": "free on OpenRouter (:free): the NVIDIA ultra model"
     },
     {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "notes": "free on OpenRouter (:free): 8/8 in the SWE-bench benchmark with the fewest tokens (one run)"
+    },
+    {
       "provider": "gemini",
       "model": "gemini-3.5-flash",
       "notes": "free (AI Studio), reasoning off"
@@ -210,6 +215,10 @@
       {
         "provider": "nvidia",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b"
+      },
+      {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3.5-super-vl:free"
       },
       {
         "provider": "openrouter",

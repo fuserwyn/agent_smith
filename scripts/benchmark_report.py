@@ -50,6 +50,12 @@ def load(run: str) -> List[dict]:
             "host": re.sub(r"^https?://([^/]+).*", r"\1", url) if url else "?",
             "passed": (verdict.group(1) == "PASSED") if verdict else None,
         })
+    # A run cut by the provider before its first step records no model name / URL: take them from another run of
+    # the same model (same folder), so it counts for that model instead of forming a separate "?" row.
+    known = {r["slug"]: (r["model"], r["host"]) for r in rows if r["host"] != "?"}
+    for r in rows:
+        if r["host"] == "?" and r["slug"] in known:
+            r["model"], r["host"] = known[r["slug"]]
     return rows
 
 
@@ -137,7 +143,7 @@ def wilson(k: int, n: int) -> tuple:
 
 
 def short(model: str) -> str:
-    return model.replace("nvidia/", "").replace("-30b-a3b", "").replace(":free", " (OR)")
+    return re.sub(r"^(nvidia|baidu|google|inclusionai)/", "", model).replace("-30b-a3b", "").replace(":free", " (OR)")
 
 
 # --------------------------------------------------------------------------- SVG charts (no dependencies)
@@ -158,30 +164,8 @@ def bar_chart(path: Path, title: str, labels: List[str], values: List[float], fm
             lo, hi = errors[i]
             parts.append(f'<line x1="{left + lo * scale:.1f}" x2="{left + hi * scale:.1f}" y1="{y + row / 2}" '
                          f'y2="{y + row / 2}" stroke="#222" stroke-width="1.5"/>')
-        parts.append(f'<text x="{left + v * scale + 6:.1f}" y="{y + 16}">{fmt.format(v)}{unit}</text>')
-    parts.append("</svg>")
-    path.write_text("\n".join(parts))
-
-
-def scatter(path: Path, title: str, points: List[tuple]) -> None:
-    """points: (label, x = input tokens per task, y = pass rate)."""
-    w, h, pad = 760, 420, 60
-    xmax = max([p[1] for p in points] + [1]) * 1.1
-    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" font-family="sans-serif" font-size="11">',
-             '<rect width="100%" height="100%" fill="white"/>',
-             f'<text x="10" y="22" font-size="15" font-weight="bold">{title}</text>',
-             f'<line x1="{pad}" y1="{h - pad}" x2="{w - 20}" y2="{h - pad}" stroke="#444"/>',
-             f'<line x1="{pad}" y1="{h - pad}" x2="{pad}" y2="40" stroke="#444"/>',
-             f'<text x="{w / 2}" y="{h - 20}" text-anchor="middle">mean input tokens per task</text>',
-             f'<text x="16" y="{h / 2}" transform="rotate(-90 16 {h / 2})" text-anchor="middle">pass rate</text>']
-    for frac in (0, 0.5, 1):
-        y = h - pad - frac * (h - pad - 50)
-        parts.append(f'<text x="{pad - 6}" y="{y + 4}" text-anchor="end">{int(frac * 100)}%</text>')
-    for label, x, y in points:
-        cx = pad + x / xmax * (w - pad - 30)
-        cy = h - pad - y * (h - pad - 50)
-        parts.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="#d65f5f"/>')
-        parts.append(f'<text x="{cx + 7:.1f}" y="{cy - 6:.1f}">{label}</text>')
+        end = max(v, errors[i][1]) if errors else v   # value label after the bar and its interval
+        parts.append(f'<text x="{left + end * scale + 6:.1f}" y="{y + 16}">{fmt.format(v)}{unit}</text>')
     parts.append("</svg>")
     path.write_text("\n".join(parts))
 
@@ -234,18 +218,20 @@ def main() -> None:
                         f'{mean(r["sol"]["total_input_tokens"] for r in rs):,.0f}',
                         f'{mean(r["sol"]["total_output_tokens"] for r in rs):,.0f}',
                         f'{median(r["sol"]["total_time_seconds"] for r in rs):.0f}',
-                        f'{sum(r["sol"]["total_input_tokens"] for r in rs) / max(1, len(solved)):,.0f}',
-                        f"${sum(c) / max(1, len(solved)):.4f}" if None not in c else "n/a"])
+                        f'{sum(r["sol"]["total_input_tokens"] for r in rs) / len(solved):,.0f}' if solved else "–",
+                        f"${sum(c) / len(solved):.4f}" if solved and None not in c else "n/a"])
     md.append(table(["Model", "Provider", "Solved", "95 % CI", "Avg iterations", "Avg input tok", "Avg output tok",
                      "Median time (s)", "Input tok per solved task", "Paid-equivalent $ per solved task"], summary))
     bar_chart(CHARTS / "pass_rate.svg", f"SWE-bench pass rate ({len(tasks)} tasks, moulinette verdict, 95% CI)",
               [short(m) for m in order], [sum(r["passed"] for r in models[m]) / len(models[m]) for m in order],
               fmt="{:.0%}", errors=[wilson(sum(r["passed"] for r in models[m]), len(models[m])) for m in order], vmax=1)
-    scatter(CHARTS / "tokens_vs_pass.svg", "Cost (input tokens) vs pass rate",
-            [(short(m), mean(r["sol"]["total_input_tokens"] for r in models[m]),
-              sum(r["passed"] for r in models[m]) / len(models[m])) for m in order])
+    eff = sorted(((short(m), sum(r["sol"]["total_input_tokens"] for r in models[m]) / sum(r["passed"] for r in models[m]))
+                  for m in order if any(r["passed"] for r in models[m])), key=lambda e: e[1])
+    bar_chart(CHARTS / "tokens_per_solved.svg", "Input tokens per solved task (lower is cheaper)",
+              [e[0] for e in eff], [e[1] for e in eff], fmt="{:,.0f}")
+    (CHARTS / "tokens_vs_pass.svg").unlink(missing_ok=True)
     md.append("\n![pass rate](benchmarks/swebench/charts/pass_rate.svg)\n\n"
-              "![tokens vs pass rate](benchmarks/swebench/charts/tokens_vs_pass.svg)\n")
+              "![tokens per solved task](benchmarks/swebench/charts/tokens_per_solved.svg)\n")
 
     by_task = []
     for t in tasks:
@@ -372,11 +358,11 @@ def main() -> None:
         q_text, per_day = next(((v[0], v[1]) for k, v in QUOTA.items() if k in host), ("?", None))
         req_task = mean(r["sol"]["total_requests"] for r in rs)
         c = [cost(m, r["sol"]) for r in rs]
-        solved = max(1, sum(r["passed"] for r in rs))
+        solved = sum(r["passed"] for r in rs)
         crow.append([short(m), f"{req_task:.1f}", q_text,
                      f"{per_day / (3 * req_task):.0f}" if per_day else "not limiting",
                      f"${sum(c) / len(rs):.4f}" if None not in c else "n/a",
-                     f"${sum(c) / solved:.4f}" if None not in c else "n/a"])
+                     f"${sum(c) / solved:.4f}" if solved and None not in c else "n/a"])
     md.append(table(["Model", "Requests per task", "Free quota", "Full SWE exams (3 tasks) per day of quota",
                      "Paid-equivalent $ per task", "Paid-equivalent $ per solved task"], crow))
     print("\n".join(md))

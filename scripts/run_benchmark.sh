@@ -42,8 +42,12 @@ for task in "${TASKS[@]}"; do
         --model-name "$model" --provider-url "$url" --env-file "$ENV_FILE" --trace-file "$dir/events.jsonl" \
         ${AGENT_ARGS:-}) \
         > "$dir/stdout.log" 2> "$dir/stderr.log"
+    # One validation at a time across parallel streams: the moulinette writes the patch to the fixed paths
+    # /tmp/patch.diff and /tmp/patch.tar, so two concurrent validations can lose or swap each other's patch.
+    until mkdir /tmp/agent-smith-validate.lock 2>/dev/null; do sleep 2; done
     (cd "$MOULINETTE" && PYTHONPATH=. uv run moulinette_eval validate swebench "$task_file" "$dir/solution.json") \
         > "$dir/validation.txt" 2>&1
+    rmdir /tmp/agent-smith-validate.lock
     sed 's/\x1b\[[0-9;]*m//g' "$dir/validation.txt" | grep -E "^Overall" || true
     echo "    leftover containers: $(docker ps -aq --filter label=agent-smith | wc -l | tr -d ' ')"
   done

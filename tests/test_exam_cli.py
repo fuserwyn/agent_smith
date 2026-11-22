@@ -35,7 +35,7 @@ def test_default_model_follows_the_keys_present(no_keys):
     with pytest.raises(InputError, match="NVIDIA_API_KEY"):
         pick_model(args(), "swebench")
     no_keys.setenv("OPENROUTER_API_KEY", "y")
-    assert pick_model(args(), "swebench") == ("nvidia/nemotron-3.5-lightning:free", "https://openrouter.ai/api/v1")
+    assert pick_model(args(), "swebench") == ("nvidia/nemotron-3.5-super-vl:free", "https://openrouter.ai/api/v1")
     no_keys.setenv("NVIDIA_API_KEY", "z")
     assert pick_model(args(), "swebench")[0] == "nvidia/nemotron-3.5-lightning-30b-a3b"
 

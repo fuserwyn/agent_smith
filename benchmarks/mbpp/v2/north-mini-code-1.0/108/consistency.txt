@@ -1,0 +1,4 @@
+CONSISTENCY CHECKS
+============================================================
+  NOTE: Step 3: 1 LLM retries
+  WARN: Step 4: has sandbox_output but empty sandbox_input

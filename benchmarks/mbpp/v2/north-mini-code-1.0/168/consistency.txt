@@ -1,0 +1,4 @@
+CONSISTENCY CHECKS
+============================================================
+  NOTE: Step 4: 2 LLM retries
+  WARN: Steps 2 and 3: identical sandbox_input (copy-paste?)

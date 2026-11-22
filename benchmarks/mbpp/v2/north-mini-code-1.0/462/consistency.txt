@@ -1,0 +1,3 @@
+CONSISTENCY CHECKS
+============================================================
+  WARN: Step 3: has sandbox_output but empty sandbox_input
