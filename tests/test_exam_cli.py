@@ -30,7 +30,7 @@ def args(model=None, url=None):
 
 def test_default_model_follows_the_keys_present(no_keys):
     no_keys.setenv("GROQ_API_KEY", "x")
-    assert pick_model(args(), "mbpp") == ("qwen/qwen3.8-27b", "https://api.groq.com/openai/v1")
+    assert pick_model(args(), "mbpp") == ("openai/gpt-oss-120b", "https://api.groq.com/openai/v1")
     # Groq's 8k tokens/min cannot hold a SWE-bench prompt: SWE-bench needs another key
     with pytest.raises(InputError, match="NVIDIA_API_KEY"):
         pick_model(args(), "swebench")

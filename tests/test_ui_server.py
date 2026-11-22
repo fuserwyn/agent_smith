@@ -37,7 +37,7 @@ def test_preview_builds_fixed_commands():
     cmds = [s["command"] for s in pv["steps"]]
     assert cmds[0] == ("(cd moulinette && PYTHONPATH=. uv run moulinette_eval dump mbpp --task-id 80 "
                        "--output ../runs/ui/manual-mbpp/task.json)")
-    assert "--model-name qwen/qwen3.8-27b --provider-url https://api.groq.com/openai/v1" in cmds[1]
+    assert "--model-name openai/gpt-oss-120b --provider-url https://api.groq.com/openai/v1" in cmds[1]
     assert cmds[2].startswith("(cd moulinette && PYTHONPATH=. DOCKER_HOST=")  # the moulinette validates in Docker
     assert "uv run moulinette_eval validate mbpp ../runs/ui/manual-mbpp/task.json" in cmds[2]
     assert [s["key"] for s in ui_jobs.preview("sandbox", {})["steps"]] == ["step_sandbox"]

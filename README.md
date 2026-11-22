@@ -73,8 +73,8 @@ uv run python -m agent_swebench --task-file cache/swebench_task.json --output ca
 
 `--model-name` / `--provider-url` are optional (the official exam scripts do not pass them): without them the agent
 takes the first free model of `benchmark_defaults` in `config/models.json` whose provider has a key in the
-environment. MBPP: Groq `qwen/qwen3.8-27b` → NVIDIA `nemotron-3.5-lightning` → OpenRouter
-`nvidia/nemotron-3.5-lightning:free` → Gemini → Cohere. SWE-bench: NVIDIA `nemotron-3.5-lightning` → OpenRouter
+environment. MBPP: Groq `openai/gpt-oss-120b` → Groq `qwen/qwen3.8-27b` → NVIDIA `nemotron-3.5-lightning` → Cohere
+`command-a` → OpenRouter `nvidia/nemotron-3.5-lightning:free`. SWE-bench: NVIDIA `nemotron-3.5-lightning` → OpenRouter
 `nvidia/nemotron-3.5-lightning:free` → Gemini (Groq's free 8k tokens/minute cannot hold a SWE-bench prompt).
 One NVIDIA, OpenRouter or Gemini key is enough for both benchmarks.
 

@@ -3,7 +3,7 @@
 #
 #   ./scripts/mock_exam.sh <mbpp|swebench|sandbox|all> --student-path . --moulinette-path ./moulinette --env-file .env \
 #       [--model-name M --provider-url URL]            (same model for every part)
-#       [--mbpp-model-name M --mbpp-provider-url URL]  (MBPP only; default qwen/qwen3.8-27b on Groq)
+#       [--mbpp-model-name M --mbpp-provider-url URL]  (MBPP only; default openai/gpt-oss-120b on Groq)
 #
 # When a free key runs out of quota the agent moves to the next key, then to the free providers listed in
 # `fallbacks` of config/models.json (fallback_enabled: true; only providers with a key in .env).
@@ -18,8 +18,8 @@ set -uo pipefail
 
 TYPE="${1:-all}"; shift || true
 STUDENT="."; MOULINETTE="./moulinette"; ENV_FILE=".env"
-# Defaults = the free models of benchmark_defaults in config/models.json (Groq for MBPP, NVIDIA for SWE-bench).
-MBPP_MODEL="qwen/qwen3.8-27b"; MBPP_URL="https://api.groq.com/openai/v1"
+# Defaults = the free models of benchmark_defaults in config/models.json (Groq gpt-oss-120b for MBPP, NVIDIA for SWE-bench).
+MBPP_MODEL="openai/gpt-oss-120b"; MBPP_URL="https://api.groq.com/openai/v1"
 MODEL="nvidia/nemotron-3.5-lightning-30b-a3b"; URL="https://integrate.api.nvidia.com/v1"; TASKS=""
 while [[ $# -gt 0 ]]; do
   case "$1" in

@@ -152,7 +152,7 @@
     {
       "provider": "groq",
       "model": "openai/gpt-oss-120b",
-      "notes": "free (Groq): needs reasoning_effort=low; 8k tokens/min -> MBPP only"
+      "notes": "free (Groq): MBPP default (benchmarks/mbpp/v2: 26/29, 20 tasks solved at the first step, no retry); reasoning_effort=low; 8k tokens/min -> MBPP only"
     },
     {
       "provider": "cohere",
@@ -187,6 +187,10 @@
     "mbpp": [
       {
         "provider": "groq",
+        "model": "openai/gpt-oss-120b"
+      },
+      {
+        "provider": "groq",
         "model": "qwen/qwen3.8-27b"
       },
       {
@@ -194,16 +198,12 @@
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b"
       },
       {
+        "provider": "cohere",
+        "model": "command-a-03-2025"
+      },
+      {
         "provider": "openrouter",
         "model": "nvidia/nemotron-3.5-lightning:free"
-      },
-      {
-        "provider": "gemini",
-        "model": "gemini-3.5-flash-lite"
-      },
-      {
-        "provider": "cohere",
-        "model": "north-mini-code-1.0"
       }
     ],
     "swebench": [

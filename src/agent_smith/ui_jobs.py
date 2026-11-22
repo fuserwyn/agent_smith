@@ -36,7 +36,7 @@ TRACE_ROOTS = ("benchmarks", "evaluations", "runs")
 MBPP_ID = re.compile(r"^\d{1,4}$")
 SWE_ID = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
-DEFAULTS = {"mbpp": ("groq", "qwen/qwen3.8-27b"), "swebench": ("nvidia", "nvidia/nemotron-3.5-lightning-30b-a3b")}
+DEFAULTS = {"mbpp": ("groq", "openai/gpt-oss-120b"), "swebench": ("nvidia", "nvidia/nemotron-3.5-lightning-30b-a3b")}
 
 
 class ActionError(ValueError):
