@@ -42,6 +42,8 @@ def test_env_moves_or_disables_it(tmp_path, monkeypatch):
     assert code_root() is None
     emit_run(EventSink(listeners=[CodeLog(code_root())]))       # disabled: nothing written, nothing raised
     monkeypatch.delenv("AGENT_SMITH_CODE_DIR")
+    assert code_root(tmp_path) is None                            # off by default: exams write nothing here
+    monkeypatch.setenv("AGENT_SMITH_CODE_DIR", "1")
     assert code_root(tmp_path).name == "agent_code" and code_root(tmp_path).parent == tmp_path
 
 

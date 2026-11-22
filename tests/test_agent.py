@@ -7,11 +7,11 @@ import subprocess
 import sys
 
 from agent_smith.agent import AgentSettings, CodeAgent
-from agent_smith.agent.prompts import swebench_system_prompt
+from agent_smith.agent.prompts import swe_system_prompt
 from agent_smith.events import EventSink
 from agent_smith.llm import Endpoint, KeyPool, LLMClient, OpenAICompatProvider
 from agent_smith.mcp_client import MCPClient
-from agent_smith.models import MBPP_LIMITS, SWEBENCH_LIMITS, Limits, SandboxConfig
+from agent_smith.models import MBPP_LIMITS, SWE_BENCH, SWEBENCH_LIMITS, Limits, SandboxConfig
 from agent_smith.sandbox import Sandbox
 from tests.conftest import FIXTURES, ROOT
 from tests.fake_llm_server import FakeLLMServer
@@ -69,12 +69,12 @@ def test_budget_stops_before_exceeding_input_tokens(git_repo):
             MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp) as sb:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
-        agent = CodeAgent(llm, sb, "system", limits, "swebench", "t", settings=AgentSettings())
+        agent = CodeAgent(llm, sb, "system", limits, SWE_BENCH, "t", settings=AgentSettings())
         out = agent.run("task")
     assert out.total_input_tokens <= limits.max_input_tokens and "input-token budget" in out.error
 
 
-def test_swebench_loop_on_local_repo(git_repo, tmp_path):
+def test_swe_loop_on_local_repo(git_repo, tmp_path):
     script = [
         'Thought: find add.\n```python\nprint(search_function_or_class_definition_in_code("add"))\n'
         'print(read_file("pkg/mathutil.py", 1, 3))\n```<end_code>',
@@ -89,8 +89,8 @@ def test_swebench_loop_on_local_repo(git_repo, tmp_path):
             MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp) as sb:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
-        agent = CodeAgent(llm, sb, swebench_system_prompt(SandboxConfig(), mcp, str(git_repo)), SWEBENCH_LIMITS,
-                          "swebench", "local-1", settings=AgentSettings(show_budget=True),
+        agent = CodeAgent(llm, sb, swe_system_prompt(SandboxConfig(), mcp, str(git_repo)), SWEBENCH_LIMITS,
+                          SWE_BENCH, "local-1", settings=AgentSettings(show_budget=True),
                           events=EventSink(str(tmp_path / "trace.jsonl")))
         out = agent.run("Fix add()")
     assert out.success and out.iterations == 3
@@ -107,7 +107,7 @@ def test_exact_repeat_is_not_executed_and_gets_a_navigation_hint(git_repo):
             MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp) as sb:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
-        out = CodeAgent(llm, sb, "system", SWEBENCH_LIMITS, "swebench", "t").run("task")
+        out = CodeAgent(llm, sb, "system", SWEBENCH_LIMITS, SWE_BENCH, "t").run("task")
     assert out.success and "[LOOP]" in out.steps[1].sandbox_output
     assert "read_file(" in out.steps[1].sandbox_output and "mathutil.py" in out.steps[1].sandbox_output
     assert [c.name for c in sb.tool_log].count("search_code") == 1  # the repeat did not reach the tool
@@ -123,7 +123,7 @@ def test_rejected_final_answer_and_empty_response(git_repo):
             MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp, \
             Sandbox(SandboxConfig(), mcp) as sb:
         llm = LLMClient([Endpoint(OpenAICompatProvider(srv.url, "fake"), KeyPool(["k"]))], sleep=lambda s: None)
-        out = CodeAgent(llm, sb, "system", SWEBENCH_LIMITS, "swebench", "t",
+        out = CodeAgent(llm, sb, "system", SWEBENCH_LIMITS, SWE_BENCH, "t",
                         answer_validator=lambda a: None if "diff --git" in a else "must be the patch").run("task")
         sent = srv.requests
     assert out.success and out.solution.startswith("diff --git") and out.iterations == 3

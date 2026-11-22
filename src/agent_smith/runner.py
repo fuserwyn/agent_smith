@@ -1,4 +1,4 @@
-"""Shared CLI plumbing for ``agent_mbpp`` and ``agent_swebench``.
+"""Shared CLI plumbing for the two benchmark agents (MBPP and SWE-bench).
 
 Guarantees that a valid ``solution.json`` is written even if something crashes
 (errors are handled gracefully, the error message goes into ``error``).
@@ -51,7 +51,7 @@ def setup(args: argparse.Namespace) -> EventSink:
     load_env_file(args.env_file, override=bool(args.env_file))
     # SIGTERM (e.g. exam timeout) -> SystemExit so `finally` blocks clean up containers.
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
-    # agent_code/runs/<benchmark>/<run>/step_NN.py: the code each step sent to the sandbox worker (git-ignored)
+    # opt-in (AGENT_SMITH_CODE_DIR): <dir>/runs/<benchmark>/<run>/step_NN.py, the code each step sent to the worker
     return EventSink(args.trace_file, listeners=[CodeLog(code_root())])
 
 

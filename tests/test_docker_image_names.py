@@ -10,10 +10,11 @@ def test_short_names_get_docker_hub():
 
 
 def test_full_names_unchanged():
-    for name in ("docker.io/swebench/a:b", "ghcr.io/x/y:1", "localhost/x:1", "localhost:5000/x"):
+    for name in ("docker.io/acme/a:b", "ghcr.io/x/y:1", "localhost/x:1", "localhost:5000/x"):
         assert qualify_image(name) == name
 
 
 def test_docker_env_uses_full_name_and_keeps_platform():
     env = DockerEnv("swebench/sweb.eval.x86_64.django_1776_django-11066:latest", "django__django-11066")
-    assert env.image.startswith("docker.io/swebench/") and env.platform == "linux/amd64"
+    assert env.image == "docker.io/swebench/sweb.eval.x86_64.django_1776_django-11066:latest"
+    assert env.platform == "linux/amd64"

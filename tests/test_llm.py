@@ -2,6 +2,7 @@ import pytest
 
 from agent_smith.config import keys_from_env
 from agent_smith.llm import Endpoint, KeyPool, LLMClient, LLMError, OpenAICompatProvider
+from agent_smith.net import HttpResponse
 from tests.fake_llm_server import FakeLLMServer
 
 
@@ -56,31 +57,25 @@ def test_all_attempts_fail_raises():
 
 def test_daily_quota_is_detected_and_key_disabled():
     """A per-day 429 must disable the key at once instead of being retried until the time budget is gone."""
-    import httpx
-
     provider = OpenAICompatProvider("http://unused", "m")
-    assert provider._quota_exhausted(httpx.Response(429, text='{"error":{"message":"free-models-per-day"}}'))
-    assert not provider._quota_exhausted(httpx.Response(429, text='{"error":"slow down"}'))
+    assert provider._quota_exhausted(HttpResponse(429, '{"error":{"message":"free-models-per-day"}}'))
+    assert not provider._quota_exhausted(HttpResponse(429, '{"error":"slow down"}'))
     with pytest.raises(LLMError) as err:
-        provider._parse(httpx.Response(429, text='{"error":{"message":"Rate limit exceeded: free-models-per-day"}}'), [])
+        provider._parse(HttpResponse(429, '{"error":{"message":"Rate limit exceeded: free-models-per-day"}}'), [])
     assert err.value.disable_key
 
 
 def test_provider_errors_do_not_leak_account_ids():
     """Error texts are stored in committed solution.json files: account identifiers are masked."""
-    import httpx
-
     provider = OpenAICompatProvider("http://unused", "m")
     body = '{"error":{"message":"free-models-per-day","metadata":{}},"user_id":"user_SECRET123"}'
     with pytest.raises(LLMError) as err:
-        provider._parse(httpx.Response(429, text=body), [])
+        provider._parse(HttpResponse(429, body), [])
     assert "user_SECRET123" not in str(err.value) and '"user_id":"<redacted>"' in str(err.value)
 
 
 # ---------------------------------------------------------------- throttling (provider rate limits)
 import json as _json  # noqa: E402
-
-import httpx  # noqa: E402
 
 from agent_smith.llm.openai_compat import parse_duration, redact_account_ids  # noqa: E402
 
@@ -95,12 +90,12 @@ GROQ_OTPM = ('{"error":{"message":"Request too large for model `qwen/qwen3.8-27b
 def mock_client(responses, sleeps):
     sent = []
 
-    def handle(request):
-        sent.append(_json.loads(request.content))
-        status, body, headers = responses.pop(0)
-        return httpx.Response(status, text=body if isinstance(body, str) else _json.dumps(body), headers=headers)
+    def handle(method, url, body, headers, timeout, connect_timeout):
+        sent.append(_json.loads(body))
+        status, text, resp_headers = responses.pop(0)
+        return HttpResponse(status, text if isinstance(text, str) else _json.dumps(text), resp_headers)
 
-    provider = OpenAICompatProvider("https://api.groq.com/openai/v1", "qwen/qwen3.8-27b", transport=httpx.MockTransport(handle))
+    provider = OpenAICompatProvider("https://api.groq.com/openai/v1", "qwen/qwen3.8-27b", transport=handle)
     return LLMClient([Endpoint(provider, KeyPool(["k"]))], sleep=sleeps.append), provider, sent
 
 

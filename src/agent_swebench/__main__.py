@@ -1,7 +1,7 @@
 """SWE-bench agent CLI.
 
-    uv run python -m agent_swebench --task-file ../cache/swebench_task.json \\
-        --output ../cache/swebench_solution.json --model-name "model/name" --provider-url "https://provider.api/v1"
+    uv run python -m <this package> --task-file ../cache/task.json --output ../cache/solution.json \\
+        --model-name "model/name" --provider-url "https://provider.api/v1"    (see README, Instructions)
 
 Architecture choice (subject V.4, option b): the sandbox runs on the host and
 the MCP tools bridge into the task's Docker container via ``docker exec``.
@@ -18,12 +18,12 @@ from dataclasses import replace
 from typing import Optional
 
 from agent_smith.agent import AgentSettings, CodeAgent
-from agent_smith.agent.prompts import swebench_system_prompt, swebench_task_prompt
+from agent_smith.agent.prompts import swe_system_prompt, swe_task_prompt
 from agent_smith.config import load_sandbox_config
 from agent_smith.docker_env import DockerEnv
 from agent_smith.llm import build_client
 from agent_smith.mcp_client import MCPClient
-from agent_smith.models import SWEBENCH_LIMITS, SandboxConfig, SolutionOutput, SWEBenchTaskInput
+from agent_smith.models import SWE_AGENT_MODULE, SWE_BENCH, SWEBENCH_LIMITS, SandboxConfig, SolutionOutput, SWEBenchTaskInput
 from agent_smith.runner import InputError, common_parser, default_server, pick_model, read_task, run_cli, server_env, setup
 from agent_smith.sandbox import Sandbox
 
@@ -55,7 +55,7 @@ def settings_for(ablations) -> AgentSettings:
 
 
 def main(argv=None) -> int:
-    parser = common_parser("agent_swebench", "Fix a SWE-bench issue with the Agent Smith code agent")
+    parser = common_parser(SWE_AGENT_MODULE, "Fix a SWE-bench issue with the Agent Smith code agent")
     parser.add_argument("--keep-network", action="store_true", help="do not start the container with --network none")
     parser.add_argument("--prompt-variant", choices=["full", "minimal"], default="full",
                         help="system prompt variant (minimal = no method section; ablation study)")
@@ -77,7 +77,7 @@ def main(argv=None) -> int:
         limits = SWEBENCH_LIMITS.model_copy()
         if args.max_iterations:
             limits.max_iterations = min(args.max_iterations, SWEBENCH_LIMITS.max_iterations)
-        llm = build_client(*pick_model(args, "swebench"), use_fallbacks=args.fallback, on_event=events.emit)
+        llm = build_client(*pick_model(args, SWE_BENCH), use_fallbacks=args.fallback, on_event=events.emit)
 
         docker = DockerEnv(task.docker_image, task.instance_id, network="bridge" if args.keep_network else "none")
         events.emit("docker_pull", {"image": task.docker_image})
@@ -113,11 +113,11 @@ def main(argv=None) -> int:
                                 "Call final_answer(get_patch()) (check first that get_patch() is not empty).")
 
                     with Sandbox(config, mcp, event_hook=events.emit, trace_execution=bool(args.trace_file)) as sandbox:
-                        agent = CodeAgent(llm, sandbox, swebench_system_prompt(config, mcp, REPO_ROOT, args.prompt_variant), limits,
-                                          "swebench", task.instance_id, settings=settings_for(args.ablation), events=events,
+                        agent = CodeAgent(llm, sandbox, swe_system_prompt(config, mcp, REPO_ROOT, args.prompt_variant), limits,
+                                          SWE_BENCH, task.instance_id, settings=settings_for(args.ablation), events=events,
                                           fallback_answer=current_patch, started=started,
                                           answer_validator=None if "no-patch-check" in args.ablation else patch_only)
-                        output = agent.run(swebench_task_prompt(task, REPO_ROOT))
+                        output = agent.run(swe_task_prompt(task, REPO_ROOT))
                         if agent.interrupted:
                             raise KeyboardInterrupt
                         return output
@@ -125,7 +125,7 @@ def main(argv=None) -> int:
             docker.close()
             events.emit("docker_removed", {"container": docker.name})
 
-    return run_cli("swebench", task_id, args, started, body, events)
+    return run_cli(SWE_BENCH, task_id, args, started, body, events)
 
 
 if __name__ == "__main__":

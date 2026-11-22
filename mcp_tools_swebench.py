@@ -25,7 +25,7 @@ from mcp.server.fastmcp import FastMCP  # noqa: E402
 
 from agent_smith.tools.executor import executor_from_env  # noqa: E402
 from agent_smith.tools.instrument import instrumented  # noqa: E402
-from agent_smith.tools.swebench_tools import SWEBenchTools  # noqa: E402
+from agent_smith.tools.swe_tools import SWEBenchTools  # noqa: E402
 
 
 def _load_tools() -> SWEBenchTools:

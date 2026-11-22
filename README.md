@@ -118,9 +118,11 @@ API keys: `<PROVIDER>_API_KEY`, `<PROVIDER>_API_KEY_2…_9` or `<PROVIDER>_API_K
 (`OPENROUTER`, `GROQ`, `GEMINI`, `MISTRAL`, `TOGETHER`, `CEREBRAS`, `NVIDIA`; `LLM_API_KEY` for any other
 OpenAI-compatible URL). Keys are never written in code or config.
 
-**Code of every step**: each run keeps the code each step sent to the sandbox worker in
-`agent_code/runs/<benchmark>/<date>_<task>/step_NN.py` (thought as header, exact code, observation as a trailing
-comment) plus `task.md`. The folder ignores itself in git; `AGENT_SMITH_CODE_DIR=off` disables it.
+**Code of every step** (opt-in, for debugging): with `AGENT_SMITH_CODE_DIR=<dir>` (or `=1` for `agent_code/` in the
+repository) each run keeps the code each step sent to the sandbox worker in
+`<dir>/runs/<benchmark>/<date>_<task>/step_NN.py` (thought as header, exact code, observation as a trailing comment)
+plus `task.md`. Off by default, so exam runs write nothing into the project; the same code is in `solution.json`
+(`sandbox_input`) and in the trace.
 
 ## System architecture
 
@@ -300,7 +302,7 @@ and `list_prompts()/get_prompt(name, arguments)`. Nothing is hard-coded, so an u
 **MBPP** (`mcp_tools_mbpp.py`): `run_tests(code, tests=None)` runs the candidate *inside a sandbox* and reports
 each assertion with got/expected values. Task context comes from `MBPP_TASK_FILE`; resource `mbpp://task`.
 
-**SWE-bench** (`mcp_tools_swebench.py`, logic in `tools/swebench_tools.py`): act through `docker exec` when
+**SWE-bench** (`mcp_tools_swebench.py`, logic in `tools/swe_tools.py`): act through `docker exec` when
 `SWEBENCH_CONTAINER` is set, otherwise on the local disk under `TESTBED_PATH` (used for independent tests).
 
 | Tool | Notes |

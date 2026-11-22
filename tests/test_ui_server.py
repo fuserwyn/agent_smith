@@ -4,13 +4,13 @@ import json
 import sys
 import threading
 import time
-import urllib.error
-import urllib.request
 from http.server import ThreadingHTTPServer
 
 import pytest
 
 from agent_smith import ui_jobs, ui_server
+from agent_smith.models import MBPP, SWE_BENCH
+from agent_smith.net import HttpTransport
 
 
 @pytest.fixture()
@@ -23,13 +23,9 @@ def server(tmp_path):
 
 def call(base, path, body=None, headers=None):
     h = {"Content-Type": "application/json", **({"X-Agent-Smith": "1"} if body is not None else {}), **(headers or {})}
-    req = urllib.request.Request(base + path, data=None if body is None else json.dumps(body).encode(), headers=h,
-                                 method="GET" if body is None else "POST")
-    try:
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return r.status, r.read().decode()
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode()
+    data = b"" if body is None else json.dumps(body).encode()
+    resp = HttpTransport()("GET" if body is None else "POST", base + path, data, h, 10, 10)
+    return resp.status_code, resp.text
 
 
 def test_preview_builds_fixed_commands():
@@ -46,7 +42,7 @@ def test_preview_builds_fixed_commands():
 @pytest.mark.parametrize("action,params", [
     ("mbpp", {"task_id": "1; rm -rf /"}),
     ("mbpp", {"provider": "groq", "model": "not-in-config"}),
-    ("swebench", {"task_id": "$(id)"}),
+    (SWE_BENCH, {"task_id": "$(id)"}),
     ("bash", {}),
 ])
 def test_invalid_actions_are_rejected(action, params):
@@ -116,7 +112,7 @@ def test_embedded_file_mode_commands_match_the_server_recipes():
     spec.loader.exec_module(embed)
     stored = embed.embedded(embed.UI.read_text(encoding="utf-8"))
     assert stored == ui_jobs.static_commands(), "run: uv run python scripts/embed_ui_commands.py"
-    assert "docker context inspect" in stored["swebench"]["steps"][-1]["command"]
+    assert "docker context inspect" in stored[SWE_BENCH]["steps"][-1]["command"]
 
 
 def test_only_free_models_and_free_fallbacks():
@@ -125,7 +121,7 @@ def test_only_free_models_and_free_fallbacks():
     assert models and not any(m["paid"] for m in models)  # the evaluation requires free tiers only
     cfg = load_models_config()
     assert cfg.fallback_enabled and not any(f.paid for f in cfg.fallbacks)
-    for bench in ("mbpp", "swebench"):  # every default exists in the model list
+    for bench in (MBPP, SWE_BENCH):  # every default exists in the model list
         assert all(any(m["provider"] == d["provider"] and m["model"] == d["model"] for m in models)
                    for d in cfg.benchmark_defaults[bench])
 
@@ -148,6 +144,6 @@ def test_rootless_podman_gets_root_owned_copies_and_docker_is_untouched(tmp_path
                              env={**os.environ, "DOCKER_HOST": host, "PYTHONPATH": compat})
         uid[name] = int(out.stdout.strip())
     assert uid["podman"] == 0 and uid["docker"] == os.getuid()
-    for action, params in (("mbpp", {"task_id": "11"}), ("swebench", {"task_id": "sympy__sympy-14711"})):
+    for action, params in ((MBPP, {"task_id": "11"}), (SWE_BENCH, {"task_id": "sympy__sympy-14711"})):
         validate = next(s for s in ui_jobs.plan(action, params, ui_jobs.ROOT / "runs" / "ui" / "x") if s.key == "step_validate")
         assert validate.quiet_env == ui_jobs.PODMAN_COMPAT and "podman_compat" not in validate.display()

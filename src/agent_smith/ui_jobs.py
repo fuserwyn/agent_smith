@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from agent_smith.config import PROJECT_ROOT, load_models_config
+from agent_smith.models import MBPP, SWE_AGENT_MODULE, SWE_BENCH
 
 ROOT = PROJECT_ROOT
 MOULINETTE = ROOT / "moulinette"
@@ -36,7 +37,7 @@ TRACE_ROOTS = ("benchmarks", "evaluations", "runs")
 MBPP_ID = re.compile(r"^\d{1,4}$")
 SWE_ID = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
-DEFAULTS = {"mbpp": ("groq", "openai/gpt-oss-120b"), "swebench": ("nvidia", "nvidia/nemotron-3.5-lightning-30b-a3b")}
+DEFAULTS = {MBPP: ("groq", "openai/gpt-oss-120b"), SWE_BENCH: ("nvidia", "nvidia/nemotron-3.5-lightning-30b-a3b")}
 
 
 class ActionError(ValueError):
@@ -96,7 +97,7 @@ def model_choices() -> List[Dict[str, Any]]:
 STARTER_SWE_TASKS = ["sympy__sympy-14711", "sympy__sympy-13480", "pydata__xarray-4629"]
 
 
-def swebench_pool() -> List[str]:
+def swe_pool() -> List[str]:
     return list(STARTER_SWE_TASKS)
 
 
@@ -141,7 +142,7 @@ def docker_running() -> bool:
 
 
 def actions() -> Dict[str, Any]:
-    return {"models": model_choices(), "pool": swebench_pool(), "mbpp": mbpp_tasks(), "defaults": {k: {"provider": p, "model": m} for k, (p, m) in DEFAULTS.items()},
+    return {"models": model_choices(), "pool": swe_pool(), "mbpp": mbpp_tasks(), "defaults": {k: {"provider": p, "model": m} for k, (p, m) in DEFAULTS.items()},
             "moulinette": (MOULINETTE / "pyproject.toml").is_file(), "env_file": (ROOT / ".env").is_file(),
             "docker": bool(shutil.which("docker")), "docker_running": docker_running(), "uv": bool(shutil.which("uv"))}
 
@@ -183,15 +184,15 @@ def plan(action: str, params: Dict[str, Any], job_dir: Path) -> List[Step]:
             Step("step_validate", ["uv", "run", "moulinette_eval", "validate", "mbpp", f"../{rel}/task.json",
                                    f"../{rel}/solution.json"], MOULINETTE, {**moul, "DOCKER_HOST": docker_host()}, PODMAN_COMPAT),
         ]
-    if action == "swebench":
-        model, url = _model(params, "swebench")
+    if action == SWE_BENCH:
+        model, url = _model(params, SWE_BENCH)
         tid = str(params.get("task_id") or "").strip()
         if not SWE_ID.match(tid):
             raise ActionError("choose a SWE-bench task")
         return [
             Step("step_dump", ["uv", "run", "moulinette_eval", "dump", "swebench", "--task-id", tid,
                                "--output", f"../{rel}/task.json"], MOULINETTE, moul),
-            Step("step_agent", ["uv", "run", "python", "-m", "agent_swebench", "--task-file", f"{rel}/task.json",
+            Step("step_agent", ["uv", "run", "python", "-m", SWE_AGENT_MODULE, "--task-file", f"{rel}/task.json",
                                 "--output", f"{rel}/solution.json", "--model-name", model, "--provider-url", url,
                                 "--env-file", ".env", "--trace-file", f"{rel}/events.jsonl"], env=_no_free_fallback(model, url)),
             Step("step_containers", ["docker", "ps", "-a", "--filter", "label=agent-smith"]),
@@ -211,11 +212,11 @@ def preview(action: str, params: Dict[str, Any]) -> Dict[str, Any]:
     steps = plan(action, params, job_dir)
     return {"steps": [{"key": s.key, "command": s.display()} for s in steps],
             "dir": job_dir.relative_to(ROOT).as_posix(), "trace": f"{job_dir.relative_to(ROOT).as_posix()}/events.jsonl"
-            if action in ("mbpp", "swebench") else None}
+            if action in (MBPP, SWE_BENCH) else None}
 
 
 PORTABLE_DOCKER_HOST = "\"$(docker context inspect --format '{{.Endpoints.docker.Host}}')\""
-STATIC_DEFAULTS = (("mbpp", {}), ("swebench", {"task_id": "sympy__sympy-13480"}), ("sandbox", {}), ("exam", {}))
+STATIC_DEFAULTS = ((MBPP, {}), (SWE_BENCH, {"task_id": "sympy__sympy-13480"}), ("sandbox", {}), ("exam", {}))
 
 
 def static_commands() -> Dict[str, Any]:
@@ -255,7 +256,7 @@ class JobManager:
             job_dir = JOBS_DIR / f"{datetime.now():%Y-%m-%d_%H-%M-%S}-{action}"
             steps = plan(action, params, job_dir)
             job_dir.mkdir(parents=True, exist_ok=True)
-            trace = job_dir / "events.jsonl" if action in ("mbpp", "swebench") else None
+            trace = job_dir / "events.jsonl" if action in (MBPP, SWE_BENCH) else None
             self._job = {"id": job_dir.name, "action": action, "params": params, "dir": job_dir.relative_to(ROOT).as_posix(),
                          "trace": trace.relative_to(ROOT).as_posix() if trace else None, "status": "running", "verdict": None,
                          "started": time.time(), "ended": None, "log": collections.deque(maxlen=800),

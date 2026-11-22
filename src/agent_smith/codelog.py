@@ -5,8 +5,9 @@ An :class:`EventSink` listener: every run gets a folder
 ``step_01.py``, ``step_02.py``, … — the thought as a header comment, the exact code the worker ran, and the
 observation as a trailing comment. Handy to study a run, re-run a step by hand or diff two runs.
 
-The folder ignores itself (it contains a ``.gitignore`` with ``*``), so it never shows up in ``git status``
-of the project it is written to. ``AGENT_SMITH_CODE_DIR`` moves it; ``AGENT_SMITH_CODE_DIR=off`` disables it.
+Off by default: ``AGENT_SMITH_CODE_DIR=<dir>`` turns it on (``AGENT_SMITH_CODE_DIR=1`` writes to ``agent_code/``
+next to the project). An exam run therefore writes nothing into the student's directory; the same code is in
+``solution.json`` (``sandbox_input``) and in the trace anyway. The folder ignores itself (``.gitignore`` with ``*``).
 """
 
 from __future__ import annotations
@@ -25,11 +26,13 @@ _THOUGHT = re.compile(r"^\s*(?:Thought:)?\s*(.*?)(?:```|<code>|\{\s*\"|$)", re.S
 
 
 def code_root(default: Optional[Path] = None) -> Optional[Path]:
-    """Where runs are written: ``$AGENT_SMITH_CODE_DIR``, else ``<default or repo>/agent_code``; None if off."""
-    env = os.environ.get("AGENT_SMITH_CODE_DIR")
-    if env is not None and env.strip().lower() in ("", "0", "off", "false", "no"):
+    """Where runs are written: ``$AGENT_SMITH_CODE_DIR`` (``1``/``on``: ``<default or repo>/agent_code``); None if off."""
+    env = (os.environ.get("AGENT_SMITH_CODE_DIR") or "").strip()
+    if env.lower() in ("", "0", "off", "false", "no"):
         return None
-    return Path(env).expanduser() if env else Path(default or PROJECT_ROOT) / FOLDER
+    if env.lower() in ("1", "on", "true", "yes"):
+        return Path(default or PROJECT_ROOT) / FOLDER
+    return Path(env).expanduser()
 
 
 def _comment(text: str, limit: int = 4000) -> str:

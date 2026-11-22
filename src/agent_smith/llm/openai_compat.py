@@ -6,9 +6,8 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-import httpx
-
 from agent_smith.llm.base import LLMError, LLMResponse, Message, estimate_messages_tokens, estimate_tokens
+from agent_smith.net import HttpResponse, HttpTransport, Transport, TransportError, TransportTimeout, post_json
 
 # Provider error bodies can carry account identifiers (OpenRouter: "user_id":"user_..."); error texts end up in
 # solution.json files that are committed, so the identifiers are masked before they are stored anywhere.
@@ -66,13 +65,13 @@ class OpenAICompatProvider:
     KEEP = ("provider",)  # extra_body keys that are never dropped on a 400 (OpenRouter routing)
 
     def __init__(self, base_url: str, model: str, extra_headers: Optional[Dict[str, str]] = None,
-                 transport: Optional[httpx.BaseTransport] = None, extra_body: Optional[Dict[str, Any]] = None):
+                 transport: Optional[Transport] = None, extra_body: Optional[Dict[str, Any]] = None):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.extra_headers = extra_headers or {}
         # e.g. {"reasoning": {"enabled": false}}: thinking tokens count toward the output budget.
         self.extra_body = dict(extra_body or {})
-        self._client = httpx.Client(transport=transport)
+        self._transport: Transport = transport or HttpTransport()
         # what the provider told us about its limits (x-ratelimit-* headers, 429 bodies): used to wait *before*
         # a request that cannot fit instead of collecting 429s
         self.tokens_left: Optional[int] = None
@@ -93,7 +92,7 @@ class OpenAICompatProvider:
                 wait = max(wait, self.tokens_reset_at - now)
         return round(wait, 2)
 
-    def _learn(self, resp: httpx.Response) -> None:
+    def _learn(self, resp: HttpResponse) -> None:
         h, now = resp.headers, time.monotonic()
         try:
             live = LIVE_LIMITS.setdefault((self.base_url, self.model), {})
@@ -145,17 +144,17 @@ class OpenAICompatProvider:
                 result.text = result.text.split(s, 1)[0]
         return result
 
-    def _post(self, payload: Dict[str, Any], headers: Dict[str, str], timeout: float) -> httpx.Response:
+    def _post(self, payload: Dict[str, Any], headers: Dict[str, str], timeout: float) -> HttpResponse:
         try:
-            return self._client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers,
-                                     timeout=httpx.Timeout(timeout, connect=min(10.0, timeout)))
-        except httpx.TimeoutException as exc:
+            return post_json(self._transport, f"{self.base_url}/chat/completions", payload, headers,
+                             timeout=timeout, connect_timeout=min(10.0, timeout))
+        except TransportTimeout as exc:
             raise LLMError(f"request timed out: {exc}", retryable=True) from exc
-        except httpx.HTTPError as exc:
+        except TransportError as exc:
             raise LLMError(f"network error: {exc}", retryable=True) from exc
 
     @staticmethod
-    def _retry_after(resp: httpx.Response) -> Optional[float]:
+    def _retry_after(resp: HttpResponse) -> Optional[float]:
         value = resp.headers.get("retry-after")
         try:
             return float(value) if value else None
@@ -163,7 +162,7 @@ class OpenAICompatProvider:
             return None
 
     @staticmethod
-    def _quota_exhausted(resp: httpx.Response) -> bool:
+    def _quota_exhausted(resp: HttpResponse) -> bool:
         text = resp.text.lower()
         if any(marker in text for marker in ("per-day", "per day", "daily", "quota", "per-month")):
             return True
@@ -175,7 +174,7 @@ class OpenAICompatProvider:
         except (TypeError, ValueError):
             return False
 
-    def _parse(self, resp: httpx.Response, messages: List[Message]) -> LLMResponse:
+    def _parse(self, resp: HttpResponse, messages: List[Message]) -> LLMResponse:
         status = resp.status_code
         body_text = redact_account_ids(resp.text[:500])
         if status == 429:

@@ -31,10 +31,10 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
 
 from agent_smith import ui_jobs
 from agent_smith.config import PROJECT_ROOT
+from agent_smith.net import hostname_of, query_params, split_url
 
 UI_FILE = PROJECT_ROOT / "ui" / "index.html"
 LOOPBACK = {"127.0.0.1", "localhost", "::1"}
@@ -85,7 +85,7 @@ def make_handler(trace: Path, *, host: str = "127.0.0.1", port: int = 8765, jobs
         def do_GET(self) -> None:  # noqa: N802
             if not self._host_ok():
                 return self._send(403, b"forbidden host", "text/plain")
-            url = urlparse(self.path)
+            url = split_url(self.path)
             path = url.path
             try:
                 if path in ("/", "/index.html"):
@@ -96,13 +96,13 @@ def make_handler(trace: Path, *, host: str = "127.0.0.1", port: int = 8765, jobs
                 elif path == "/api/info":
                     self._json({"app": "agent-smith-ui", "trace": str(state.get()[0]), "runs": allow_runs})
                 elif path == "/events":
-                    self._stream(fixed=trace if parse_qs(url.query).get("default") == ["1"] else None)
+                    self._stream(fixed=trace if query_params(url.query).get("default") == ["1"] else None)
                 elif path == "/api/actions":
                     self._json(ui_jobs.actions())
                 elif path == "/api/runs":
                     self._json(ui_jobs.recorded_runs())
                 elif path == "/api/trace":
-                    p = ui_jobs.safe_trace_path(parse_qs(url.query).get("path", [""])[0])
+                    p = ui_jobs.safe_trace_path(query_params(url.query).get("path", [""])[0])
                     self._send(200, p.read_bytes(), "text/plain; charset=utf-8")
                 elif path == "/api/job":
                     self._json(jobs.snapshot())
@@ -114,7 +114,7 @@ def make_handler(trace: Path, *, host: str = "127.0.0.1", port: int = 8765, jobs
         def do_POST(self) -> None:  # noqa: N802
             origin = self.headers.get("Origin")
             if not self._host_ok() or self.headers.get("X-Agent-Smith") != "1" or (
-                    origin and urlparse(origin).hostname not in LOOPBACK | {host}):
+                    origin and hostname_of(origin) not in LOOPBACK | {host}):
                 return self._json({"error": "forbidden"}, 403)
             if not allow_runs:
                 return self._json({"error": "launching runs is only allowed when serving on localhost"}, 403)

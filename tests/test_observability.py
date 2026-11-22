@@ -47,7 +47,7 @@ def test_tool_results_carry_hops_and_provenance(tmp_path):
     assert meta["details"]["tests"] == ["assert sub_list([1,2],[3,4])==[-2,-2]", "assert sub_list([90,120],[50,70])==[40,50]"]
 
 
-def test_swebench_ops_report_commands(git_repo):
+def test_swe_ops_report_commands(git_repo):
     env = dict(os.environ, TESTBED_PATH=str(git_repo))
     with MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp:
         out = mcp.call_tool("search_code", {"pattern": "def add"})

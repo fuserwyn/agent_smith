@@ -44,7 +44,7 @@ def _docker(*args: str, timeout: float = 120, check: bool = True) -> subprocess.
 
 
 def qualify_image(image: str) -> str:
-    """``swebench/x:tag`` -> ``docker.io/swebench/x:tag``; ``python:3.11`` -> ``docker.io/library/python:3.11``.
+    """``ns/x:tag`` -> ``docker.io/ns/x:tag``; ``python:3.11`` -> ``docker.io/library/python:3.11``.
 
     Podman (Fedora, 42 computers) refuses short names without a TTY ("short-name resolution enforced");
     Docker accepts the full name too, so it is always used."""

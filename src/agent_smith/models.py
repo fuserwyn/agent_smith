@@ -12,9 +12,17 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+# Benchmark identifiers, as written to SolutionOutput.benchmark and expected by the moulinette.
+MBPP = "mbpp"
+SWE_BENCH = "swebench"
+SWE_AGENT_MODULE = "agent_swebench"  # python -m agent_swebench (name fixed by the subject)
+
+
 # --------------------------------------------------------------------------- #
 # Sandbox
 # --------------------------------------------------------------------------- #
+
+
 class SandboxConfig(BaseModel):
     """Sandbox configuration for student solutions.
 

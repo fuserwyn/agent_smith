@@ -60,22 +60,21 @@ REMOVED_BUILTINS = {
     "eval", "exec", "compile", "input", "breakpoint", "globals", "locals", "vars",
     "help", "exit", "quit", "copyright", "credits", "license", "__loader__", "__spec__",
 }
-# Modules that must never be imported, even indirectly, unless explicitly allowlisted.
-HARD_DENY_MODULES = {
-    "os", "posix", "nt", "sys", "subprocess", "socket", "_socket", "ssl", "ctypes", "_ctypes",
-    "multiprocessing", "_multiprocessing", "threading", "_thread", "signal", "importlib",
-    "builtins", "shutil", "pathlib", "io", "_io", "pty", "fcntl", "resource", "gc", "inspect",
-    "code", "codeop", "pickle", "marshal", "urllib", "http", "ftplib", "smtplib", "asyncio",
-    "selectors", "select", "mmap", "tempfile", "glob", "webbrowser", "sysconfig", "site",
-}
-# Audit events that are always denied.
-DENIED_EVENT_PREFIXES = (
-    "socket.", "subprocess.", "os.system", "os.exec", "os.spawn", "os.posix_spawn", "os.fork",
-    "os.forkpty", "os.kill", "os.killpg", "os.startfile", "os.putenv", "os.unsetenv",
-    "ctypes.", "urllib.", "ftplib.", "smtplib.", "imaplib.", "poplib.", "nntplib.", "telnetlib.",
-    "webbrowser.", "sys.settrace", "sys.setprofile", "sys._getframe", "sys._current_frames",
-    "sys.remote_exec", "code.__new__", "function.__new__", "pty.", "mmap.", "os.add_dll_directory",
-)
+# Deny policy (data, next to this file): modules that must never be imported, even indirectly, unless explicitly
+# allowlisted, and audit events that are always denied. Fail closed: without the policy the worker does not start.
+_POLICY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "worker_policy.json")
+
+
+def _load_policy(path: str = _POLICY_FILE):
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    modules, prefixes = data["hard_deny_modules"], data["denied_event_prefixes"]
+    if not modules or not prefixes or not all(isinstance(x, str) and x for x in modules + prefixes):
+        raise ValueError(f"invalid sandbox policy: {path}")
+    return frozenset(modules), tuple(prefixes)
+
+
+HARD_DENY_MODULES, DENIED_EVENT_PREFIXES = _load_policy()
 # Audit events carrying filesystem paths: event -> indices of path arguments.
 PATH_EVENTS = {
     "os.listdir": (0,), "os.scandir": (0,), "os.mkdir": (0,), "os.remove": (0,), "os.rmdir": (0,),

@@ -19,6 +19,8 @@ from pathlib import Path
 from statistics import mean
 from typing import Dict, List, Optional
 
+from agent_smith.models import SWE_BENCH
+
 
 def load(run_dir: Path) -> List[dict]:
     rows = []
@@ -112,4 +114,4 @@ def main(run_dir: str) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "benchmarks/swebench/main")
+    main(sys.argv[1] if len(sys.argv) > 1 else f"benchmarks/{SWE_BENCH}/main")

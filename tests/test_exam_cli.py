@@ -9,6 +9,7 @@ from argparse import Namespace
 
 import pytest
 
+from agent_smith.models import SWE_BENCH
 from agent_smith.runner import InputError, pick_model, read_task
 from agent_smith.tools import mbpp_tools
 from tests.conftest import ROOT
@@ -33,16 +34,16 @@ def test_default_model_follows_the_keys_present(no_keys):
     assert pick_model(args(), "mbpp") == ("openai/gpt-oss-120b", "https://api.groq.com/openai/v1")
     # Groq's 8k tokens/min cannot hold a SWE-bench prompt: SWE-bench needs another key
     with pytest.raises(InputError, match="NVIDIA_API_KEY"):
-        pick_model(args(), "swebench")
+        pick_model(args(), SWE_BENCH)
     no_keys.setenv("OPENROUTER_API_KEY", "y")
-    assert pick_model(args(), "swebench") == ("nvidia/nemotron-3.5-super-vl:free", "https://openrouter.ai/api/v1")
+    assert pick_model(args(), SWE_BENCH) == ("nvidia/nemotron-3.5-super-vl:free", "https://openrouter.ai/api/v1")
     no_keys.setenv("NVIDIA_API_KEY", "z")
-    assert pick_model(args(), "swebench")[0] == "nvidia/nemotron-3.5-lightning-30b-a3b"
+    assert pick_model(args(), SWE_BENCH)[0] == "nvidia/nemotron-3.5-lightning-30b-a3b"
 
 
 def test_explicit_and_partial_model_arguments(no_keys):
     assert pick_model(args("m", "http://localhost:11434/v1"), "mbpp") == ("m", "http://localhost:11434/v1")
-    assert pick_model(args(url="https://integrate.api.nvidia.com/v1"), "swebench")[0] == \
+    assert pick_model(args(url="https://integrate.api.nvidia.com/v1"), SWE_BENCH)[0] == \
         "nvidia/nemotron-3.5-lightning-30b-a3b"
     assert pick_model(args("gemini-3.5-flash-lite"), "mbpp")[1].startswith("https://generativelanguage")
     with pytest.raises(InputError):

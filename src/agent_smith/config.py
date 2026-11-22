@@ -10,11 +10,11 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field
 
 from agent_smith.models import SandboxConfig
+from agent_smith.net import hostname_of
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -90,7 +90,7 @@ class ModelsConfig(BaseModel):
     fallbacks: List[ModelSpec] = Field(default_factory=list)
     fallback_enabled: bool = Field(
         default=False, description="Use `fallbacks` even without --fallback (only providers with a key in env)")
-    # agent_mbpp / agent_swebench without --model-name/--provider-url: {"mbpp": [...], "swebench": [...]},
+    # the benchmark agents without --model-name/--provider-url: {benchmark id: [...]},
     # the first entry whose provider has a key in the environment is used
     benchmark_defaults: Dict[str, Any] = Field(default_factory=dict)
 
@@ -109,7 +109,7 @@ class ModelsConfig(BaseModel):
         return next((m for m in self.models if m.provider == provider and m.model == model), None)
 
     def provider_for_url(self, url: str) -> Optional[ProviderSpec]:
-        host = (urlparse(url).hostname or "").lower()
+        host = hostname_of(url)
         for spec in self.providers:
             if any(host == h or host.endswith("." + h) for h in spec.hosts):
                 return spec

@@ -1,11 +1,11 @@
 """Tables, statistics and charts of BENCHMARK_REPORT.md, computed from the run folders only.
 
-    uv run python scripts/benchmark_report.py            # prints the Markdown, writes benchmarks/swebench/charts/*.svg
+    uv run python scripts/benchmark_report.py            # prints the Markdown, writes the charts (SVG)
 
 Input (written by scripts/run_benchmark.sh / run_benchmark_suite.sh):
 
-    benchmarks/swebench/<run>/<model-slug>/<instance_id>/solution.json   the agent's output (every step)
-    benchmarks/swebench/<run>/<model-slug>/<instance_id>/validation.txt  the moulinette's verdict ("Overall: PASSED")
+    <BENCH>/<run>/<model-slug>/<instance_id>/solution.json   the agent's output (every step)
+    <BENCH>/<run>/<model-slug>/<instance_id>/validation.txt  the moulinette's verdict ("Overall: PASSED")
 
 Runs: v2 (main grid), v2-repeat-N (same reference model again), v2-ablation-<name> (one mechanism off).
 Pass/fail is ALWAYS the moulinette's verdict; the agent's own `success` flag is reported separately.
@@ -22,8 +22,11 @@ from pathlib import Path
 from statistics import mean, median, pstdev
 from typing import Dict, List, Optional
 
+from agent_smith.models import SWE_BENCH
+
 ROOT = Path(__file__).resolve().parent.parent
-BENCH = ROOT / "benchmarks" / "swebench"
+REL = f"benchmarks/{SWE_BENCH}"  # results of the SWE-bench runs, relative to the repository
+BENCH = ROOT / REL
 CHARTS = BENCH / "charts"
 PRICES = json.loads((BENCH / "paid-equivalent-prices.json").read_text())
 REFERENCE = "nvidia_nemotron-3.5-lightning-30b-a3b"
@@ -230,8 +233,8 @@ def main() -> None:
     bar_chart(CHARTS / "tokens_per_solved.svg", "Input tokens per solved task (lower is cheaper)",
               [e[0] for e in eff], [e[1] for e in eff], fmt="{:,.0f}")
     (CHARTS / "tokens_vs_pass.svg").unlink(missing_ok=True)
-    md.append("\n![pass rate](benchmarks/swebench/charts/pass_rate.svg)\n\n"
-              "![tokens per solved task](benchmarks/swebench/charts/tokens_per_solved.svg)\n")
+    md.append(f"\n![pass rate]({REL}/charts/pass_rate.svg)\n\n"
+              f"![tokens per solved task]({REL}/charts/tokens_per_solved.svg)\n")
 
     by_task = []
     for t in tasks:
@@ -261,7 +264,7 @@ def main() -> None:
                             if st.get("request_time_ms")] or [0])) for m in order]
     bar_chart(CHARTS / "latency.svg", "Average response time per request (ms)", [x[0] for x in lat],
               [x[1] for x in lat], fmt="{:,.0f}", unit=" ms")
-    md.append("\n![latency](benchmarks/swebench/charts/latency.svg)\n")
+    md.append(f"\n![latency]({REL}/charts/latency.svg)\n")
 
     # ---- intermediary metrics
     md.append("\n## 4. Intermediary metrics\n")
@@ -335,7 +338,7 @@ def main() -> None:
                          "Fallback submissions"], lines))
         bar_chart(CHARTS / "ablations.svg", f"Ablations: tasks solved (of {len(tasks)})", [b[0] for b in bars],
                   [b[1] for b in bars], fmt="{:.1f}", vmax=len(tasks))
-        md.append("\n![ablations](benchmarks/swebench/charts/ablations.svg)\n")
+        md.append(f"\n![ablations]({REL}/charts/ablations.svg)\n")
         md.append("\nPer task:\n")
         per = []
         for t in tasks:
@@ -350,7 +353,7 @@ def main() -> None:
     md.append("\n## 7. Cost analysis\n")
     md.append("Every run above was free (free tiers / `:free` models). Two costs still matter: the **free quota** "
               "a task consumes, and what the same tokens would cost on the **paid** version of the model "
-              "(public OpenRouter prices of 2026-11-21, `benchmarks/swebench/paid-equivalent-prices.json`).\n")
+              f"(public OpenRouter prices of 2026-11-21, `{REL}/paid-equivalent-prices.json`).\n")
     crow = []
     for m in order:
         rs = models[m]

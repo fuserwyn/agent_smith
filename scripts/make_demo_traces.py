@@ -25,11 +25,11 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from agent_smith.agent import AgentSettings, CodeAgent  # noqa: E402
-from agent_smith.agent.prompts import swebench_system_prompt  # noqa: E402
+from agent_smith.agent.prompts import swe_system_prompt  # noqa: E402
 from agent_smith.events import EventSink  # noqa: E402
 from agent_smith.llm import Endpoint, KeyPool, LLMClient, OpenAICompatProvider  # noqa: E402
 from agent_smith.mcp_client import MCPClient  # noqa: E402
-from agent_smith.models import SWEBENCH_LIMITS, SandboxConfig  # noqa: E402
+from agent_smith.models import MBPP, SWE_BENCH, SWEBENCH_LIMITS, SandboxConfig  # noqa: E402
 from agent_smith.sandbox import Sandbox  # noqa: E402
 from tests.fake_llm_server import FakeLLMServer  # noqa: E402
 
@@ -108,8 +108,8 @@ def run_swe(tmp: Path) -> list:
         with MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env) as mcp:
             events.emit("mcp_connected", mcp.describe())
             with Sandbox(SandboxConfig(), mcp, event_hook=events.emit, trace_execution=True) as sb:
-                agent = CodeAgent(llm, sb, swebench_system_prompt(SandboxConfig(), mcp, str(repo)), SWEBENCH_LIMITS,
-                                  "swebench", "demo__calculator-1", settings=AgentSettings(show_budget=True),
+                agent = CodeAgent(llm, sb, swe_system_prompt(SandboxConfig(), mcp, str(repo)), SWEBENCH_LIMITS,
+                                  SWE_BENCH, "demo__calculator-1", settings=AgentSettings(show_budget=True),
                                   events=events)
                 agent.run(f"Repository: demo/calculator (checked out at {repo})\n<issue>\n{ISSUE}\n</issue>")
     events.close()
@@ -118,7 +118,7 @@ def run_swe(tmp: Path) -> list:
 
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
-        traces = {"mbpp": run_mbpp(Path(tmp)), "swebench": run_swe(Path(tmp))}
+        traces = {MBPP: run_mbpp(Path(tmp)), SWE_BENCH: run_swe(Path(tmp))}
     data = json.dumps(traces, separators=(",", ":"))
     # Keep the published demo free of local machine details.
     data = re.sub(r"http://127\.0\.0\.1:\d+/v1", "scripted://fake-llm", data)

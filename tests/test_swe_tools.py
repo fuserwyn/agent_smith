@@ -3,7 +3,7 @@
 import re
 
 from agent_smith.tools.executor import LocalExecutor
-from agent_smith.tools.swebench_tools import SWEBenchTools
+from agent_smith.tools.swe_tools import SWEBenchTools
 
 
 def tools(repo, script=None):
@@ -62,7 +62,7 @@ def test_search_code_falls_back_to_literal_text(git_repo):
 
 
 def test_summarize_sympy_django_pytest_formats():
-    from agent_smith.tools.swebench_tools import summarize_test_output as summ
+    from agent_smith.tools.swe_tools import summarize_test_output as summ
     sympy = "test_Vector ok\ntest_Vector_diffs E\ntest_vector_var_in_dcm E\n= tests finished: 1 passed, 3 exceptions, in 0.66 seconds ="
     assert summ(sympy).startswith("summary: 1 passed, 3 failed/errored") and "test_Vector_diffs E" in summ(sympy)
     django = "test_a (m.T) ... ok\ntest_b (m.T) ... FAIL\nRan 2 tests in 0.1s\nFAILED (failures=1)"

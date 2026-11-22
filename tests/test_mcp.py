@@ -24,7 +24,7 @@ def swe_client(repo):
     return MCPClient(stdio_command=f"python {shlex.quote(str(ROOT / 'mcp_tools_swebench.py'))}", env=env)
 
 
-def test_swebench_server_exposes_mandatory_tools_and_manual(git_repo):
+def test_swe_server_exposes_mandatory_tools_and_manual(git_repo):
     with swe_client(git_repo) as mcp:
         assert MANDATORY <= set(mcp.tool_names())
         manual = build_manual(SandboxConfig(), mcp)
