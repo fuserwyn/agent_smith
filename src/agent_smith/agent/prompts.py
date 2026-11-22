@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 from agent_smith.models import MBPPTaskInput, SandboxConfig, SWEBenchTaskInput
 from agent_smith.sandbox.manual import build_manual
 
@@ -60,57 +63,33 @@ def mbpp_task_prompt(task: MBPPTaskInput) -> str:
             f"Public tests (run_tests checks these):\n{tests}{imports}")
 
 
-SWE_METHOD = """## Method (follow it; it is how an experienced engineer fixes a bug)
-1. Understand: restate the bug in one sentence. Identify symbols, error messages and files mentioned in the bug report.
-2. Locate: search_function_or_class_definition_in_code / search_code for those symbols, then read the relevant
-   region in ONE call with a wide range, e.g. read_file(path, 1, 200). Do not page through a file 50 lines at a time.
-3. Reproduce: run the snippet from the bug report once, e.g.
-   run_command("cd /testbed && python -c '<snippet>'"), and confirm the failure.
-4. Fix: make the minimal, general change at the root cause with edit_file(path, old_str, new_str).
-   old_str must be copied EXACTLY (indentation included) from read_file output and be unique.
-5. Verify in the SAME code block as the edit: print(edit_file(...)), then print(run_tests()). run_tests runs the
-   task's real test suite: it is the only verification that counts. Read the failing test names and fix regressions.
-6. Submit: as soon as run_tests shows no failures, call final_answer(get_patch()). Do not keep exploring.
-
-## Efficiency
-- Batch several tool calls in ONE code block (search + read, edit + run_tests). Print only what you need.
-- You have a limited number of steps and tokens: no long essays in Thoughts, no repeated manual experiments.
-- Never modify test files. Keep scratch files in /tmp, never inside the repository.
-
-## Integrity (mandatory)
-- Fix the bug by reading and running the code in this repository only.
-- Do not fetch anything from the internet (code hosting sites, bug trackers, package indexes), and do not
-  reproduce a memorised upstream patch without verifying it against this code base."""
-
-SWE_EXAMPLE = '''## Example of a good first step
-Thought: The bug report says `Matrix.col_insert` misplaces columns. Find its definition and read it.
-```python
-print(search_function_or_class_definition_in_code("col_insert"))
-print(search_code("def _eval_col_insert", "*.py"))
-```<end_code>'''
+# SWE-bench prompt text lives in prompt_text/*.md (plain data, see prompt_text/README.md).
+_TEXT_DIR = Path(__file__).with_name("prompt_text")
+_PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
-SWE_MINIMAL = """Fix the bug, check it, then call final_answer(get_patch()).
-Solve it using this repository only (no internet)."""
+def _text(name: str) -> str:
+    return (_TEXT_DIR / f"{name}.md").read_text(encoding="utf-8").removesuffix("\n")
+
+
+def _fill(template: str, **values: str) -> str:
+    """One pass: ``{name}`` -> value; the values themselves are never re-scanned (task text may contain braces)."""
+    return _PLACEHOLDER.sub(lambda m: values[m.group(1)] if m.group(1) in values else m.group(0), template)
+
+
+SWE_METHOD = _text("swe_method")
+SWE_EXAMPLE = _text("swe_example")
+SWE_MINIMAL = _text("swe_minimal")
 
 
 def swe_system_prompt(config: SandboxConfig, mcp, repo_root: str = "/testbed", variant: str = "full") -> str:
     """``variant="minimal"`` drops the method section and the example (used for the ablation study)."""
     guidance = f"{SWE_METHOD}\n\n{SWE_EXAMPLE}" if variant == "full" else SWE_MINIMAL
-    return f"""You are an autonomous software engineer fixing a real bug in the repository at {repo_root}.
-You act by writing Python code that calls tools (Python functions). The repository lives in a separate
-environment: you can only reach it through the tools, never with open() or imports.
-
-{FORMAT_RULES}
-
-{build_manual(config, mcp)}
-
-{guidance}"""
+    return _fill(_text("swe_system"), repo_root=repo_root, format_rules=FORMAT_RULES,
+                 manual=build_manual(config, mcp), guidance=guidance)
 
 
 def swe_task_prompt(task: SWEBenchTaskInput, repo_root: str = "/testbed") -> str:
     hints = f"\n\n<hints>\n{task.hints_text.strip()}\n</hints>" if task.hints_text.strip() else ""
-    return (f"Repository: {task.repo or 'unknown'} (checked out at {repo_root})\n"
-            f"Fix the bug described below so that the repository's tests pass.\n\n"
-            f"<bug_report>\n{task.problem_statement.strip()}\n</bug_report>{hints}\n\n"
-            f"Start with step 1 of the method.")
+    return _fill(_text("swe_task"), repo=task.repo or "unknown", repo_root=repo_root,
+                 problem_statement=task.problem_statement.strip(), hints=hints)

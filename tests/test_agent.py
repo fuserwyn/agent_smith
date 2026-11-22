@@ -144,3 +144,19 @@ def test_long_runs_send_only_the_last_steps(tmp_path):
     assert len(last) == 2 + 2 * 2                                      # system, task, then only 2 (assistant, observation) pairs
     assert "4 earlier step(s) of this run are not shown" in last[1]["content"]
     assert "print(5)" in last[-2]["content"] and "print(0)" not in json.dumps(last)
+
+
+def test_swe_prompt_text_comes_from_the_templates():
+    """The SWE-bench prompt text is data (agent/prompt_text/*.md); braces in a task are never treated as fields."""
+    from agent_smith.agent import prompts
+    from agent_smith.models import SWEBenchTaskInput
+
+    system = prompts.swe_system_prompt(SandboxConfig(), None, "/testbed")
+    assert system.startswith("You are an autonomous software engineer") and "/testbed" in system
+    assert "## Method" in system and "## Integrity (mandatory)" in system and "{" + "guidance}" not in system
+    minimal = prompts.swe_system_prompt(SandboxConfig(), None, "/testbed", variant="minimal")
+    assert "## Method" not in minimal and prompts.SWE_MINIMAL in minimal
+    task = SWEBenchTaskInput(instance_id="x__y-1", repo="x/y", base_commit="0" * 40, problem_statement="f({hints}) {}",
+                             hints_text="see {repo}", docker_image="img", eval_script="true")
+    text = prompts.swe_task_prompt(task)
+    assert "f({hints}) {}" in text and "see {repo}" in text and "x/y (checked out at /testbed)" in text

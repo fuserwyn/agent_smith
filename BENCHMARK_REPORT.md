@@ -501,6 +501,28 @@ is within noise; the token and step counts are the stronger signal.
   - So with the full prompt this mechanism is a safety net that this model rarely needs. It matters with a weaker
     prompt (8 refusals above), and once with `ultra:free` (13480, refused once and then passed).
 
+### Prompt wording is not neutral (found after the main runs)
+
+While cleaning the code for the anti-cheat scan, we replaced the word "issue" in the SWE-bench prompt with "bug
+report", including the `<issue>` tag around the problem statement. Nothing else in the prompt changed.
+
+| Run (reference model) | Solved | `sympy__sympy-14711` | Replies with an extra empty code block |
+|---|---|---|---|
+| main + 2 repeats, original wording | 24/24 | 3/3 | 8 of 137 steps (main run) |
+| "bug report" wording (`v2-prompt-wording`, `-r2`, `-r3`) | 7/8 | **0/3** | 38 of 121 steps |
+| original wording, new HTTP client (`probe-oldprompt-newtransport`) | – | 1/1 | 0 |
+| final code: original wording, new HTTP client (`v2-final-code`) | **8/8** | 1/1 | 6 of 118 steps |
+
+- With the new wording the model kept appending an empty `` ```python ``` `` block after its code. Each reply then
+  ran as two blocks.
+- On the hardest task, this cost the steps needed to finish, and the run hit the 30-iteration limit three times in
+  a row.
+- The original text with the new HTTP client behaved as before. So the cause is the wording.
+- The prompt was therefore restored byte for byte. It now lives in `src/agent_smith/agent/prompt_text/*.md`, and a
+  check against the previous code gave identical system and task prompts for all 8 tasks.
+- **Lesson:** a synonym is a change. Every prompt edit needs a run before it ships, and the method section is not
+  the only sensitive part.
+
 ## 9. MBPP
 
 Same method, the MBPP agent:
@@ -532,7 +554,7 @@ Same method, the MBPP agent:
 ## 10. Reproduce
 
 ```bash
-git checkout exam-ready                   # agent of this report: 28e2ce4 (unchanged for SWE-bench up to the report commit)
+git checkout exam-ready                   # runs of sections 2–7: agent 28e2ce4; later commits keep the prompt byte-identical
 cp .env.example .env                      # NVIDIA_API_KEY, OPENROUTER_API_KEY, COHERE_API_KEY (free)
 ./scripts/run_benchmark_suite.sh          # 3 streams: models × 8 tasks, repeats, ablations (resumable)
 uv run python scripts/benchmark_report.py # tables of sections 2–7 + charts in benchmarks/swebench/charts/
