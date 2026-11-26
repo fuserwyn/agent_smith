@@ -17,7 +17,8 @@
 # validation, then the subject's starter SWE-bench tasks) are pulled in the background while you start working.
 #
 # Options
-#   --sgo DIR              data folder (default /sgoinfre/goinfre/Perso/$USER/agent_smith)
+#   --sgo DIR              data folder (default /sgoinfre/goinfre/Perso/$USER/agent_smith; without sgoinfre:
+#                          /goinfre/$USER/agent_smith, else ~/agent_smith_data)
 #   --moulinette PATH      moulinette folder or archive (default: ./moulinette, then ~/moulinette, ~/Downloads, $SGO)
 #   --env FILE             .env with the API keys (copied to ~/.agent_smith.env; default: keep ./.env if present)
 #   --prefetch starters|none|ID[,ID]   SWE-bench images to pull in the background (default starters = the subject's
@@ -28,6 +29,12 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
 SGO_BASE="/sgoinfre/goinfre/Perso/$USER"; SGO=""; MOUL_SRC=""; ENV_SRC=""; PREFETCH="starters"; CHECK=1; YES=0; UNINSTALL=0
+args=()
+for a in "$@"; do   # a chat or an editor may turn "--sgo" into "—sgo" / "–sgo": accept those too
+  case "$a" in —*) a="--${a#—}" ;; –*) a="--${a#–}" ;; esac
+  args+=("$a")
+done
+set -- "${args[@]+"${args[@]}"}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --sgo) SGO="$2"; shift 2 ;;
@@ -41,7 +48,16 @@ while [[ $# -gt 0 ]]; do
     *) echo "unknown option $1 (see --help)"; exit 2 ;;
   esac
 done
-SGO="${SGO:-$SGO_BASE/agent_smith}"
+# Data folder: --sgo / SGO=..., else sgoinfre; on a computer without sgoinfre, /goinfre/$USER, else the home folder.
+if [[ -z "$SGO" ]]; then
+  if [[ -d "$SGO_BASE" || -w "$(dirname "$SGO_BASE")" ]] || mkdir -p "$SGO_BASE" 2>/dev/null; then
+    SGO="$SGO_BASE/agent_smith"
+  elif [[ -d "/goinfre/$USER" || -w /goinfre ]]; then
+    SGO="/goinfre/$USER/agent_smith"
+  else
+    SGO="$HOME/agent_smith_data"
+  fi
+fi
 STATE="$SGO/state"; LOGS="$SGO/logs"; KEYS="$HOME/.agent_smith.env"
 G=$'\e[32m'; R=$'\e[31m'; Y=$'\e[33m'; B=$'\e[1m'; N=$'\e[0m'
 say()  { echo "${B}==>${N} $*"; }

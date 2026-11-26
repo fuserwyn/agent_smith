@@ -3,6 +3,7 @@
 #
 # Variables (on the command line, e.g. `make swe T="sympy__sympy-13480"`):
 M          ?=
+SGO        ?=
 ENV        ?= .env
 MOULINETTE ?= ./moulinette
 PORT       ?= 8765
@@ -71,11 +72,11 @@ clean-all: ## also Docker images and .venv (asks first)
 	@printf "Remove Docker images and virtualenvs too? [y/N] "; read a; [ "$$a" = y ] && ./scripts/clean.sh --all || echo "cancelled"
 
 # ---- 42 school computers
-school: ## set up here, heavy data in sgoinfre  (M=moulinette folder/archive if not found)
-	./scripts/school_setup.sh $(if $(M),--moulinette $(M),)
+school: ## set up here, heavy data in sgoinfre  (M=moulinette if not found, SGO=data folder)
+	./scripts/school_setup.sh $(if $(M),--moulinette $(M),) $(if $(SGO),--sgo $(SGO),)
 
 purge: ## after the defense: remove images, sgoinfre data (keeps .env)
-	./scripts/school_setup.sh --uninstall
+	./scripts/school_setup.sh --uninstall $(if $(SGO),--sgo $(SGO),)
 
 rm-env: ## delete the API keys: ./.env and ~/.agent_smith.env (asks first)
 	@ls -l $(ENV) $(HOME)/.agent_smith.env 2>/dev/null | awk '{print "  " $$NF}' || true
