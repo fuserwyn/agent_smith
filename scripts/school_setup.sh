@@ -260,6 +260,14 @@ p2=$!
 wait $p1 $p2
 [[ "$(cat "$STATE/sync-agent.rc")" == 0 ]] || die "agent dependencies failed (see $LOGS/sync-agent.log)"
 [[ "$(cat "$STATE/sync-moul.rc")" == 0 ]] || die "moulinette dependencies failed (see $LOGS/sync-moulinette.log)"
+# The moulinette is an editable install (a .pth file points at its sources); seen on 42 computers: the .pth missing
+# after the parallel sync, so `moulinette_eval` failed with "No module named 'moulinette'". Check and reinstall.
+if ! (cd moulinette && .venv/bin/python -c "import moulinette" >/dev/null 2>&1); then
+  warn "moulinette not importable after sync: reinstalling it"
+  (cd moulinette && uv sync --python 3.10 --reinstall-package moulinette >>"$LOGS/sync-moulinette.log" 2>&1)
+  (cd moulinette && .venv/bin/python -c "import moulinette" >/dev/null 2>&1) \
+    || die "moulinette still not importable (see $LOGS/sync-moulinette.log)"
+fi
 ok "agent and moulinette environments ready"; lap
 
 # ------------------------------------------------------------------ 7. shell file
@@ -267,6 +275,9 @@ cat > .school.env <<EOF
 # written by scripts/school_setup.sh — load with: source .school.env
 export PATH="\$HOME/.local/bin:\$PATH"
 export UV_CACHE_DIR="$UV_CACHE_DIR" UV_PYTHON_INSTALL_DIR="$UV_PYTHON_INSTALL_DIR" HF_HOME="$HF_HOME"
+# Every uv command uses Python 3.10: the school's system Python is newer, and a moulinette synced on it fails to build
+# numpy (no wheel for that version). Matters for a plain "uv sync" in a fresh moulinette folder, as a corrector does.
+export UV_PYTHON=3.10
 ${DH:+export DOCKER_HOST="$DH"}
 EOF
 ok "wrote .school.env"
